@@ -129,3 +129,16 @@ mostrarse explícitamente con `--include-private`:
 PYTHONPATH=src python -m biblioteca_kindle work-show ID_OBRA \
   --database work/library.sqlite3
 ```
+
+## Interfaz web local
+
+La interfaz escucha únicamente en esta computadora. No necesita que el Kindle
+esté conectado para consultar la base ya sincronizada:
+
+```bash
+PYTHONPATH=src python3 -m biblioteca_kindle serve \
+  --database work/library.sqlite3
+```
+
+Luego se abre `http://127.0.0.1:8000` en el navegador. El servidor se detiene
+presionando `Ctrl+C` en la terminal.

@@ -20,6 +20,7 @@ from .personal import (
     create_collection,
 )
 from .reports import ReportError, library_summary, work_card
+from .web import run_server
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -132,6 +133,10 @@ def build_parser() -> argparse.ArgumentParser:
     work_show.add_argument("work_id")
     work_show.add_argument("--database", required=True, type=Path)
     work_show.add_argument("--include-private", action="store_true")
+
+    serve = subparsers.add_parser("serve", help="Abrir el servidor web local")
+    serve.add_argument("--database", required=True, type=Path)
+    serve.add_argument("--port", type=int, default=8000)
     return parser
 
 
@@ -235,6 +240,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(work_card(args.database, args.work_id, include_private=args.include_private))
         except ReportError as error:
             print(f"Error de ficha: {error}")
+            return 1
+        return 0
+    if args.command == "serve":
+        try:
+            run_server(args.database, port=args.port)
+        except ValueError as error:
+            print(f"Error del servidor: {error}")
             return 1
         return 0
     if args.command == "import-annotations":

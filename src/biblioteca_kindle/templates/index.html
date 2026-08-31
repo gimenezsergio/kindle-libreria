@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Biblioteca personal local de lecturas y anotaciones Kindle">
+    <title>Biblioteca personal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Inicio de Biblioteca personal">
+        <span class="brand-mark" aria-hidden="true">B</span>
+        <span>Biblioteca personal</span>
+      </a>
+      <span class="local-badge">Solo en esta computadora</span>
+    </header>
+
+    <main>
+      <section class="welcome" aria-labelledby="welcome-title">
+        <p class="eyebrow">Tu archivo de lectura</p>
+        <h1 id="welcome-title">Los libros continúan<br>después de leerlos.</h1>
+        <p class="introduction">
+          Un espacio privado para volver a tus subrayados, desarrollar notas y
+          descubrir relaciones entre las obras que leés.
+        </p>
+
+        <div class="library-state" aria-live="polite">
+          <span class="state-dot" aria-hidden="true"></span>
+          <div>
+            <strong id="state-title">Consultando la biblioteca…</strong>
+            <span id="state-detail">La información permanece en tu equipo.</span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="reading-note" aria-label="Principio de la biblioteca">
+        <span class="note-number">01</span>
+        <blockquote>
+          “Una biblioteca no es una colección de objetos, sino un mapa de las
+          preguntas que seguimos haciéndonos.”
+        </blockquote>
+        <p>Este espacio se construirá alrededor de tus propias lecturas.</p>
+      </aside>
+    </main>
+
+    <footer>
+      <span>Biblioteca Kindle</span>
+      <span>Local · privada · independiente</span>
+    </footer>
+  </body>
+</html>

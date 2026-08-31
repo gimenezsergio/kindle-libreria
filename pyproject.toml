@@ -7,7 +7,7 @@ name = "biblioteca-kindle"
 version = "0.1.0"
 description = "Biblioteca personal local con Kindle como fuente de solo lectura"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["Flask>=3.1,<4"]
 
 [project.scripts]
 biblioteca-kindle = "biblioteca_kindle.cli:main"
@@ -16,5 +16,9 @@ biblioteca-kindle = "biblioteca_kindle.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-biblioteca_kindle = ["migrations/*.sql"]
-
+biblioteca_kindle = [
+    "migrations/*.sql",
+    "static/css/*.css",
+    "static/js/*.js",
+    "templates/*.html",
+]
