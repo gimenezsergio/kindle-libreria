@@ -10,8 +10,9 @@
 | Subrayados | `My Clippings.txt` y datos laterales `.sdr` | Muy prometedor |
 | Notas | `My Clippings.txt` y datos laterales `.sdr` | Muy prometedor |
 | Marcadores | `My Clippings.txt` | Disponible |
+| IDs alternativos de anotación | `.han` | Disponible para tres documentos; reconciliación pendiente |
 | Vocabulario consultado | `vocab.db` | Disponible |
-| Sesiones de lectura | `fmcache.db` | Candidata fuerte; serialización pendiente de estudiar |
+| Sesiones de lectura recientes | `fmcache.db` | Disponible, pero solo dos sesiones y un libro cubierto |
 | Posición actual por libro | `lpr` en sidecars KRDS | Disponible para 185 documentos, en formato nativo |
 | Máxima posición alcanzada | `fpr` en sidecars KRDS | Disponible para 84 documentos |
 | Porcentaje comparable | requiere denominador específico por formato | No disponible de forma universal |
@@ -21,7 +22,6 @@
 
 ## Siguiente investigación
 
-Los formatos laterales, la estrategia de identidad y las limitaciones del progreso
-ya fueron caracterizados. La investigación siguiente debe definir los campos
-mínimos y límites del primer modelo de datos, sin implementar todavía la
-sincronización completa.
+Los formatos laterales, la estrategia de identidad, las limitaciones del progreso,
+el modelo mínimo y las fuentes auxiliares ya fueron caracterizados. La siguiente
+decisión es fijar el alcance exacto de la primera versión implementable.

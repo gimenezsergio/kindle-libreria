@@ -140,7 +140,7 @@ Campos mínimos:
 - `id`;
 - `annotation_id`;
 - `source_observation_id`;
-- `source_kind`: clippings, KRDS u otro;
+- `source_kind`: clippings, KRDS, HAN u otro;
 - `source_record_key` o huella estable;
 - campos originales de encabezado, posición y fecha;
 - `raw_payload_ref` opcional y local;
@@ -236,4 +236,3 @@ no fusionan obras automáticamente.
 - Colección Amazon, si alguna vez se recupera, y colección propia.
 - Obra, edición y entrega Kindle.
 - Estado actual e historial de observaciones.
-
