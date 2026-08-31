@@ -1,0 +1,8 @@
+# Resultados temporales y posibles datos privados extraídos del Kindle
+work/*
+!work/.gitkeep
+
+# Archivos del entorno local
+.DS_Store
+*.log
+
