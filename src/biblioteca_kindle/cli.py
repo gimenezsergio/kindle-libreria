@@ -12,6 +12,13 @@ from .clippings import ClippingsImportError, import_clippings
 from .progress import ProgressImportError, import_progress
 from .annotations import AnnotationImportError, import_annotations
 from .sync import synchronize
+from .personal import (
+    PersonalDataError,
+    add_work_note,
+    add_work_relation,
+    assign_work_to_collection,
+    create_collection,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -83,6 +90,39 @@ def build_parser() -> argparse.ArgumentParser:
     sync.add_argument(
         "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
     )
+
+    collection_add = subparsers.add_parser(
+        "collection-add", help="Crear una colección local"
+    )
+    collection_add.add_argument("name")
+    collection_add.add_argument("--database", required=True, type=Path)
+    collection_add.add_argument("--parent")
+    collection_add.add_argument("--description")
+
+    collection_assign = subparsers.add_parser(
+        "collection-assign", help="Asignar una obra a una colección"
+    )
+    collection_assign.add_argument("work_id")
+    collection_assign.add_argument("collection_id")
+    collection_assign.add_argument("--database", required=True, type=Path)
+    collection_assign.add_argument("--note")
+    collection_assign.add_argument("--order", type=int, default=0)
+
+    note_add = subparsers.add_parser("note-add", help="Añadir una nota propia a una obra")
+    note_add.add_argument("work_id")
+    note_add.add_argument("body")
+    note_add.add_argument("--database", required=True, type=Path)
+
+    relation_add = subparsers.add_parser(
+        "relation-add", help="Relacionar dos obras"
+    )
+    relation_add.add_argument("source_work_id")
+    relation_add.add_argument("target_work_id")
+    relation_add.add_argument("relation_type")
+    relation_add.add_argument("--database", required=True, type=Path)
+    relation_add.add_argument("--label")
+    relation_add.add_argument("--explanation")
+    relation_add.add_argument("--symmetric", action="store_true")
     return parser
 
 
@@ -122,6 +162,57 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"{result.reconciliation.resolved_aliases} aliases reconciliados; "
             f"{result.marked_absent} entregas marcadas ausentes."
         )
+        return 0
+    if args.command == "collection-add":
+        try:
+            result = create_collection(
+                args.database,
+                args.name,
+                parent_id=args.parent,
+                description=args.description,
+            )
+        except PersonalDataError as error:
+            print(f"Error de colección: {error}")
+            return 1
+        print(f"Colección {'creada' if result.created else 'actualizada'}: {result.id}")
+        return 0
+    if args.command == "collection-assign":
+        try:
+            created = assign_work_to_collection(
+                args.database,
+                args.work_id,
+                args.collection_id,
+                note=args.note,
+                display_order=args.order,
+            )
+        except PersonalDataError as error:
+            print(f"Error de asignación: {error}")
+            return 1
+        print("Asignación creada." if created else "Asignación actualizada.")
+        return 0
+    if args.command == "note-add":
+        try:
+            identifier = add_work_note(args.database, args.work_id, args.body)
+        except PersonalDataError as error:
+            print(f"Error de nota: {error}")
+            return 1
+        print(f"Nota creada: {identifier}")
+        return 0
+    if args.command == "relation-add":
+        try:
+            result = add_work_relation(
+                args.database,
+                args.source_work_id,
+                args.target_work_id,
+                args.relation_type,
+                label=args.label,
+                explanation=args.explanation,
+                symmetric=args.symmetric,
+            )
+        except PersonalDataError as error:
+            print(f"Error de relación: {error}")
+            return 1
+        print(f"Relación {'creada' if result.created else 'actualizada'}: {result.id}")
         return 0
     if args.command == "import-annotations":
         try:

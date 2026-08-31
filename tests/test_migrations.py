@@ -14,7 +14,11 @@ class MigrationTests(unittest.TestCase):
             database = Path(directory) / "library.sqlite3"
             self.assertEqual(
                 migrate_database(database),
-                ["0001_initial.sql", "0002_reading_history.sql"],
+                [
+                    "0001_initial.sql",
+                    "0002_reading_history.sql",
+                    "0003_personal_constraints.sql",
+                ],
             )
 
             connection = connect_database(database)
@@ -57,7 +61,7 @@ class MigrationTests(unittest.TestCase):
                 ).fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(count, 2)
+            self.assertEqual(count, 3)
 
     def test_foreign_keys_are_enabled(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

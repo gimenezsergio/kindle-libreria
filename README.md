@@ -79,3 +79,37 @@ Para ejecutar el pipeline completo en el orden seguro:
 PYTHONPATH=src python -m biblioteca_kindle sync /media/usuario/Kindle \
   --database work/library.sqlite3
 ```
+
+## Organización personal
+
+Las colecciones, notas y relaciones se guardan únicamente en la base local. No
+se escriben ni se sincronizan al Kindle.
+
+Para crear una colección local (puede anidarse usando el identificador de otra):
+
+```bash
+PYTHONPATH=src python -m biblioteca_kindle collection-add "Temas" \
+  --database work/library.sqlite3
+
+PYTHONPATH=src python -m biblioteca_kindle collection-add "Poder" \
+  --parent ID_DE_TEMAS --database work/library.sqlite3
+```
+
+Para asignar una obra a una colección y añadir una nota propia:
+
+```bash
+PYTHONPATH=src python -m biblioteca_kindle collection-assign ID_OBRA ID_COLECCION \
+  --database work/library.sqlite3
+
+PYTHONPATH=src python -m biblioteca_kindle note-add ID_OBRA \
+  "Esta escena cambia la lectura del conflicto." \
+  --database work/library.sqlite3
+```
+
+Para relacionar obras por tema, símbolo, conflicto u otro criterio propio:
+
+```bash
+PYTHONPATH=src python -m biblioteca_kindle relation-add ID_ORIGEN ID_DESTINO simbolo \
+  --label "El laberinto" --explanation "Opera de modo distinto en ambas obras." \
+  --symmetric --database work/library.sqlite3
+```
