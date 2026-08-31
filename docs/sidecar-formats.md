@@ -44,18 +44,23 @@ actual.
 Hay 84 archivos KRDS de estado/anotaciones y todos contienen
 `annotation.cache.object`.
 
-El analizador público pudo interpretar semánticamente 61 archivos. En 23 archivos
-leyó correctamente el contenedor, pero encontró una variante más nueva de la
-estructura de anotaciones. En los 61 compatibles se recuperaron como mínimo:
+El analizador público interpretó semánticamente 61 archivos. Los 23 restantes
+contienen un `annotation.cache.object` completamente vacío; la implementación
+consultada intenta extraer un contador inexistente y produce un error, aunque el
+contenedor se lee correctamente. No son anotaciones inaccesibles ni evidencia de
+una variante nueva con datos adicionales.
+
+Los totales presentes en los sidecars KRDS son:
 
 - 5.216 subrayados;
 - 48 notas;
 - 28 marcadores.
 
-Estos valores son mínimos, no totales. `My Clippings.txt` sigue siendo la fuente
-más completa para el texto de las anotaciones; KRDS es valioso por sus posiciones,
-fechas y asociación directa con el archivo lateral del libro. Antes de construir
-el extractor habrá que soportar la variante observada en esos 23 archivos.
+`My Clippings.txt` contiene más anotaciones que los sidecars actualmente
+disponibles: 7.156 subrayados, 53 notas y 42 marcadores. Por ello debe considerarse
+un historial acumulativo más amplio, mientras que KRDS representa el estado local
+de los libros presentes y aporta posiciones, fechas y asociación directa con cada
+archivo. El futuro lector KRDS deberá tratar una caché vacía como cero anotaciones.
 
 ## Otros formatos
 
@@ -82,4 +87,3 @@ Para validar la estructura se utilizó una copia temporal del analizador KRDS
 bajo `work/`. Esa carpeta está excluida de Git. La herramienta se revisó antes de
 usarla y se invocó como biblioteca, evitando su modo de línea de comandos, que
 intentaría escribir un JSON junto al archivo de entrada.
-
