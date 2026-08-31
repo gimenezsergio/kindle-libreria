@@ -9,6 +9,7 @@ from .inventory import InventoryError, run_inventory
 from .manifests import ManifestImportError, import_manifests
 from .vocabulary import VocabularyImportError, import_vocabulary
 from .clippings import ClippingsImportError, import_clippings
+from .progress import ProgressImportError, import_progress
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -54,6 +55,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
     )
     clippings.add_argument("--snapshot", help="ID de instantánea; usa la última si se omite")
+
+    progress = subparsers.add_parser(
+        "import-progress", help="Importar posiciones y métricas KRDS"
+    )
+    progress.add_argument("mount", type=Path, help="Punto de montaje del Kindle")
+    progress.add_argument(
+        "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
+    )
+    progress.add_argument("--snapshot", help="ID de instantánea; usa la última si se omite")
     return parser
 
 
@@ -75,6 +85,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"Instantánea completa: {result.file_count} archivos, "
             f"{result.total_bytes} bytes, {result.warning_count} advertencias."
+        )
+        return 0
+    if args.command == "import-progress":
+        try:
+            result = import_progress(
+                args.mount, args.database, snapshot_id=args.snapshot
+            )
+        except (ProgressImportError, InventoryError) as error:
+            print(f"Error de progreso: {error}")
+            return 1
+        print(
+            f"Sidecars de progreso: {result.files}; importados: {result.imported}; "
+            f"sin entrega: {result.unmatched}; con fpr: "
+            f"{result.with_furthest_position}; con temporizador: {result.with_timer}; "
+            f"historiales: {result.history_records}; advertencias: {result.warnings}."
         )
         return 0
     if args.command == "import-clippings":

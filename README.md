@@ -58,3 +58,10 @@ Para importar el historial de `My Clippings.txt`:
 PYTHONPATH=src python -m biblioteca_kindle import-clippings \
   /media/usuario/Kindle --database work/library.sqlite3
 ```
+
+Para importar posiciones y métricas nativas de lectura:
+
+```bash
+PYTHONPATH=src python -m biblioteca_kindle import-progress \
+  /media/usuario/Kindle --database work/library.sqlite3
+```

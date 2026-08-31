@@ -12,7 +12,10 @@ class MigrationTests(unittest.TestCase):
     def test_initial_migration_creates_expected_tables(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "library.sqlite3"
-            self.assertEqual(migrate_database(database), ["0001_initial.sql"])
+            self.assertEqual(
+                migrate_database(database),
+                ["0001_initial.sql", "0002_reading_history.sql"],
+            )
 
             connection = connect_database(database)
             try:
@@ -37,6 +40,7 @@ class MigrationTests(unittest.TestCase):
                     "collections",
                     "personal_notes",
                     "work_relations",
+                    "reading_history_records",
                 }.issubset(tables)
             )
 
@@ -53,7 +57,7 @@ class MigrationTests(unittest.TestCase):
                 ).fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(count, 1)
+            self.assertEqual(count, 2)
 
     def test_foreign_keys_are_enabled(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -72,4 +76,3 @@ class MigrationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
