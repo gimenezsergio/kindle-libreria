@@ -6,6 +6,7 @@ from typing import Sequence
 
 from .db import migrate_database
 from .inventory import InventoryError, run_inventory
+from .manifests import ManifestImportError, import_manifests
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -24,6 +25,15 @@ def build_parser() -> argparse.ArgumentParser:
     inventory.add_argument(
         "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
     )
+
+    manifests = subparsers.add_parser(
+        "import-manifests", help="Importar entregas desde una instantánea completa"
+    )
+    manifests.add_argument("mount", type=Path, help="Punto de montaje del Kindle")
+    manifests.add_argument(
+        "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
+    )
+    manifests.add_argument("--snapshot", help="ID de instantánea; usa la última si se omite")
     return parser
 
 
@@ -47,5 +57,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"{result.total_bytes} bytes, {result.warning_count} advertencias."
         )
         return 0
+    if args.command == "import-manifests":
+        try:
+            result = import_manifests(
+                args.mount, args.database, snapshot_id=args.snapshot
+            )
+        except (ManifestImportError, InventoryError) as error:
+            print(f"Error de manifiestos: {error}")
+            return 1
+        print(
+            f"Manifiestos importados: {result.imported}; "
+            f"entregas nuevas: {result.created}; actualizadas: {result.updated}."
+        )
+        return 0
     return 2
-

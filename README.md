@@ -37,3 +37,10 @@ PYTHONPATH=src python -m biblioteca_kindle inventory /media/usuario/Kindle \
 
 El comando rechaza una base ubicada dentro del Kindle y solo inventaría fuentes
 relevantes; no interpreta todavía libros ni anotaciones.
+
+Para importar manifiestos desde la última instantánea completa:
+
+```bash
+PYTHONPATH=src python -m biblioteca_kindle import-manifests \
+  /media/usuario/Kindle --database work/library.sqlite3
+```
