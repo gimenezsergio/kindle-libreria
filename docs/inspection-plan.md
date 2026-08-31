@@ -17,3 +17,8 @@ privados o temporales permanecen bajo `work/`, fuera del control de versiones.
 7. Documentar fuentes, confiabilidad y limitaciones de cada dato.
 8. Diseñar el extractor después de comprender los datos disponibles.
 
+## Estado
+
+La inspección estructural está completada. El alcance de la primera versión está
+definido en `mvp-scope.md`; la siguiente fase comienza con esquema SQLite y
+migraciones, manteniendo el contrato de solo lectura.
