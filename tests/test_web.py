@@ -25,21 +25,29 @@ class WebTests(unittest.TestCase):
             client = create_app(database).test_client()
             page = client.get("/")
             status = client.get("/api/status")
+            summary = client.get("/api/summary")
 
             self.assertEqual(page.status_code, 200)
             self.assertIn("Biblioteca personal", page.get_data(as_text=True))
             self.assertEqual(
                 status.get_json(), {"database_available": True, "works": 1}
             )
+            self.assertEqual(summary.status_code, 200)
+            self.assertEqual(summary.get_json()["catalog"]["works"], 1)
+            self.assertEqual(summary.get_json()["annotations"]["total"], 0)
+            self.assertIsNone(summary.get_json()["last_sync"])
 
     def test_missing_database_is_reported_without_creating_it(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "missing.sqlite3"
             response = create_app(database).test_client().get("/api/status")
+            summary = create_app(database).test_client().get("/api/summary")
             self.assertEqual(
                 response.get_json(), {"database_available": False, "works": 0}
             )
             self.assertFalse(database.exists())
+            self.assertEqual(summary.status_code, 404)
+            self.assertEqual(summary.get_json(), {"database_available": False})
 
     def test_server_rejects_external_network_binding(self) -> None:
         with self.assertRaisesRegex(ValueError, "127.0.0.1"):

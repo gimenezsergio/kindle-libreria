@@ -14,35 +14,66 @@
         <span class="brand-mark" aria-hidden="true">B</span>
         <span>Biblioteca personal</span>
       </a>
-      <span class="local-badge">Solo en esta computadora</span>
+      <nav aria-label="Navegación principal">
+        <a class="nav-link is-active" href="/">Resumen</a>
+        <span class="nav-link is-muted">Biblioteca</span>
+      </nav>
+      <span class="local-badge">Local y privada</span>
     </header>
 
     <main>
-      <section class="welcome" aria-labelledby="welcome-title">
-        <p class="eyebrow">Tu archivo de lectura</p>
-        <h1 id="welcome-title">Los libros continúan<br>después de leerlos.</h1>
-        <p class="introduction">
-          Un espacio privado para volver a tus subrayados, desarrollar notas y
-          descubrir relaciones entre las obras que leés.
-        </p>
-
-        <div class="library-state" aria-live="polite">
-          <span class="state-dot" aria-hidden="true"></span>
+      <section class="dashboard" aria-labelledby="page-title">
+        <div class="page-heading">
           <div>
-            <strong id="state-title">Consultando la biblioteca…</strong>
-            <span id="state-detail">La información permanece en tu equipo.</span>
+            <p class="eyebrow">Tu archivo de lectura</p>
+            <h1 id="page-title">Resumen</h1>
+          </div>
+          <div class="library-state" aria-live="polite">
+            <span class="state-dot" aria-hidden="true"></span>
+            <div>
+              <strong id="state-title">Consultando la biblioteca…</strong>
+              <span id="state-detail">La información permanece en tu equipo.</span>
+            </div>
           </div>
         </div>
-      </section>
 
-      <aside class="reading-note" aria-label="Principio de la biblioteca">
-        <span class="note-number">01</span>
-        <blockquote>
-          “Una biblioteca no es una colección de objetos, sino un mapa de las
-          preguntas que seguimos haciéndonos.”
-        </blockquote>
-        <p>Este espacio se construirá alrededor de tus propias lecturas.</p>
-      </aside>
+        <div class="metrics" aria-label="Estado de la biblioteca">
+          <article class="metric metric-primary"><span class="metric-label">Obras</span><strong id="works-count">—</strong><span id="editions-detail">Catálogo local</span></article>
+          <article class="metric"><span class="metric-label">Anotaciones</span><strong id="annotations-count">—</strong><span id="annotations-detail">Subrayados, notas y marcadores</span></article>
+          <article class="metric"><span class="metric-label">En el Kindle</span><strong id="present-count">—</strong><span id="presence-detail">Entregas presentes</span></article>
+          <article class="metric"><span class="metric-label">Organización propia</span><strong id="collections-count">—</strong><span id="organization-detail">Colecciones creadas</span></article>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="panel annotation-panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">Memoria de lectura</p><h2>Anotaciones recuperadas</h2></div>
+              <span class="panel-total" id="annotation-total">—</span>
+            </div>
+            <div class="annotation-types">
+              <div><span class="type-mark highlight"></span><span>Subrayados</span><strong id="highlight-count">—</strong></div>
+              <div><span class="type-mark note"></span><span>Notas</span><strong id="note-count">—</strong></div>
+              <div><span class="type-mark bookmark"></span><span>Marcadores</span><strong id="bookmark-count">—</strong></div>
+            </div>
+          </article>
+
+          <article class="panel sync-panel">
+            <p class="eyebrow">Origen</p><h2>Última sincronización</h2>
+            <p class="sync-date" id="sync-date">Consultando…</p>
+            <dl>
+              <div><dt>Fuentes procesadas</dt><dd id="source-count">—</dd></div>
+              <div><dt>Advertencias</dt><dd id="warning-count">—</dd></div>
+            </dl>
+            <p class="privacy-note">El Kindle no necesita estar conectado para consultar esta biblioteca.</p>
+          </article>
+
+          <article class="panel review-panel">
+            <p class="eyebrow">Calidad del catálogo</p><h2>Identidades por revisar</h2>
+            <div class="review-count"><strong id="review-count">—</strong><span>obras requieren atención</span></div>
+            <p id="provisional-detail">Las coincidencias inciertas se conservan sin fusionarlas automáticamente.</p>
+          </article>
+        </div>
+      </section>
     </main>
 
     <footer>
