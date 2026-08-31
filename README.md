@@ -15,3 +15,15 @@ como fuente de datos de solo lectura.
 - `docs/`: hallazgos y decisiones del proyecto.
 - `work/`: resultados locales temporales, excluidos de Git.
 
+## Desarrollo local
+
+El proyecto usa Python 3.11 o posterior y SQLite, sin dependencias de ejecución.
+
+Para crear una base local durante el desarrollo:
+
+```bash
+PYTHONPATH=src python -m biblioteca_kindle init-db work/library.sqlite3
+```
+
+La base debe permanecer fuera del Kindle. `work/` está excluido de Git porque
+puede contener datos privados derivados del dispositivo.
