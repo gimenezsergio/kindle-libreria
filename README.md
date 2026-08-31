@@ -113,3 +113,19 @@ PYTHONPATH=src python -m biblioteca_kindle relation-add ID_ORIGEN ID_DESTINO sim
   --label "El laberinto" --explanation "Opera de modo distinto en ambas obras." \
   --symmetric --database work/library.sqlite3
 ```
+
+## Consultas locales
+
+El resumen no muestra textos de anotaciones ni notas privadas:
+
+```bash
+PYTHONPATH=src python -m biblioteca_kindle report --database work/library.sqlite3
+```
+
+La ficha de una obra también oculta el contenido de las notas por defecto. Puede
+mostrarse explícitamente con `--include-private`:
+
+```bash
+PYTHONPATH=src python -m biblioteca_kindle work-show ID_OBRA \
+  --database work/library.sqlite3
+```

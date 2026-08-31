@@ -19,6 +19,7 @@ from .personal import (
     assign_work_to_collection,
     create_collection,
 )
+from .reports import ReportError, library_summary, work_card
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -123,6 +124,14 @@ def build_parser() -> argparse.ArgumentParser:
     relation_add.add_argument("--label")
     relation_add.add_argument("--explanation")
     relation_add.add_argument("--symmetric", action="store_true")
+
+    report = subparsers.add_parser("report", help="Mostrar el resumen local de la biblioteca")
+    report.add_argument("--database", required=True, type=Path)
+
+    work_show = subparsers.add_parser("work-show", help="Mostrar la ficha textual de una obra")
+    work_show.add_argument("work_id")
+    work_show.add_argument("--database", required=True, type=Path)
+    work_show.add_argument("--include-private", action="store_true")
     return parser
 
 
@@ -213,6 +222,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"Error de relación: {error}")
             return 1
         print(f"Relación {'creada' if result.created else 'actualizada'}: {result.id}")
+        return 0
+    if args.command == "report":
+        try:
+            print(library_summary(args.database))
+        except ReportError as error:
+            print(f"Error de reporte: {error}")
+            return 1
+        return 0
+    if args.command == "work-show":
+        try:
+            print(work_card(args.database, args.work_id, include_private=args.include_private))
+        except ReportError as error:
+            print(f"Error de ficha: {error}")
+            return 1
         return 0
     if args.command == "import-annotations":
         try:
