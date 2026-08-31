@@ -27,3 +27,13 @@ PYTHONPATH=src python -m biblioteca_kindle init-db work/library.sqlite3
 
 La base debe permanecer fuera del Kindle. `work/` está excluido de Git porque
 puede contener datos privados derivados del dispositivo.
+
+Para crear una instantánea de inventario de solo lectura:
+
+```bash
+PYTHONPATH=src python -m biblioteca_kindle inventory /media/usuario/Kindle \
+  --database work/library.sqlite3
+```
+
+El comando rechaza una base ubicada dentro del Kindle y solo inventaría fuentes
+relevantes; no interpreta todavía libros ni anotaciones.
