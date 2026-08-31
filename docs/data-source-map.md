@@ -4,7 +4,8 @@
 | --- | --- | --- |
 | Archivo y formato del libro | `documents/` | Disponible para libros descargados |
 | Título y autor | rutas, metadata lateral y `vocab.db` | Disponible parcialmente; falta reconciliar |
-| ASIN, UUID o GUID | nombres, `.sdr`, miniaturas y `vocab.db` | Disponible parcialmente |
+| Identidad de entrega | `content.id` en `.mf`, nombre y `.sdr` | Determinística para 173 documentos |
+| ASIN, UUID o GUID | manifiestos, miniaturas y `vocab.db` | Disponible parcialmente; requiere espacios de nombres |
 | Portada | `system/thumbnails/` | Disponible, aunque la aplicación tendrá portadas propias |
 | Subrayados | `My Clippings.txt` y datos laterales `.sdr` | Muy prometedor |
 | Notas | `My Clippings.txt` y datos laterales `.sdr` | Muy prometedor |
@@ -18,9 +19,7 @@
 
 ## Siguiente investigación
 
-La prioridad técnica siguiente es identificar de forma segura la función de los
-formatos laterales `.yjf`, `.yjr`, `.azw3f`, `.azw3r`, `.pds`, `.pdt`, `.mbp1` y
-`.mbs`, y determinar cuáles contienen posición, progreso o anotaciones. Después
-se podrá diseñar una identidad de libro que reconcilie rutas, encabezados de
-clippings, ASIN y UUID sin depender de un único campo frágil.
-
+Los formatos laterales y la estrategia de identidad ya fueron caracterizados.
+La investigación siguiente debe precisar cómo convertir posiciones KRDS a una
+métrica de progreso comparable y qué campos mínimos necesita el primer modelo de
+datos, sin implementar todavía la sincronización completa.
