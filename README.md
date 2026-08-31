@@ -72,3 +72,10 @@ Para importar anotaciones locales KRDS y HAN como fuentes separadas:
 PYTHONPATH=src python -m biblioteca_kindle import-annotations \
   /media/usuario/Kindle --database work/library.sqlite3
 ```
+
+Para ejecutar el pipeline completo en el orden seguro:
+
+```bash
+PYTHONPATH=src python -m biblioteca_kindle sync /media/usuario/Kindle \
+  --database work/library.sqlite3
+```

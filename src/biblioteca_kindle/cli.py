@@ -11,6 +11,7 @@ from .vocabulary import VocabularyImportError, import_vocabulary
 from .clippings import ClippingsImportError, import_clippings
 from .progress import ProgressImportError, import_progress
 from .annotations import AnnotationImportError, import_annotations
+from .sync import synchronize
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -74,6 +75,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
     )
     annotations.add_argument("--snapshot", help="ID de instantánea; usa la última si se omite")
+
+    sync = subparsers.add_parser(
+        "sync", help="Ejecutar la sincronización completa de solo lectura"
+    )
+    sync.add_argument("mount", type=Path, help="Punto de montaje del Kindle")
+    sync.add_argument(
+        "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
+    )
     return parser
 
 
@@ -95,6 +104,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"Instantánea completa: {result.file_count} archivos, "
             f"{result.total_bytes} bytes, {result.warning_count} advertencias."
+        )
+        return 0
+    if args.command == "sync":
+        try:
+            result = synchronize(args.mount, args.database)
+        except (InventoryError, ManifestImportError, VocabularyImportError,
+                ClippingsImportError, ProgressImportError, AnnotationImportError) as error:
+            print(f"Error de sincronización: {error}")
+            return 1
+        print(
+            f"Sincronización completa: {result.inventory.file_count} fuentes; "
+            f"{result.manifests.imported} manifiestos; "
+            f"{result.clippings.entries if result.clippings else 0} clippings; "
+            f"{result.progress.imported} estados; "
+            f"{result.annotations.created} anotaciones locales nuevas; "
+            f"{result.reconciliation.resolved_aliases} aliases reconciliados; "
+            f"{result.marked_absent} entregas marcadas ausentes."
         )
         return 0
     if args.command == "import-annotations":
