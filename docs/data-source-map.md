@@ -12,14 +12,16 @@
 | Marcadores | `My Clippings.txt` | Disponible |
 | Vocabulario consultado | `vocab.db` | Disponible |
 | Sesiones de lectura | `fmcache.db` | Candidata fuerte; serialización pendiente de estudiar |
-| Progreso actual por libro | archivos laterales `.sdr` | Candidato; formato pendiente de estudiar |
+| Posición actual por libro | `lpr` en sidecars KRDS | Disponible para 185 documentos, en formato nativo |
+| Máxima posición alcanzada | `fpr` en sidecars KRDS | Disponible para 84 documentos |
+| Porcentaje comparable | requiere denominador específico por formato | No disponible de forma universal |
 | Uso agregado del dispositivo | `isd.db` | Disponible |
 | Colecciones de Kindle | ninguna fuente USB encontrada | No expuestas en esta inspección |
 | Categorías y relaciones propias | base futura de la aplicación | Fuera del Kindle por diseño |
 
 ## Siguiente investigación
 
-Los formatos laterales y la estrategia de identidad ya fueron caracterizados.
-La investigación siguiente debe precisar cómo convertir posiciones KRDS a una
-métrica de progreso comparable y qué campos mínimos necesita el primer modelo de
-datos, sin implementar todavía la sincronización completa.
+Los formatos laterales, la estrategia de identidad y las limitaciones del progreso
+ya fueron caracterizados. La investigación siguiente debe definir los campos
+mínimos y límites del primer modelo de datos, sin implementar todavía la
+sincronización completa.
