@@ -51,3 +51,10 @@ Para enriquecer las entregas coincidentes con `vocab.db`:
 PYTHONPATH=src python -m biblioteca_kindle import-vocabulary \
   /media/usuario/Kindle --database work/library.sqlite3
 ```
+
+Para importar el historial de `My Clippings.txt`:
+
+```bash
+PYTHONPATH=src python -m biblioteca_kindle import-clippings \
+  /media/usuario/Kindle --database work/library.sqlite3
+```

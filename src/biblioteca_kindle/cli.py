@@ -8,6 +8,7 @@ from .db import migrate_database
 from .inventory import InventoryError, run_inventory
 from .manifests import ManifestImportError, import_manifests
 from .vocabulary import VocabularyImportError, import_vocabulary
+from .clippings import ClippingsImportError, import_clippings
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -44,6 +45,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
     )
     vocabulary.add_argument("--snapshot", help="ID de instantánea; usa la última si se omite")
+
+    clippings = subparsers.add_parser(
+        "import-clippings", help="Importar My Clippings.txt con procedencia"
+    )
+    clippings.add_argument("mount", type=Path, help="Punto de montaje del Kindle")
+    clippings.add_argument(
+        "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
+    )
+    clippings.add_argument("--snapshot", help="ID de instantánea; usa la última si se omite")
     return parser
 
 
@@ -65,6 +75,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"Instantánea completa: {result.file_count} archivos, "
             f"{result.total_bytes} bytes, {result.warning_count} advertencias."
+        )
+        return 0
+    if args.command == "import-clippings":
+        try:
+            result = import_clippings(
+                args.mount, args.database, snapshot_id=args.snapshot
+            )
+        except (ClippingsImportError, InventoryError) as error:
+            print(f"Error de clippings: {error}")
+            return 1
+        print(
+            f"Clippings: {result.entries}; nuevos: {result.created}; "
+            f"existentes: {result.existing}; encabezados vinculados: "
+            f"{result.matched_headings}; provisionales: {result.provisional_headings}; "
+            f"ambiguos: {result.ambiguous_headings}."
         )
         return 0
     if args.command == "import-vocabulary":
