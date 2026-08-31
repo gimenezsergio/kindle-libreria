@@ -119,7 +119,7 @@ Una interfaz de línea de comandos o reporte local deberá poder mostrar:
 - cada manifiesto enlaza un archivo y su `.sdr`;
 - se importan las 7.251 entradas de clippings sin pérdidas silenciosas;
 - se reconocen 185 estados con `lpr` y 84 con `fpr`;
-- los 23 caches KRDS vacíos no generan errores;
+- las 24 cachés KRDS vacías no generan errores;
 - las anotaciones importadas conservan fuente y huella;
 - el encabezado de clippings no resuelto permanece visible como provisional.
 
@@ -157,4 +157,3 @@ Dos sincronizaciones consecutivas sin cambios deben producir:
 10. Reporte local y pruebas de aceptación con snapshots sanitizados.
 
 Cada punto tendrá un commit funcional separado y pruebas proporcionales al riesgo.
-

@@ -10,6 +10,7 @@ from .manifests import ManifestImportError, import_manifests
 from .vocabulary import VocabularyImportError, import_vocabulary
 from .clippings import ClippingsImportError, import_clippings
 from .progress import ProgressImportError, import_progress
+from .annotations import AnnotationImportError, import_annotations
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -64,6 +65,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
     )
     progress.add_argument("--snapshot", help="ID de instantánea; usa la última si se omite")
+
+    annotations = subparsers.add_parser(
+        "import-annotations", help="Importar anotaciones locales KRDS y HAN"
+    )
+    annotations.add_argument("mount", type=Path, help="Punto de montaje del Kindle")
+    annotations.add_argument(
+        "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
+    )
+    annotations.add_argument("--snapshot", help="ID de instantánea; usa la última si se omite")
     return parser
 
 
@@ -85,6 +95,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"Instantánea completa: {result.file_count} archivos, "
             f"{result.total_bytes} bytes, {result.warning_count} advertencias."
+        )
+        return 0
+    if args.command == "import-annotations":
+        try:
+            result = import_annotations(
+                args.mount, args.database, snapshot_id=args.snapshot
+            )
+        except (AnnotationImportError, InventoryError) as error:
+            print(f"Error de anotaciones: {error}")
+            return 1
+        print(
+            f"KRDS: {result.krds_annotations} anotaciones en {result.krds_files} archivos; "
+            f"HAN: {result.han_annotations} en {result.han_files}; nuevas: "
+            f"{result.created}; existentes: {result.existing}; fuentes sin entrega: "
+            f"{result.unmatched_files}; advertencias: {result.warnings}."
         )
         return 0
     if args.command == "import-progress":

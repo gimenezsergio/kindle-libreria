@@ -65,3 +65,10 @@ Para importar posiciones y métricas nativas de lectura:
 PYTHONPATH=src python -m biblioteca_kindle import-progress \
   /media/usuario/Kindle --database work/library.sqlite3
 ```
+
+Para importar anotaciones locales KRDS y HAN como fuentes separadas:
+
+```bash
+PYTHONPATH=src python -m biblioteca_kindle import-annotations \
+  /media/usuario/Kindle --database work/library.sqlite3
+```

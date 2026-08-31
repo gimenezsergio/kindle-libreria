@@ -47,6 +47,15 @@ def _timestamp(milliseconds: int) -> str | None:
 
 class KRDSReader:
     SIGNATURE = b"\x00\x00\x00\x00\x00\x1a\xb1\x26"
+    ANNOTATION_CLASSES = {
+        0: "annotation.personal.bookmark",
+        1: "annotation.personal.highlight",
+        2: "annotation.personal.note",
+        3: "annotation.personal.clip_article",
+        10: "annotation.personal.handwritten_note",
+        11: "annotation.personal.sticky_note",
+        13: "annotation.personal.underline",
+    }
 
     def __init__(self, data: bytes):
         self.buffer = _Buffer(data)
@@ -195,6 +204,38 @@ class KRDSReader:
                 "position": values.pop(0),
                 "time": _timestamp(values.pop(0)),
             }
+        if name == "annotation.cache.object":
+            if not values:
+                return {}
+            result: dict[str, list[dict[str, Any]]] = {}
+            for _ in range(values.pop(0)):
+                annotation_type = values.pop(0)
+                class_name = self.ANNOTATION_CLASSES.get(annotation_type)
+                if class_name is None:
+                    raise ValueError("tipo de anotación")
+                tree = values.pop(0)["saved.avl.interval.tree"]
+                annotations = []
+                for item in tree:
+                    annotations.append(item[class_name])
+                result[class_name] = annotations
+            return result
+        if name == "saved.avl.interval.tree":
+            return [values.pop(0) for _ in range(values.pop(0))]
+        if name in self.ANNOTATION_CLASSES.values():
+            result = {
+                "start_position": values.pop(0),
+                "end_position": values.pop(0),
+                "creation_time": _timestamp(values.pop(0)),
+                "modification_time": _timestamp(values.pop(0)),
+                "template": values.pop(0),
+            }
+            if name == "annotation.personal.note":
+                result["note"] = values.pop(0)
+            elif name == "annotation.personal.handwritten_note":
+                result["handwritten_note_ref"] = values.pop(0)
+            elif name == "annotation.personal.sticky_note":
+                result["sticky_note_ref"] = values.pop(0)
+            return result
         return raw_object(values)
 
 

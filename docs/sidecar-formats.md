@@ -44,11 +44,11 @@ actual.
 Hay 84 archivos KRDS de estado/anotaciones y todos contienen
 `annotation.cache.object`.
 
-El analizador público interpretó semánticamente 61 archivos. Los 23 restantes
-contienen un `annotation.cache.object` completamente vacío; la implementación
-consultada intenta extraer un contador inexistente y produce un error, aunque el
-contenedor se lee correctamente. No son anotaciones inaccesibles ni evidencia de
-una variante nueva con datos adicionales.
+Hay 60 archivos con anotaciones y 24 cachés vacías. El analizador público
+interpretó semánticamente 61 archivos —incluida una caché vacía codificada con
+contador cero—, pero falló con otras 23 cachés representadas como objeto sin
+valores. La implementación propia acepta ambas representaciones. No son
+anotaciones inaccesibles ni evidencia de una variante nueva con datos adicionales.
 
 Los totales presentes en los sidecars KRDS son:
 
