@@ -44,3 +44,10 @@ Para importar manifiestos desde la última instantánea completa:
 PYTHONPATH=src python -m biblioteca_kindle import-manifests \
   /media/usuario/Kindle --database work/library.sqlite3
 ```
+
+Para enriquecer las entregas coincidentes con `vocab.db`:
+
+```bash
+PYTHONPATH=src python -m biblioteca_kindle import-vocabulary \
+  /media/usuario/Kindle --database work/library.sqlite3
+```

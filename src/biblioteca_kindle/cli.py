@@ -7,6 +7,7 @@ from typing import Sequence
 from .db import migrate_database
 from .inventory import InventoryError, run_inventory
 from .manifests import ManifestImportError, import_manifests
+from .vocabulary import VocabularyImportError, import_vocabulary
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -34,6 +35,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
     )
     manifests.add_argument("--snapshot", help="ID de instantánea; usa la última si se omite")
+
+    vocabulary = subparsers.add_parser(
+        "import-vocabulary", help="Enriquecer el catálogo desde vocab.db"
+    )
+    vocabulary.add_argument("mount", type=Path, help="Punto de montaje del Kindle")
+    vocabulary.add_argument(
+        "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
+    )
+    vocabulary.add_argument("--snapshot", help="ID de instantánea; usa la última si se omite")
     return parser
 
 
@@ -55,6 +65,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"Instantánea completa: {result.file_count} archivos, "
             f"{result.total_bytes} bytes, {result.warning_count} advertencias."
+        )
+        return 0
+    if args.command == "import-vocabulary":
+        try:
+            result = import_vocabulary(
+                args.mount, args.database, snapshot_id=args.snapshot
+            )
+        except (VocabularyImportError, InventoryError) as error:
+            print(f"Error de vocabulario: {error}")
+            return 1
+        print(
+            f"BOOK_INFO: {result.rows}; vinculados: {result.matched}; "
+            f"sin entrega coincidente: {result.unmatched}."
         )
         return 0
     if args.command == "import-manifests":
