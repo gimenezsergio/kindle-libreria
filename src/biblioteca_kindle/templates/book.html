@@ -16,7 +16,12 @@
     <main><article class="book-page">
       <a class="back-link" href="/library">← Volver a la biblioteca</a>
       <header class="book-header">
-        <div><p class="eyebrow" id="identity-state">Ficha de lectura</p><h1 id="book-title">Consultando…</h1><p class="book-author" id="book-author"></p></div>
+        <div><p class="eyebrow" id="identity-state">Ficha de lectura</p><h1 id="book-title">Consultando…</h1><p class="book-author" id="book-author"></p>
+          <details class="title-editor"><summary>Editar título mostrado</summary>
+            <form id="title-form"><label>Título para la aplicación<input id="display-title-input" type="text" required></label><div><button type="submit">Guardar título</button><button class="secondary-button" id="reset-title" type="button">Usar corrección automática</button></div></form>
+            <p>Original del Kindle: <span id="original-title"></span></p>
+          </details>
+        </div>
         <div class="book-stats"><div><strong id="book-annotation-total">—</strong><span>anotaciones</span></div><div><strong id="book-presence">—</strong><span>presencia</span></div></div>
       </header>
       <section class="book-overview" aria-label="Información de la obra">

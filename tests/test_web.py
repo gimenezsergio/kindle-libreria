@@ -141,6 +141,31 @@ class WebTests(unittest.TestCase):
             )
             self.assertEqual(response.status_code, 400)
 
+    def test_automatic_and_manual_display_titles(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            try:
+                with connection:
+                    connection.execute(
+                        "INSERT INTO works(id, preferred_title) VALUES ('work', 'Jugarse_la_piel')"
+                    )
+            finally:
+                connection.close()
+            client = create_app(database).test_client()
+            automatic = client.get("/api/works/work").get_json()
+            edited = client.patch(
+                "/api/works/work/display-title", json={"title": "Jugarse la piel — Nassim Taleb"}
+            )
+            listed = client.get("/api/works?q=Nassim").get_json()
+            restored = client.patch("/api/works/work/display-title", json={"title": None})
+            self.assertEqual(automatic["title"], "Jugarse la piel")
+            self.assertEqual(automatic["original_title"], "Jugarse_la_piel")
+            self.assertEqual(edited.get_json()["title"], "Jugarse la piel — Nassim Taleb")
+            self.assertEqual(listed["items"][0]["title"], "Jugarse la piel — Nassim Taleb")
+            self.assertEqual(restored.get_json()["title"], "Jugarse la piel")
+
     def test_missing_database_is_reported_without_creating_it(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "missing.sqlite3"

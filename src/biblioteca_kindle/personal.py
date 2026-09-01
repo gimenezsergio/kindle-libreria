@@ -147,6 +147,24 @@ def add_work_note(database: Path | str, work_id: str, body: str) -> str:
         connection.close()
 
 
+def set_work_display_title(
+    database: Path | str, work_id: str, title: str | None
+) -> str | None:
+    normalized = " ".join(title.split()) if title is not None else ""
+    display_title = normalized or None
+    connection = _open_database(database)
+    try:
+        _require_row(connection, "works", work_id, "la obra")
+        with connection:
+            connection.execute(
+                "UPDATE works SET display_title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (display_title, work_id),
+            )
+        return display_title
+    finally:
+        connection.close()
+
+
 def add_work_relation(
     database: Path | str,
     source_work_id: str,

@@ -11,6 +11,7 @@ from biblioteca_kindle.personal import (
     add_work_relation,
     assign_work_to_collection,
     create_collection,
+    set_work_display_title,
 )
 
 
@@ -100,6 +101,21 @@ class PersonalDataTests(unittest.TestCase):
         self.assertEqual([row["body"] for row in rows], ["Una interpretación."] * 2)
         with self.assertRaises(PersonalDataError):
             add_work_note(self.database, "work-a", "   ")
+
+    def test_display_title_can_be_set_and_restored_to_automatic(self) -> None:
+        self.assertEqual(
+            set_work_display_title(self.database, "work-a", "  Obra   corregida "),
+            "Obra corregida",
+        )
+        self.assertIsNone(set_work_display_title(self.database, "work-a", None))
+        connection = connect_database(self.database)
+        try:
+            value = connection.execute(
+                "SELECT display_title FROM works WHERE id = 'work-a'"
+            ).fetchone()[0]
+        finally:
+            connection.close()
+        self.assertIsNone(value)
 
     def test_reversed_symmetric_relation_updates_the_same_relation(self) -> None:
         first = add_work_relation(

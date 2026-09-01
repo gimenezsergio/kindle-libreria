@@ -16,6 +16,8 @@ async function loadBook() {
   const book = await response.json();
   document.title = `${book.title} · Biblioteca personal`;
   setText("book-title", book.title);
+  setText("original-title", book.original_title);
+  document.querySelector("#display-title-input").value = book.display_title || book.title;
   setText("book-author", book.authors || "Autor no disponible");
   setText("identity-state", book.merge_status === "normal" ? "Identidad confirmada" : book.merge_status === "review" ? "Identidad por revisar" : "Identidad provisional");
   setText("book-annotation-total", formatNumber.format(book.annotations.total));
@@ -118,6 +120,16 @@ function feedback(message, error = false) {
   element.classList.toggle("is-error", error);
 }
 
+async function saveDisplayTitle(title) {
+  const data = await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/display-title`, {
+    method: "PATCH", headers: {"Content-Type": "application/json"}, body: JSON.stringify({title}),
+  });
+  setText("book-title", data.title);
+  document.title = `${data.title} · Biblioteca personal`;
+  document.querySelector("#display-title-input").value = data.display_title || data.title;
+  feedback(data.display_title ? "Título mostrado actualizado." : "Se restauró la corrección automática.");
+}
+
 async function submitPersonal(event, action) {
   event.preventDefault();
   try {
@@ -143,6 +155,15 @@ document.querySelector("#personal-note-form").addEventListener("submit", (event)
 document.querySelector("#relation-form").addEventListener("submit", (event) => submitPersonal(event, () => jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/relations`, {
   method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({target_work_id: document.querySelector("#relation-target").value, relation_type: document.querySelector("#relation-type").value, explanation: document.querySelector("#relation-explanation").value, symmetric: document.querySelector("#relation-symmetric").checked}),
 })));
+document.querySelector("#title-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  try { await saveDisplayTitle(document.querySelector("#display-title-input").value); }
+  catch (error) { feedback(error.message, true); }
+});
+document.querySelector("#reset-title").addEventListener("click", async () => {
+  try { await saveDisplayTitle(null); }
+  catch (error) { feedback(error.message, true); }
+});
 
 document.querySelector("#annotation-filters").addEventListener("input", () => { annotationPage = 1; loadAnnotations(); });
 document.querySelector("#annotation-previous").addEventListener("click", () => { if (annotationPage > 1) { annotationPage -= 1; loadAnnotations(); } });

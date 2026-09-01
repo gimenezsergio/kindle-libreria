@@ -18,6 +18,7 @@ class MigrationTests(unittest.TestCase):
                     "0001_initial.sql",
                     "0002_reading_history.sql",
                     "0003_personal_constraints.sql",
+                    "0004_work_display_title.sql",
                 ],
             )
 
@@ -61,7 +62,7 @@ class MigrationTests(unittest.TestCase):
                 ).fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(count, 3)
+            self.assertEqual(count, 4)
 
     def test_foreign_keys_are_enabled(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

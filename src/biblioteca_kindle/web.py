@@ -4,13 +4,20 @@ from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
 
-from .db import connect_database
+from .db import connect_database, migrate_database
 from .personal import (
     PersonalDataError,
     add_work_note,
     add_work_relation,
     assign_work_to_collection,
     create_collection,
+    set_work_display_title,
+)
+
+
+DISPLAY_TITLE_SQL = (
+    "COALESCE(NULLIF(TRIM(w.display_title), ''), "
+    "REPLACE(w.preferred_title, '_', ' '))"
 )
 
 
@@ -67,9 +74,9 @@ def _works_page(connection, *, query: str, presence: str, annotated: bool,
     conditions = []
     parameters: list[object] = []
     if query:
-        conditions.append("(w.preferred_title LIKE ? OR COALESCE(c.authors, '') LIKE ?)")
+        conditions.append(f"({DISPLAY_TITLE_SQL} LIKE ? OR w.preferred_title LIKE ? OR COALESCE(c.authors, '') LIKE ?)")
         pattern = f"%{query}%"
-        parameters.extend((pattern, pattern))
+        parameters.extend((pattern, pattern, pattern))
     if presence in {"present", "absent"}:
         conditions.append("COALESCE(d.presence, 'absent') = ?")
         parameters.append(presence)
@@ -77,9 +84,9 @@ def _works_page(connection, *, query: str, presence: str, annotated: bool,
         conditions.append("COALESCE(a.annotation_count, 0) > 0")
     where = "WHERE " + " AND ".join(conditions) if conditions else ""
     ordering = {
-        "title": "w.preferred_title COLLATE NOCASE, w.id",
-        "annotations": "annotation_count DESC, w.preferred_title COLLATE NOCASE",
-    }.get(sort, "w.preferred_title COLLATE NOCASE, w.id")
+        "title": f"{DISPLAY_TITLE_SQL} COLLATE NOCASE, w.id",
+        "annotations": f"annotation_count DESC, {DISPLAY_TITLE_SQL} COLLATE NOCASE",
+    }.get(sort, f"{DISPLAY_TITLE_SQL} COLLATE NOCASE, w.id")
     common = """
         WITH a AS (
             SELECT e.work_id, COUNT(an.id) AS annotation_count
@@ -106,7 +113,8 @@ def _works_page(connection, *, query: str, presence: str, annotated: bool,
     )
     rows = connection.execute(
         common + f"""
-        SELECT w.id, w.preferred_title AS title, w.merge_status,
+        SELECT w.id, {DISPLAY_TITLE_SQL} AS title,
+               w.preferred_title AS original_title, w.display_title, w.merge_status,
                COALESCE(c.authors, '') AS authors,
                COALESCE(a.annotation_count, 0) AS annotation_count,
                COALESCE(d.presence, 'absent') AS presence
@@ -131,8 +139,9 @@ def _works_page(connection, *, query: str, presence: str, annotated: bool,
 
 def _work_detail(connection, work_id: str) -> dict | None:
     work = connection.execute(
-        """
-        SELECT w.id, w.preferred_title AS title, w.merge_status,
+        f"""
+        SELECT w.id, {DISPLAY_TITLE_SQL} AS title,
+               w.preferred_title AS original_title, w.display_title, w.merge_status,
                COALESCE(GROUP_CONCAT(DISTINCT co.display_name), '') AS authors
         FROM works w
         LEFT JOIN editions e ON e.work_id = w.id
@@ -248,7 +257,7 @@ def _personal_data(connection, work_id: str) -> dict:
         """
         SELECT wr.id, wr.relation_type, wr.label, wr.explanation, wr.is_symmetric,
                CASE WHEN wr.source_work_id = ? THEN wr.target_work_id ELSE wr.source_work_id END AS other_work_id,
-               ow.preferred_title AS other_title
+               COALESCE(NULLIF(TRIM(ow.display_title), ''), REPLACE(ow.preferred_title, '_', ' ')) AS other_title
         FROM work_relations wr
         JOIN works ow ON ow.id = CASE WHEN wr.source_work_id = ? THEN wr.target_work_id ELSE wr.source_work_id END
         WHERE wr.source_work_id = ? OR wr.target_work_id = ?
@@ -270,6 +279,8 @@ def _json_body() -> dict:
 
 def create_app(database: Path | str) -> Flask:
     database_path = Path(database).expanduser().resolve()
+    if database_path.is_file():
+        migrate_database(database_path)
     app = Flask(__name__)
     app.config["DATABASE"] = database_path
 
@@ -351,6 +362,26 @@ def create_app(database: Path | str) -> Flask:
         finally:
             connection.close()
 
+    @app.patch("/api/works/<work_id>/display-title")
+    def work_display_title_update(work_id: str):
+        try:
+            payload = _json_body()
+            title = payload.get("title")
+            if title is not None and not isinstance(title, str):
+                raise PersonalDataError("El título debe ser texto")
+            display_title = set_work_display_title(database_path, work_id, title)
+            connection = connect_database(database_path)
+            try:
+                row = connection.execute(
+                    f"SELECT {DISPLAY_TITLE_SQL} AS title, w.preferred_title AS original_title FROM works w WHERE w.id = ?",
+                    (work_id,),
+                ).fetchone()
+            finally:
+                connection.close()
+            return jsonify(title=row["title"], original_title=row["original_title"], display_title=display_title)
+        except PersonalDataError as error:
+            return jsonify(error=str(error)), 400
+
     @app.get("/api/works/<work_id>/annotations")
     def work_annotations(work_id: str):
         kind = request.args.get("kind", "all")
@@ -400,7 +431,7 @@ def create_app(database: Path | str) -> Flask:
         connection = connect_database(database_path)
         try:
             rows = connection.execute(
-                "SELECT id, preferred_title AS title FROM works ORDER BY preferred_title COLLATE NOCASE"
+                f"SELECT id, {DISPLAY_TITLE_SQL} AS title FROM works w ORDER BY {DISPLAY_TITLE_SQL} COLLATE NOCASE"
             ).fetchall()
             return jsonify(items=[dict(row) for row in rows])
         finally:

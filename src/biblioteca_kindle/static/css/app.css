@@ -203,6 +203,15 @@ select { padding: .6rem 2rem .6rem .7rem; }
 .book-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3rem; align-items: end; padding-bottom: 3rem; border-bottom: 1px solid var(--line); }
 .book-header h1 { max-width: 18ch; font-size: clamp(2.8rem, 5.5vw, 5.6rem); overflow-wrap: anywhere; }
 .book-author { margin: 1.25rem 0 0; color: var(--muted); font-family: var(--serif); font-size: 1.2rem; }
+.title-editor { max-width: 35rem; margin-top: 1.5rem; }
+.title-editor summary { width: fit-content; color: var(--terracotta); cursor: pointer; font-size: .78rem; }
+.title-editor form { display: grid; gap: .8rem; margin-top: 1rem; padding: 1rem; border: 1px solid var(--line); background: var(--surface); }
+.title-editor label { display: grid; gap: .4rem; color: var(--muted); font-size: .68rem; font-weight: 700; text-transform: uppercase; }
+.title-editor input { width: 100%; padding: .7rem; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.title-editor form div { display: flex; gap: .5rem; flex-wrap: wrap; }
+.title-editor button { padding: .65rem .8rem; border: 0; border-radius: .2rem; background: var(--terracotta); color: var(--surface); cursor: pointer; }
+.title-editor .secondary-button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.title-editor > p { margin: .75rem 0 0; color: var(--muted); font-size: .7rem; overflow-wrap: anywhere; }
 .book-stats { display: flex; gap: 2.5rem; }
 .book-stats div { display: grid; gap: .35rem; text-align: right; }
 .book-stats strong { color: var(--terracotta); font-family: var(--serif); font-size: 2rem; font-weight: 400; }
@@ -241,6 +250,7 @@ select { padding: .6rem 2rem .6rem .7rem; }
 .personal-panel form + form { margin-top: 1rem; }
 .personal-panel label { display: grid; gap: .4rem; color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .personal-panel input[type="text"], .personal-panel textarea { width: 100%; padding: .7rem; border: 1px solid var(--line); border-radius: .2rem; background: var(--surface); color: var(--ink); font: inherit; resize: vertical; }
+.personal-panel select { min-width: 0; max-width: 100%; width: 100%; text-overflow: ellipsis; }
 .personal-panel button { padding: .75rem 1rem; border: 0; border-radius: .2rem; background: var(--terracotta); color: var(--surface); cursor: pointer; }
 .personal-panel button:disabled { cursor: default; opacity: .45; }
 .form-feedback { min-height: 1.3rem; margin: 1rem 0 0; color: var(--green); font-size: .8rem; }

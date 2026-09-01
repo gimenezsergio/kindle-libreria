@@ -100,7 +100,12 @@ def work_card(database: Path | str, work_id: str, *, include_private: bool = Fal
     connection = _open_database(database)
     try:
         work = connection.execute(
-            "SELECT id, preferred_title, merge_status FROM works WHERE id = ?", (work_id,)
+            """
+            SELECT id, preferred_title,
+                   COALESCE(NULLIF(TRIM(display_title), ''), REPLACE(preferred_title, '_', ' ')) AS shown_title,
+                   merge_status FROM works WHERE id = ?
+            """,
+            (work_id,),
         ).fetchone()
         if work is None:
             raise ReportError(f"No existe la obra: {work_id}")
@@ -109,7 +114,7 @@ def work_card(database: Path | str, work_id: str, *, include_private: bool = Fal
             (work_id,),
         ).fetchall()
         lines = [
-            f"Obra: {work['preferred_title']}",
+            f"Obra: {work['shown_title']}",
             f"ID: {work['id']}",
             f"Estado: {work['merge_status']}",
             f"Ediciones: {len(editions)}",
