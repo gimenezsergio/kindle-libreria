@@ -176,6 +176,11 @@ async function loadContext(identifier) {
   setText("context-count", `· ${selectedNotes.length + selectedAnnotations.length} seleccionadas`);
 }
 
+function currentContextSelection() {
+  const selected = (name) => [...document.querySelectorAll(`#context-form input[name="${name}"]:checked`)].map((input) => input.value);
+  return {personal_note_ids: selected("personal_note"), annotation_ids: selected("annotation")};
+}
+
 async function loadPromptPreview() {
   if (!activeConversationId) return;
   const packet = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/prompt-preview`);
@@ -312,7 +317,7 @@ document.querySelector("#conversation-form").addEventListener("submit", async (e
   try {
     const result = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/respond`, {
       method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({content: document.querySelector("#conversation-message").value}),
+      body: JSON.stringify({content: document.querySelector("#conversation-message").value, ...currentContextSelection()}),
     });
     form.reset();
     document.querySelector("#conversation-feedback").textContent = result.mode === "draft" ? "Mensaje guardado. No se envió a una IA porque está activo el modo borrador." : "El acompañante respondió.";
@@ -324,11 +329,10 @@ document.querySelector("#conversation-form").addEventListener("submit", async (e
 document.querySelector("#context-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!activeConversationId) return;
-  const selected = (name) => [...event.currentTarget.querySelectorAll(`input[name="${name}"]:checked`)].map((input) => input.value);
   try {
     await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/context`, {
       method: "PUT", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({personal_note_ids: selected("personal_note"), annotation_ids: selected("annotation")}),
+      body: JSON.stringify(currentContextSelection()),
     });
     document.querySelector("#conversation-feedback").textContent = "Contexto guardado para esta conversación.";
     await loadContext(activeConversationId);

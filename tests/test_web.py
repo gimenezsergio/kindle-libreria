@@ -244,16 +244,18 @@ class WebTests(unittest.TestCase):
             connection = connect_database(database)
             with connection:
                 connection.execute("INSERT INTO works(id, preferred_title) VALUES ('work', 'Libro')")
+                connection.execute("INSERT INTO personal_notes(id, target_type, target_id, body) VALUES ('note', 'work', 'work', 'Mi nota sobre el poder')")
             connection.close()
             provider = FakeProvider()
             client = create_app(database, ai_provider=provider).test_client()
             conversation_id = client.post("/api/works/work/conversations", json={"profile_id": "companion"}).get_json()["id"]
-            response = client.post(f"/api/conversations/{conversation_id}/respond", json={"content": "¿Qué relación ves?"})
+            response = client.post(f"/api/conversations/{conversation_id}/respond", json={"content": "¿Qué relación ves?", "personal_note_ids": ["note"], "annotation_ids": []})
             detail = client.get(f"/api/conversations/{conversation_id}").get_json()
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.get_json()["mode"], "test")
             self.assertEqual([item["role"] for item in detail["messages"]], ["user", "assistant"])
             self.assertIn("MATERIAL SELECCIONADO", provider.packet.input[0]["content"])
+            self.assertIn("Mi nota sobre el poder", provider.packet.input[0]["content"])
 
     def test_automatic_and_manual_display_titles(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

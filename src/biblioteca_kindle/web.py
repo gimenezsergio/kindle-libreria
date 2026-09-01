@@ -564,6 +564,13 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
     def conversation_respond(conversation_id: str):
         try:
             payload = _json_body()
+            if "personal_note_ids" in payload or "annotation_ids" in payload:
+                update_context(
+                    database_path,
+                    conversation_id,
+                    personal_note_ids=payload.get("personal_note_ids", []),
+                    annotation_ids=payload.get("annotation_ids", []),
+                )
             add_message(database_path, conversation_id=conversation_id, role="user", content=payload.get("content"))
             packet = build_prompt_packet(database_path, conversation_id)
             if not provider.ready:
