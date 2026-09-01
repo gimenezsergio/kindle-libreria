@@ -1,144 +1,231 @@
 # Biblioteca Kindle
 
-Proyecto para construir una biblioteca personal independiente usando un Kindle
-como fuente de datos de solo lectura.
+Biblioteca personal independiente que utiliza un Kindle como fuente de lectura,
+pero conserva el catálogo, las anotaciones y la organización fuera del
+ecosistema de Amazon.
+
+## El problema
+
+El Kindle es un excelente dispositivo para leer, subrayar y tomar notas, pero
+no es suficiente como biblioteca personal de largo plazo.
+
+Los libros enviados mediante Send to Kindle quedan distribuidos entre archivos
+del dispositivo, manifiestos, directorios auxiliares y bases internas. Las
+notas y los subrayados aparecen en fuentes diferentes, como `My Clippings.txt`,
+KRDS y HAN. El progreso también utiliza posiciones y registros propios de
+Kindle.
+
+Además:
+
+- la organización queda atada a Amazon y al dispositivo;
+- las colecciones creadas en el Kindle no están expuestas de manera confiable
+  mediante la conexión USB normal observada;
+- los nombres de muchos documentos personales llegan como nombres de archivo,
+  por ejemplo `Jugarse_la_piel`;
+- resulta difícil conservar anotaciones históricas cuando un libro deja de
+  estar en el dispositivo;
+- el Kindle no ofrece un espacio adecuado para relacionar lecturas, desarrollar
+  ideas o construir categorías personales;
+- recuperar datos no equivale a poder explorarlos y utilizarlos para pensar.
+
+El proyecto nació para que el Kindle pueda concentrarse en una tarea sencilla:
+buscar un libro, abrirlo, leerlo, subrayarlo y anotar. La organización duradera
+vive en otra parte.
+
+## La solución
+
+Biblioteca Kindle inspecciona el dispositivo en modo de solo lectura y guarda
+los datos recuperados en una base SQLite local, fuera del Kindle.
+
+Amazon y Send to Kindle continúan siendo el mecanismo para entregar y
+sincronizar documentos. Esta aplicación no transfiere libros, no los convierte
+y no intenta reemplazar a Amazon. Su función es construir un catálogo
+independiente y acumulativo a partir de los datos que el Kindle expone.
+
+La biblioteca local es la fuente de verdad para la organización personal. El
+último Kindle sincronizado representa solamente el estado actual de presencia:
+un libro puede quedar marcado como ausente sin que se eliminen su obra, sus
+anotaciones ni las ideas asociadas.
 
 ## Principios
 
-- Amazon y Send to Kindle siguen siendo el mecanismo de entrega y sincronización.
-- Nunca se modifican, eliminan ni escriben archivos en el Kindle.
-- Los datos derivados y las portadas propias viven fuera del dispositivo.
-- Primero se documentan los datos realmente disponibles; el extractor se diseña después.
+- El Kindle es siempre una fuente de solo lectura.
+- Ninguna base de datos ni resultado se escribe dentro del dispositivo.
+- Las sincronizaciones son idempotentes: repetirlas no duplica datos lógicos.
+- Las fuentes se conservan con procedencia separada cuando existe incertidumbre.
+- Una coincidencia ambigua no se fusiona automáticamente.
+- Las notas, categorías y relaciones propias nunca se escriben en Amazon.
+- Los textos privados permanecen fuera de Git.
+- La aplicación diferencia datos observados, inferencias y decisiones humanas.
 
-## Directorios
+## Características actuales
 
-- `docs/`: hallazgos y decisiones del proyecto.
-- `work/`: resultados locales temporales, excluidos de Git.
+### Recuperación desde Kindle
 
-## Desarrollo local
+- Inventario seguro de libros y archivos auxiliares.
+- Importación de manifiestos de documentos personales y libros de Amazon.
+- Enriquecimiento desde `vocab.db` cuando está disponible.
+- Recuperación de `My Clippings.txt`.
+- Recuperación de subrayados, notas y marcadores desde KRDS y HAN.
+- Importación de posiciones, historial y métricas nativas de lectura.
+- Registro de libros presentes y ausentes sin borrar el historial.
+- Reconciliación conservadora de títulos y fuentes.
 
-El proyecto usa Python 3.11 o posterior y SQLite, sin dependencias de ejecución.
+### Catálogo local
 
-Para crear una base local durante el desarrollo:
+- Obras, ediciones, autores y entregas Kindle.
+- Búsqueda por título o autor.
+- Filtros por presencia y existencia de anotaciones.
+- Orden alfabético o por cantidad de anotaciones.
+- Fichas con metadatos, progreso y procedencia.
+- Títulos de presentación automáticos: `Jugarse_la_piel` se muestra como
+  `Jugarse la piel`.
+- Edición manual y reversible del título mostrado sin modificar el original.
+
+### Lectura y anotaciones
+
+- Consulta de subrayados, notas y marcadores por libro.
+- Filtros por tipo y fuente.
+- Paginación de bibliotecas y anotaciones extensas.
+- Separación explícita entre Clippings, KRDS y HAN.
+- El contenido privado solo aparece al abrir deliberadamente la ficha.
+
+### Organización personal
+
+- Categorías propias, independientes de las colecciones del Kindle.
+- Asignación de una obra a una o varias categorías.
+- Notas generales sobre una obra, separadas de las notas del Kindle.
+- Relaciones manuales entre dos libros por tema, símbolo, conflicto, contraste u
+  otro criterio.
+- Explicación y dirección de cada relación.
+
+### Interfaz
+
+- Aplicación web local con HTML, CSS y JavaScript Vanilla.
+- Servidor Python con Flask.
+- Base SQLite.
+- Panel general con el estado de la biblioteca.
+- Catálogo navegable y adaptable a pantallas pequeñas.
+- Acceso limitado actualmente a `127.0.0.1`.
+
+## Uso local
+
+El proyecto requiere Python 3.11 o posterior. Para instalarlo en modo de
+desarrollo:
 
 ```bash
-PYTHONPATH=src python -m biblioteca_kindle init-db work/library.sqlite3
+python3 -m pip install -e .
 ```
 
-La base debe permanecer fuera del Kindle. `work/` está excluido de Git porque
-puede contener datos privados derivados del dispositivo.
-
-Para crear una instantánea de inventario de solo lectura:
+Para crear o actualizar la base:
 
 ```bash
-PYTHONPATH=src python -m biblioteca_kindle inventory /media/usuario/Kindle \
+PYTHONPATH=src python3 -m biblioteca_kindle init-db work/library.sqlite3
+```
+
+Para sincronizar un Kindle montado:
+
+```bash
+PYTHONPATH=src python3 -m biblioteca_kindle sync /media/usuario/Kindle \
   --database work/library.sqlite3
 ```
 
-El comando rechaza una base ubicada dentro del Kindle y solo inventaría fuentes
-relevantes; no interpreta todavía libros ni anotaciones.
+La base debe estar fuera del Kindle. El directorio `work/` está excluido de Git
+porque contiene información privada derivada de las lecturas.
 
-Para importar manifiestos desde la última instantánea completa:
-
-```bash
-PYTHONPATH=src python -m biblioteca_kindle import-manifests \
-  /media/usuario/Kindle --database work/library.sqlite3
-```
-
-Para enriquecer las entregas coincidentes con `vocab.db`:
-
-```bash
-PYTHONPATH=src python -m biblioteca_kindle import-vocabulary \
-  /media/usuario/Kindle --database work/library.sqlite3
-```
-
-Para importar el historial de `My Clippings.txt`:
-
-```bash
-PYTHONPATH=src python -m biblioteca_kindle import-clippings \
-  /media/usuario/Kindle --database work/library.sqlite3
-```
-
-Para importar posiciones y métricas nativas de lectura:
-
-```bash
-PYTHONPATH=src python -m biblioteca_kindle import-progress \
-  /media/usuario/Kindle --database work/library.sqlite3
-```
-
-Para importar anotaciones locales KRDS y HAN como fuentes separadas:
-
-```bash
-PYTHONPATH=src python -m biblioteca_kindle import-annotations \
-  /media/usuario/Kindle --database work/library.sqlite3
-```
-
-Para ejecutar el pipeline completo en el orden seguro:
-
-```bash
-PYTHONPATH=src python -m biblioteca_kindle sync /media/usuario/Kindle \
-  --database work/library.sqlite3
-```
-
-## Organización personal
-
-Las colecciones, notas y relaciones se guardan únicamente en la base local. No
-se escriben ni se sincronizan al Kindle.
-
-Para crear una colección local (puede anidarse usando el identificador de otra):
-
-```bash
-PYTHONPATH=src python -m biblioteca_kindle collection-add "Temas" \
-  --database work/library.sqlite3
-
-PYTHONPATH=src python -m biblioteca_kindle collection-add "Poder" \
-  --parent ID_DE_TEMAS --database work/library.sqlite3
-```
-
-Para asignar una obra a una colección y añadir una nota propia:
-
-```bash
-PYTHONPATH=src python -m biblioteca_kindle collection-assign ID_OBRA ID_COLECCION \
-  --database work/library.sqlite3
-
-PYTHONPATH=src python -m biblioteca_kindle note-add ID_OBRA \
-  "Esta escena cambia la lectura del conflicto." \
-  --database work/library.sqlite3
-```
-
-Para relacionar obras por tema, símbolo, conflicto u otro criterio propio:
-
-```bash
-PYTHONPATH=src python -m biblioteca_kindle relation-add ID_ORIGEN ID_DESTINO simbolo \
-  --label "El laberinto" --explanation "Opera de modo distinto en ambas obras." \
-  --symmetric --database work/library.sqlite3
-```
-
-## Consultas locales
-
-El resumen no muestra textos de anotaciones ni notas privadas:
-
-```bash
-PYTHONPATH=src python -m biblioteca_kindle report --database work/library.sqlite3
-```
-
-La ficha de una obra también oculta el contenido de las notas por defecto. Puede
-mostrarse explícitamente con `--include-private`:
-
-```bash
-PYTHONPATH=src python -m biblioteca_kindle work-show ID_OBRA \
-  --database work/library.sqlite3
-```
-
-## Interfaz web local
-
-La interfaz escucha únicamente en esta computadora. No necesita que el Kindle
-esté conectado para consultar la base ya sincronizada:
+Para iniciar la interfaz:
 
 ```bash
 PYTHONPATH=src python3 -m biblioteca_kindle serve \
   --database work/library.sqlite3
 ```
 
-Luego se abre `http://127.0.0.1:8000` en el navegador. El servidor se detiene
-presionando `Ctrl+C` en la terminal.
+Después se abre [http://127.0.0.1:8000](http://127.0.0.1:8000). El Kindle no
+necesita estar conectado para consultar una base ya sincronizada.
+
+Los importadores individuales y las decisiones sobre formatos están
+documentados en `docs/`.
+
+## Próximo paso: OpenClaw como interlocutor
+
+La dirección elegida para incorporar inteligencia artificial es utilizar
+OpenClaw como capa de conversación y razonamiento, en lugar de conectar esta
+aplicación directamente a una segunda API de modelos.
+
+La arquitectura prevista es:
+
+```text
+Biblioteca Kindle
+    │
+    │ herramientas y contexto seleccionado
+    ▼
+OpenClaw
+    │
+    ├── proveedor de modelo configurado en OpenClaw
+    ├── memoria personal relevante
+    └── conversación con el usuario
+```
+
+Biblioteca Kindle seguirá siendo la fuente de verdad para libros, subrayados,
+notas, categorías, relaciones y progreso. OpenClaw funcionará como interlocutor:
+podrá consultar la biblioteca, comparar fragmentos, encontrar patrones,
+formular preguntas y sugerir relaciones.
+
+La experiencia buscada no es una IA que declare interpretaciones definitivas,
+sino alguien con quien continuar pensando una lectura. Sus propuestas deberán
+presentarse como hipótesis, preguntas o caminos posibles.
+
+### Herramientas previstas
+
+- buscar libros;
+- obtener la ficha de una obra;
+- consultar y buscar subrayados;
+- recuperar notas personales;
+- comparar dos o más lecturas;
+- detectar temas recurrentes;
+- proponer relaciones y preguntas;
+- guardar una relación o nota únicamente después de la confirmación humana.
+
+### Salvaguardas necesarias
+
+La integración deberá mantener separadas y visibles tres fuentes de contexto:
+
+1. Evidencia de la biblioteca: subrayados, notas y categorías reales.
+2. Memoria personal recuperada por OpenClaw, que puede estar incompleta o
+   desactualizada.
+3. Conocimiento general o inferencias del modelo.
+
+OpenClaw no será una autoridad sobre el usuario ni sobre las obras. Una
+sugerencia no se convertirá automáticamente en una relación, nota o recuerdo.
+El usuario podrá examinarla, pedir evidencia, editarla, descartarla o aprobarla.
+
+También deberá controlarse qué fragmentos privados se entregan al modelo. Si el
+proveedor configurado en OpenClaw es externo, los textos seleccionados pueden
+salir del servidor. Una alternativa futura será utilizar un modelo local cuando
+la privacidad o el costo lo justifiquen.
+
+### Despliegue futuro
+
+La aplicación puede trasladarse al mismo servidor que OpenClaw y permanecer
+accesible solo mediante `localhost` para sus herramientas. Eso no equivale a
+publicar la interfaz actual en Internet.
+
+Antes de permitir acceso remoto deberán incorporarse:
+
+- autenticación;
+- HTTPS o una red privada;
+- un servidor web de producción;
+- copias de seguridad de SQLite;
+- permisos separados para lectura y escritura;
+- protección específica de anotaciones y notas privadas.
+
+La opción elegida es, por lo tanto: **Biblioteca Kindle administra los datos y
+OpenClaw ayuda a conversar y razonar sobre ellos.**
+
+## Estructura del repositorio
+
+- `src/biblioteca_kindle/`: aplicación, importadores, API e interfaz web.
+- `src/biblioteca_kindle/migrations/`: evolución reproducible de SQLite.
+- `tests/`: pruebas unitarias y de integración.
+- `docs/`: inspecciones, formatos y decisiones de diseño.
+- `work/`: base y resultados privados locales, excluidos de Git.
