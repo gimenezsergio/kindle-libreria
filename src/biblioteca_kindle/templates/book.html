@@ -48,10 +48,24 @@
         </div>
         <p class="form-feedback" id="personal-feedback" role="status" aria-live="polite"></p>
       </section>
-      <section class="conversation-preview" aria-labelledby="conversation-title">
-        <div><p class="eyebrow">Próxima etapa</p><h2 id="conversation-title">Conversar sobre esta lectura</h2><p>Elegí la perspectiva que querés usar. La conversación con IA se conectará más adelante mediante OpenClaw.</p></div>
-        <label>Conversar con<select id="conversation-profile"><option>Cargando perfiles…</option></select></label>
-        <a href="/settings/ai-profiles">Administrar perfiles</a>
+      <section class="reading-companion" aria-labelledby="conversation-title">
+        <header class="companion-heading">
+          <div><p class="eyebrow">Acompañante de lectura</p><h2 id="conversation-title">Conversar sobre esta lectura</h2><p>Guardá el hilo de tus preguntas con la perspectiva que elijas. La IA se conectará en una etapa posterior.</p></div>
+          <div class="companion-start"><label>Perfil<select id="conversation-profile"><option>Cargando perfiles…</option></select></label><button id="new-conversation" type="button">Nueva conversación</button><a href="/settings/ai-profiles">Administrar perfiles</a></div>
+        </header>
+        <div class="companion-layout">
+          <nav class="conversation-list" id="conversation-list" aria-label="Conversaciones de este libro"></nav>
+          <div class="conversation-panel">
+            <div class="conversation-empty" id="conversation-empty"><strong>Todavía no hay una conversación abierta</strong><p>Elegí un perfil y creá una para empezar a registrar tus preguntas.</p></div>
+            <div id="conversation-active" hidden>
+              <header><p class="eyebrow" id="active-conversation-profile"></p><h3 id="active-conversation-title"></h3></header>
+              <div class="conversation-messages" id="conversation-messages" aria-live="polite"></div>
+              <p class="provider-notice">Por ahora guardamos tus mensajes. El acompañante responderá cuando conectemos el proveedor de IA.</p>
+              <form class="conversation-form" id="conversation-form"><label for="conversation-message">Tu mensaje</label><textarea id="conversation-message" rows="4" required placeholder="Una pregunta, una interpretación, algo que te dejó pensando…"></textarea><button type="submit">Guardar en la conversación</button></form>
+              <p class="form-feedback" id="conversation-feedback" role="status" aria-live="polite"></p>
+            </div>
+          </div>
+        </div>
       </section>
       <section class="book-annotations" aria-labelledby="annotations-title">
         <div class="section-heading"><div><p class="eyebrow">Memoria de lectura</p><h2 id="annotations-title">Subrayados y notas</h2></div><span id="annotation-result-count">Consultando…</span></div>

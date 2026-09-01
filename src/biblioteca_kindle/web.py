@@ -16,6 +16,13 @@ from .personal import (
 )
 from .profiles import ProfileError, create_profile, update_profile
 from .cover_search import CoverSearchError, search_covers
+from .conversations import (
+    ConversationError,
+    add_message,
+    create_conversation,
+    get_conversation,
+    list_work_conversations,
+)
 
 
 DISPLAY_TITLE_SQL = (
@@ -492,6 +499,48 @@ def create_app(database: Path | str) -> Flask:
             update_profile(database_path, profile_id, _json_body())
             return jsonify(id=profile_id)
         except ProfileError as error:
+            return jsonify(error=str(error)), 400
+
+    @app.get("/api/works/<work_id>/conversations")
+    def work_conversations(work_id: str):
+        try:
+            return jsonify(items=list_work_conversations(database_path, work_id))
+        except ConversationError as error:
+            return jsonify(error=str(error)), 404
+
+    @app.post("/api/works/<work_id>/conversations")
+    def work_conversation_create(work_id: str):
+        try:
+            payload = _json_body()
+            identifier = create_conversation(
+                database_path,
+                work_id=work_id,
+                profile_id=str(payload.get("profile_id", "")),
+                title=payload.get("title", ""),
+            )
+            return jsonify(id=identifier), 201
+        except (ConversationError, PersonalDataError) as error:
+            return jsonify(error=str(error)), 400
+
+    @app.get("/api/conversations/<conversation_id>")
+    def conversation_detail(conversation_id: str):
+        try:
+            return jsonify(get_conversation(database_path, conversation_id))
+        except ConversationError as error:
+            return jsonify(error=str(error)), 404
+
+    @app.post("/api/conversations/<conversation_id>/messages")
+    def conversation_message_create(conversation_id: str):
+        try:
+            payload = _json_body()
+            identifier = add_message(
+                database_path,
+                conversation_id=conversation_id,
+                role="user",
+                content=payload.get("content"),
+            )
+            return jsonify(id=identifier), 201
+        except (ConversationError, PersonalDataError) as error:
             return jsonify(error=str(error)), 400
 
     @app.get("/api/status")

@@ -149,3 +149,28 @@ def get_conversation(database: Path | str, conversation_id: str) -> dict:
         return result
     finally:
         connection.close()
+
+
+def list_work_conversations(database: Path | str, work_id: str) -> list[dict]:
+    connection = _open_database(database)
+    try:
+        if connection.execute(
+            "SELECT 1 FROM works WHERE id = ?", (work_id,)
+        ).fetchone() is None:
+            raise ConversationError("La obra no existe")
+        rows = connection.execute(
+            """
+            SELECT rc.id, rc.title, rc.profile_id, rc.profile_name_snapshot,
+                   rc.status, rc.created_at, rc.updated_at,
+                   COUNT(cm.id) AS message_count
+            FROM reading_conversations rc
+            LEFT JOIN conversation_messages cm ON cm.conversation_id = rc.id
+            WHERE rc.work_id = ?
+            GROUP BY rc.id
+            ORDER BY rc.updated_at DESC, rc.created_at DESC, rc.id
+            """,
+            (work_id,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        connection.close()

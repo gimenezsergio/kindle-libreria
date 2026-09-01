@@ -3,6 +3,7 @@ const setText = (id, value) => { document.querySelector(`#${id}`).textContent = 
 const languageNames = {de: "Alemán", en: "Inglés", es: "Español", fr: "Francés", it: "Italiano", pt: "Portugués"};
 let annotationPage = 1;
 let annotationPages = 1;
+let activeConversationId = null;
 
 function languageName(code) {
   const normalized = String(code || "").trim().toLowerCase();
@@ -138,6 +139,65 @@ async function loadOptions() {
   relationSelect.replaceChildren(...alternatives.map((item) => new Option(item.title, item.id)));
   const profileSelect = document.querySelector("#conversation-profile");
   profileSelect.replaceChildren(...profiles.items.map((item) => new Option(item.name, item.id, item.is_default, item.is_default)));
+  document.querySelector("#new-conversation").disabled = profiles.items.length === 0;
+}
+
+function messageCard(message) {
+  const article = document.createElement("article");
+  article.className = `conversation-message ${message.role}`;
+  const label = document.createElement("strong");
+  label.textContent = message.role === "assistant" ? "Acompañante" : "Vos";
+  const content = document.createElement("p");
+  content.textContent = message.content;
+  article.append(label, content);
+  return article;
+}
+
+async function openConversation(identifier) {
+  const conversation = await jsonRequest(`/api/conversations/${encodeURIComponent(identifier)}`);
+  activeConversationId = identifier;
+  document.querySelector("#conversation-empty").hidden = true;
+  document.querySelector("#conversation-active").hidden = false;
+  setText("active-conversation-profile", conversation.profile_name_snapshot);
+  setText("active-conversation-title", conversation.title || "Conversación sobre la lectura");
+  const messages = conversation.messages.map(messageCard);
+  const container = document.querySelector("#conversation-messages");
+  container.replaceChildren(...messages);
+  if (!messages.length) {
+    const empty = document.createElement("p");
+    empty.className = "conversation-message-empty";
+    empty.textContent = "La conversación está lista. Escribí el primer mensaje.";
+    container.append(empty);
+  }
+  document.querySelectorAll(".conversation-list button").forEach((button) => {
+    button.setAttribute("aria-current", button.dataset.id === identifier ? "true" : "false");
+  });
+}
+
+async function loadConversations(preferredId = activeConversationId) {
+  const data = await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/conversations`);
+  const list = document.querySelector("#conversation-list");
+  const buttons = data.items.map((conversation) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.id = conversation.id;
+    const title = document.createElement("strong");
+    title.textContent = conversation.title || "Conversación sobre la lectura";
+    const detail = document.createElement("span");
+    detail.textContent = `${conversation.profile_name_snapshot} · ${conversation.message_count} mensajes`;
+    button.append(title, detail);
+    button.addEventListener("click", () => openConversation(conversation.id));
+    return button;
+  });
+  list.replaceChildren(...buttons);
+  if (!buttons.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "Sin conversaciones";
+    list.append(empty);
+    return;
+  }
+  const next = data.items.some((item) => item.id === preferredId) ? preferredId : data.items[0].id;
+  await openConversation(next);
 }
 
 function feedback(message, error = false) {
@@ -190,6 +250,37 @@ document.querySelector("#reset-title").addEventListener("click", async () => {
   try { await saveDisplayTitle(null); }
   catch (error) { feedback(error.message, true); }
 });
+document.querySelector("#new-conversation").addEventListener("click", async () => {
+  const button = document.querySelector("#new-conversation");
+  button.disabled = true;
+  try {
+    const created = await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/conversations`, {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({profile_id: document.querySelector("#conversation-profile").value}),
+    });
+    await loadConversations(created.id);
+    document.querySelector("#conversation-message").focus();
+  } catch (error) {
+    document.querySelector("#conversation-feedback").textContent = error.message;
+  } finally { button.disabled = false; }
+});
+document.querySelector("#conversation-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!activeConversationId) return;
+  const button = event.currentTarget.querySelector("button");
+  button.disabled = true;
+  try {
+    await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/messages`, {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({content: document.querySelector("#conversation-message").value}),
+    });
+    event.currentTarget.reset();
+    document.querySelector("#conversation-feedback").textContent = "Mensaje guardado localmente.";
+    await loadConversations(activeConversationId);
+  } catch (error) {
+    document.querySelector("#conversation-feedback").textContent = error.message;
+  } finally { button.disabled = false; }
+});
 
 document.querySelector("#annotation-filters").addEventListener("input", () => { annotationPage = 1; loadAnnotations(); });
 document.querySelector("#annotation-previous").addEventListener("click", () => { if (annotationPage > 1) { annotationPage -= 1; loadAnnotations(); } });
@@ -198,3 +289,4 @@ loadBook();
 loadAnnotations();
 loadPersonal();
 loadOptions();
+loadConversations();

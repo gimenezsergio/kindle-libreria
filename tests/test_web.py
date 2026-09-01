@@ -192,6 +192,43 @@ class WebTests(unittest.TestCase):
             self.assertEqual(archived.status_code, 200)
             self.assertEqual([item["name"] for item in remaining], ["Compañero de lectura"])
 
+    def test_reading_conversation_can_be_created_and_messages_saved(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            with connection:
+                connection.execute(
+                    "INSERT INTO works(id, preferred_title) VALUES ('work', 'Libro')"
+                )
+            connection.close()
+            client = create_app(database).test_client()
+
+            page = client.get("/library/work")
+            created = client.post(
+                "/api/works/work/conversations",
+                json={"profile_id": "companion"},
+            )
+            conversation_id = created.get_json()["id"]
+            message = client.post(
+                f"/api/conversations/{conversation_id}/messages",
+                json={"content": "¿Qué tensión organiza el libro?"},
+            )
+            conversations = client.get(
+                "/api/works/work/conversations"
+            ).get_json()["items"]
+            detail = client.get(
+                f"/api/conversations/{conversation_id}"
+            ).get_json()
+
+            self.assertIn("Acompañante de lectura", page.get_data(as_text=True))
+            self.assertEqual(created.status_code, 201)
+            self.assertEqual(message.status_code, 201)
+            self.assertEqual(conversations[0]["message_count"], 1)
+            self.assertEqual(detail["profile_name_snapshot"], "Compañero de lectura")
+            self.assertEqual(detail["messages"][0]["role"], "user")
+            self.assertEqual(detail["messages"][0]["content"], "¿Qué tensión organiza el libro?")
+
     def test_automatic_and_manual_display_titles(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "library.sqlite3"
