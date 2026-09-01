@@ -15,7 +15,7 @@ from biblioteca_kindle.conversations import (
     build_prompt_packet,
 )
 from biblioteca_kindle.db import connect_database, migrate_database
-from biblioteca_kindle.ai import DraftProvider, ResponsesProvider, provider_from_environment
+from biblioteca_kindle.ai import DraftProvider, ResponsesProvider, load_environment_file, provider_from_environment
 
 
 class ConversationTests(unittest.TestCase):
@@ -132,6 +132,14 @@ class ConversationTests(unittest.TestCase):
         self.assertEqual(provider.model, "deepseek-v4-flash")
         with patch.dict("os.environ", {"BIBLIOTECA_AI_PROVIDER": "deepseek"}, clear=True):
             self.assertIsInstance(provider_from_environment(), DraftProvider)
+
+    def test_environment_file_does_not_override_exported_values(self) -> None:
+        environment = Path(self.temporary.name) / ".env"
+        environment.write_text("BIBLIOTECA_AI_PROVIDER=deepseek\nDEEPSEEK_API_KEY=local-key\n", encoding="utf-8")
+        with patch.dict("os.environ", {"BIBLIOTECA_AI_PROVIDER": "draft"}, clear=True):
+            load_environment_file(environment)
+            self.assertEqual(__import__("os").environ["BIBLIOTECA_AI_PROVIDER"], "draft")
+            self.assertEqual(__import__("os").environ["DEEPSEEK_API_KEY"], "local-key")
 
 
 if __name__ == "__main__":

@@ -3,6 +3,8 @@ work/*
 !work/.gitkeep
 
 # Archivos del entorno local
+.env
+work/.env
 .DS_Store
 *.log
 __pycache__/

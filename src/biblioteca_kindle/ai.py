@@ -5,11 +5,27 @@ import os
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Protocol
 
 
 class AIError(RuntimeError):
     pass
+
+
+def load_environment_file(path: Path) -> None:
+    """Carga pares simples CLAVE=VALOR sin reemplazar variables ya exportadas."""
+    if not path.is_file():
+        return
+    for number, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        key, separator, value = line.partition("=")
+        key = key.strip()
+        if not separator or not key.replace("_", "").isalnum() or not key[0].isalpha():
+            raise AIError(f"Línea inválida en {path.name}: {number}")
+        os.environ.setdefault(key, value.strip())
 
 
 @dataclass(frozen=True)

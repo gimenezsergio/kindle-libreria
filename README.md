@@ -162,6 +162,10 @@ credenciales no se guardan en SQLite ni en Git. Véase `.env.example`. Para
 OpenClaw será necesario habilitar su endpoint Responses y definir la URL y el
 token del Gateway.
 
+En la instalación local, la configuración privada se guarda en `work/.env`.
+Ese archivo está excluido de Git y se carga automáticamente al iniciar el
+servidor. Las variables exportadas por el sistema tienen prioridad sobre él.
+
 La arquitectura prevista es:
 
 ```text

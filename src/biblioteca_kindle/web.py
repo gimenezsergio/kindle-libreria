@@ -26,7 +26,7 @@ from .conversations import (
     update_context,
     build_prompt_packet,
 )
-from .ai import AIError, DraftProvider, provider_from_environment
+from .ai import AIError, DraftProvider, load_environment_file, provider_from_environment
 
 
 DISPLAY_TITLE_SQL = (
@@ -392,6 +392,7 @@ def _json_body() -> dict:
 
 def create_app(database: Path | str, ai_provider=None) -> Flask:
     database_path = Path(database).expanduser().resolve()
+    load_environment_file(database_path.parent / ".env")
     if database_path.is_file():
         migrate_database(database_path)
         connection = connect_database(database_path)
