@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
@@ -20,6 +21,32 @@ DISPLAY_TITLE_SQL = (
     "COALESCE(NULLIF(TRIM(w.display_title), ''), "
     "REPLACE(w.preferred_title, '_', ' '))"
 )
+
+PAGE_PATTERN = re.compile(r"\b(?:page|página)\s+(\d+)", re.IGNORECASE)
+LOCATION_PATTERN = re.compile(
+    r"\b(?:location|ubicación|posición)\s+(\d+)(?:\s*[-–]\s*(\d+))?",
+    re.IGNORECASE,
+)
+
+
+def _readable_reference(position: str | None, date_text: str | None) -> dict | None:
+    source = " · ".join(value for value in (position, date_text) if value)
+    page_match = PAGE_PATTERN.search(source)
+    location_match = LOCATION_PATTERN.search(source)
+    if page_match is None and location_match is None:
+        return None
+    parts = []
+    result: dict[str, object] = {}
+    if page_match is not None:
+        result["page"] = int(page_match.group(1))
+        parts.append(f"Página {page_match.group(1)}")
+    if location_match is not None:
+        start, end = location_match.groups()
+        result["location_start"] = int(start)
+        result["location_end"] = int(end) if end else None
+        parts.append(f"Ubicación {start}{f'–{end}' if end else ''}")
+    result["label"] = " · ".join(parts)
+    return result
 
 
 def _count(connection, query: str, parameters: tuple = ()) -> int:
@@ -221,7 +248,27 @@ def _annotation_page(connection, work_id: str, *, kind: str, source: str,
         f"""
         SELECT an.id, an.kind, an.text, an.note_text, an.start_position_native,
                an.end_position_native, an.position_type, an.native_created_at,
-               an.status, GROUP_CONCAT(DISTINCT ao.source_kind) AS sources
+               an.status, GROUP_CONCAT(DISTINCT ao.source_kind) AS sources,
+               COALESCE(
+                   MAX(CASE WHEN ao.source_kind = 'clippings' THEN ao.original_position END),
+                   (SELECT ao2.original_position
+                    FROM annotations an2
+                    JOIN editions e2 ON e2.id = an2.edition_id
+                    JOIN annotation_occurrences ao2 ON ao2.annotation_id = an2.id
+                    WHERE e2.work_id = e.work_id AND ao2.source_kind = 'clippings'
+                      AND an.text IS NOT NULL AND TRIM(an2.text) = TRIM(an.text)
+                    LIMIT 1)
+               ) AS clipping_position,
+               COALESCE(
+                   MAX(CASE WHEN ao.source_kind = 'clippings' THEN ao.original_date END),
+                   (SELECT ao2.original_date
+                    FROM annotations an2
+                    JOIN editions e2 ON e2.id = an2.edition_id
+                    JOIN annotation_occurrences ao2 ON ao2.annotation_id = an2.id
+                    WHERE e2.work_id = e.work_id AND ao2.source_kind = 'clippings'
+                      AND an.text IS NOT NULL AND TRIM(an2.text) = TRIM(an.text)
+                    LIMIT 1)
+               ) AS clipping_date
         FROM annotations an
         JOIN editions e ON e.id = an.edition_id
         LEFT JOIN annotation_occurrences ao ON ao.annotation_id = an.id
@@ -232,8 +279,15 @@ def _annotation_page(connection, work_id: str, *, kind: str, source: str,
         """,
         (*parameters, page_size, (page - 1) * page_size),
     ).fetchall()
+    items = []
+    for row in rows:
+        item = dict(row)
+        item["reference"] = _readable_reference(
+            item.pop("clipping_position"), item.pop("clipping_date")
+        )
+        items.append(item)
     return {
-        "items": [dict(row) for row in rows], "page": page, "page_size": page_size,
+        "items": items, "page": page, "page_size": page_size,
         "total": total, "pages": max(1, (total + page_size - 1) // page_size),
     }
 

@@ -54,8 +54,24 @@ function annotationCard(annotation) {
   const meta = document.createElement("div");
   meta.className = "annotation-meta";
   const kind = {highlight: "Subrayado", note: "Nota", bookmark: "Marcador"}[annotation.kind] || "Anotación";
-  const position = annotation.start_position_native ? ` · Posición ${annotation.start_position_native}` : "";
-  meta.textContent = `${kind}${position} · ${(annotation.sources || "fuente desconocida").toUpperCase()}`;
+  meta.textContent = `${kind} · ${(annotation.sources || "fuente desconocida").toUpperCase()}`;
+  if (annotation.reference) {
+    const separator = document.createTextNode(" · ");
+    const reference = document.createElement("span");
+    reference.className = "annotation-reference";
+    reference.textContent = annotation.reference.label;
+    const copy = document.createElement("button");
+    copy.className = "copy-reference";
+    copy.type = "button";
+    copy.textContent = "Copiar referencia";
+    copy.setAttribute("aria-label", `Copiar ${annotation.reference.label}`);
+    copy.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(annotation.reference.label);
+      copy.textContent = "Copiado";
+      window.setTimeout(() => { copy.textContent = "Copiar referencia"; }, 1500);
+    });
+    meta.append(separator, reference, document.createTextNode(" "), copy);
+  }
   const quote = document.createElement("blockquote");
   quote.textContent = annotation.text || (annotation.kind === "bookmark" ? "Marcador sin texto" : "Anotación sin texto recuperable");
   article.append(meta, quote);

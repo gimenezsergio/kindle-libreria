@@ -81,6 +81,23 @@ class WebTests(unittest.TestCase):
                         VALUES ('annotation', 'edition', 'highlight', 'Texto privado', '42')
                         """
                     )
+                    connection.execute(
+                        """INSERT INTO device_snapshots(id, device_key, mount_point, mount_read_only, status, started_at)
+                           VALUES ('snapshot', 'kindle', '/media/kindle', 1, 'completed', '2026-01-01')"""
+                    )
+                    connection.execute(
+                        """INSERT INTO source_observations(id, snapshot_id, source_type, source_relative_path,
+                               file_size, file_hash, observed_at, parse_status)
+                           VALUES ('source', 'snapshot', 'clippings', 'documents/My Clippings.txt',
+                               1, 'hash', '2026-01-01', 'parsed')"""
+                    )
+                    connection.execute(
+                        """INSERT INTO annotation_occurrences(id, annotation_id, source_observation_id,
+                               source_kind, source_record_key, original_position, original_date, observed_at)
+                           VALUES ('occurrence', 'annotation', 'source', 'clippings', 'record',
+                               '- Your Highlight on page 65',
+                               'location 768-770 | Added on Saturday', '2026-01-01')"""
+                    )
             finally:
                 connection.close()
             client = create_app(database).test_client()
@@ -98,6 +115,11 @@ class WebTests(unittest.TestCase):
             self.assertEqual(detail.get_json()["title"], "Libro")
             self.assertEqual(detail.get_json()["annotations"]["highlight"], 1)
             self.assertEqual(annotations.get_json()["items"][0]["text"], "Texto privado")
+            self.assertEqual(
+                annotations.get_json()["items"][0]["reference"],
+                {"page": 65, "location_start": 768, "location_end": 770,
+                 "label": "Página 65 · Ubicación 768–770"},
+            )
             self.assertEqual(missing.status_code, 404)
             self.assertEqual(invalid.status_code, 400)
 

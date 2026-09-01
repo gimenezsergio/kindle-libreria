@@ -235,6 +235,8 @@ select { padding: .6rem 2rem .6rem .7rem; }
 .annotation-card.note { border-left-color: #9b6b9e; }
 .annotation-card.bookmark { border-left-color: #60829a; }
 .annotation-meta { color: var(--muted); font-size: .68rem; letter-spacing: .04em; text-transform: uppercase; }
+.annotation-reference { color: var(--ink); font-weight: 700; }
+.copy-reference { padding: .15rem .35rem; border: 0; background: transparent; color: var(--terracotta); cursor: pointer; font: inherit; letter-spacing: inherit; text-decoration: underline; text-transform: uppercase; }
 .annotation-card blockquote { max-width: 68ch; margin: 1.25rem 0 .5rem; font-family: var(--serif); font-size: 1.12rem; line-height: 1.65; white-space: pre-wrap; }
 .kindle-note { margin: 1.2rem 0 0; padding: 1rem; border-left: 2px solid #9b6b9e; background: var(--paper); font-size: .88rem; line-height: 1.55; }
 .personal-workspace { margin: 5rem 0; }
