@@ -299,6 +299,17 @@ select { padding: .6rem 2rem .6rem .7rem; }
 .profile-form input[type="text"], .profile-form textarea { width: 100%; padding: .75rem; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: inherit; resize: vertical; }
 .profile-actions { display: flex; gap: .75rem; }
 .profile-form .secondary-button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.cover-setup { padding: clamp(3rem, 6vw, 6rem); }
+.cover-setup > header > p:last-child { max-width: 55ch; color: var(--muted); line-height: 1.6; }
+.cover-review-item { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--line); }
+.cover-review-item h2 { margin: 0; font-family: var(--serif); font-size: 2rem; font-weight: 400; }
+.cover-review-item > div:first-child > p:last-child { color: var(--muted); }
+.cover-candidates { display: grid; grid-template-columns: repeat(3, minmax(0, 14rem)); gap: 1.5rem; margin: 2rem 0; }
+.cover-candidate { display: grid; gap: .75rem; align-content: end; }
+.cover-candidate img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; box-shadow: 0 .5rem 1.5rem rgb(38 31 26 / 14%); }
+.cover-candidate p { margin: 0; color: var(--muted); font-size: .72rem; }
+.cover-candidate button, .cover-review-item > button { padding: .7rem; border: 0; background: var(--terracotta); color: var(--surface); cursor: pointer; }
+.cover-review-item > .secondary-button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
 
 footer {
   border-top: 1px solid var(--line);
@@ -325,6 +336,7 @@ footer {
   .book-overview { grid-template-columns: 1fr; }
   .personal-grid { grid-template-columns: 1fr; }
   .conversation-preview, .profile-layout { grid-template-columns: 1fr; }
+  .cover-candidates { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .conversation-preview { align-items: start; }
   .overview-card { border-right: 0; border-bottom: 1px solid var(--line); }
   .overview-card:last-child { border-bottom: 0; }

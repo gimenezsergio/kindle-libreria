@@ -31,6 +31,13 @@ PILOT_COVERS = {
     "daa74900-192b-5894-a02c-f136b4842260": {"path": "gandhi.jpg", "source": "Editorial Océano"},
     "8731def6-8203-5e31-9dfc-2d672c98e958": {"path": "bartleby.jpg", "source": "Librotea"},
 }
+PILOT_COVER_CANDIDATES = {
+    "0090294e-4a8d-5ce8-a419-86465bb89c23": [
+        {"path": "12-reglas-para-vivir.webp", "source": "Planeta"},
+        {"path": "12-reglas-candidato-2.webp", "source": "El Aleph"},
+        {"path": "12-reglas-candidato-3.webp", "source": "Booket"},
+    ]
+}
 
 PAGE_PATTERN = re.compile(r"\b(?:page|página)\s+(\d+)", re.IGNORECASE)
 LOCATION_PATTERN = re.compile(
@@ -170,6 +177,15 @@ def _works_page(connection, *, query: str, presence: str, annotated: bool,
     for row in rows:
         item = dict(row)
         item["cover"] = PILOT_COVERS.get(item["id"])
+        preference = connection.execute(
+            "SELECT selected_path, review_status FROM work_cover_preferences WHERE work_id = ?",
+            (item["id"],),
+        ).fetchone()
+        if preference is not None:
+            if preference["review_status"] == "none":
+                item["cover"] = None
+            elif preference["selected_path"]:
+                item["cover"] = {"path": preference["selected_path"], "source": "Elegida por vos"}
         items.append(item)
     return {
         "items": items,
@@ -369,6 +385,38 @@ def create_app(database: Path | str) -> Flask:
     @app.get("/settings/ai-profiles")
     def ai_profiles_settings() -> str:
         return render_template("profiles.html")
+
+    @app.get("/settings/covers")
+    def cover_settings() -> str:
+        return render_template("cover_setup.html")
+
+    @app.get("/api/cover-setup")
+    def cover_setup():
+        connection = connect_database(database_path)
+        try:
+            items = []
+            for work_id, candidates in PILOT_COVER_CANDIDATES.items():
+                work = connection.execute(f"SELECT {DISPLAY_TITLE_SQL} AS title FROM works w WHERE w.id = ?", (work_id,)).fetchone()
+                if work is None: continue
+                pref = connection.execute("SELECT review_status, selected_path FROM work_cover_preferences WHERE work_id = ?", (work_id,)).fetchone()
+                items.append({"id": work_id, "title": work["title"], "authors": "Jordan B. Peterson", "candidates": candidates, "status": pref["review_status"] if pref else "pending", "selected_path": pref["selected_path"] if pref else None})
+            return jsonify(items=items)
+        finally: connection.close()
+
+    @app.patch("/api/cover-setup/<work_id>")
+    def cover_setup_update(work_id: str):
+        payload = _json_body()
+        status = payload.get("review_status")
+        path = payload.get("selected_path")
+        allowed = {item["path"] for item in PILOT_COVER_CANDIDATES.get(work_id, [])}
+        if status not in {"confirmed", "none"} or (status == "confirmed" and path not in allowed):
+            return jsonify(error="Elección de portada inválida"), 400
+        connection = connect_database(database_path)
+        try:
+            with connection:
+                connection.execute("INSERT INTO work_cover_preferences(work_id, selected_path, review_status) VALUES (?, ?, ?) ON CONFLICT(work_id) DO UPDATE SET selected_path=excluded.selected_path, review_status=excluded.review_status, updated_at=CURRENT_TIMESTAMP", (work_id, path, status))
+            return jsonify(saved=True)
+        finally: connection.close()
 
     @app.get("/api/ai-profiles")
     def ai_profiles():
