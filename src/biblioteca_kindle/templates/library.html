@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Catálogo local de la biblioteca personal">
+    <title>Biblioteca · Biblioteca personal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <script src="{{ url_for('static', filename='js/library.js') }}" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Inicio de Biblioteca personal"><span class="brand-mark" aria-hidden="true">B</span><span>Biblioteca personal</span></a>
+      <nav aria-label="Navegación principal"><a class="nav-link" href="/">Resumen</a><a class="nav-link is-active" href="/library">Biblioteca</a></nav>
+      <span class="local-badge">Local y privada</span>
+    </header>
+
+    <main>
+      <section class="catalog" aria-labelledby="catalog-title">
+        <div class="page-heading catalog-heading">
+          <div><p class="eyebrow">Catálogo local</p><h1 id="catalog-title">Biblioteca</h1></div>
+          <p class="catalog-intro">Buscá una obra por título o autor. Los textos de tus anotaciones permanecen ocultos en esta vista.</p>
+        </div>
+
+        <form class="catalog-controls" id="catalog-form" role="search">
+          <label class="search-field"><span class="sr-only">Buscar por título o autor</span><input id="query" type="search" placeholder="Buscar por título o autor…" autocomplete="off"><span aria-hidden="true">⌕</span></label>
+          <label>Presencia<select id="presence"><option value="all">Todos</option><option value="present">En el Kindle</option><option value="absent">Ausentes</option></select></label>
+          <label>Orden<select id="sort"><option value="title">Título</option><option value="annotations">Más anotados</option></select></label>
+          <label class="check-field"><input id="annotated" type="checkbox"><span>Con anotaciones</span></label>
+        </form>
+
+        <div class="catalog-meta" aria-live="polite"><strong id="result-count">Consultando…</strong><span id="page-status"></span></div>
+        <div class="book-list" id="book-list"></div>
+        <div class="empty-state" id="empty-state" hidden><strong>No encontramos obras</strong><span>Probá quitando algún filtro o usando otra búsqueda.</span></div>
+        <nav class="pagination" aria-label="Páginas de resultados"><button id="previous" type="button">← Anterior</button><span id="pagination-status"></span><button id="next" type="button">Siguiente →</button></nav>
+      </section>
+    </main>
+    <footer><span>Biblioteca Kindle</span><span>Local · privada · independiente</span></footer>
+  </body>
+</html>

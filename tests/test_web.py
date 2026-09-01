@@ -24,11 +24,15 @@ class WebTests(unittest.TestCase):
 
             client = create_app(database).test_client()
             page = client.get("/")
+            library = client.get("/library")
             status = client.get("/api/status")
             summary = client.get("/api/summary")
+            works = client.get("/api/works?q=Una&annotated=false")
 
             self.assertEqual(page.status_code, 200)
             self.assertIn("Biblioteca personal", page.get_data(as_text=True))
+            self.assertEqual(library.status_code, 200)
+            self.assertIn("Buscar por título o autor", library.get_data(as_text=True))
             self.assertEqual(
                 status.get_json(), {"database_available": True, "works": 1}
             )
@@ -36,6 +40,31 @@ class WebTests(unittest.TestCase):
             self.assertEqual(summary.get_json()["catalog"]["works"], 1)
             self.assertEqual(summary.get_json()["annotations"]["total"], 0)
             self.assertIsNone(summary.get_json()["last_sync"])
+            self.assertEqual(works.status_code, 200)
+            self.assertEqual(works.get_json()["total"], 1)
+            self.assertEqual(works.get_json()["items"][0]["title"], "Una obra")
+
+    def test_works_api_validates_filters_and_paginates(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            try:
+                with connection:
+                    connection.executemany(
+                        "INSERT INTO works(id, preferred_title) VALUES (?, ?)",
+                        [("a", "Alfa"), ("b", "Beta")],
+                    )
+            finally:
+                connection.close()
+            client = create_app(database).test_client()
+            first = client.get("/api/works?page_size=1&page=1")
+            second = client.get("/api/works?page_size=1&page=2")
+            invalid = client.get("/api/works?presence=unknown")
+            self.assertEqual(first.get_json()["items"][0]["title"], "Alfa")
+            self.assertEqual(first.get_json()["pages"], 2)
+            self.assertEqual(second.get_json()["items"][0]["title"], "Beta")
+            self.assertEqual(invalid.status_code, 400)
 
     def test_missing_database_is_reported_without_creating_it(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
