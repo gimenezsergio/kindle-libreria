@@ -1,7 +1,13 @@
 const formatNumber = new Intl.NumberFormat("es-AR");
 const setText = (id, value) => { document.querySelector(`#${id}`).textContent = value; };
+const languageNames = {de: "Alemán", en: "Inglés", es: "Español", fr: "Francés", it: "Italiano", pt: "Portugués"};
 let annotationPage = 1;
 let annotationPages = 1;
+
+function languageName(code) {
+  const normalized = String(code || "").trim().toLowerCase();
+  return languageNames[normalized] || normalized.toUpperCase();
+}
 
 async function jsonRequest(url, options = {}) {
   const response = await fetch(url, options);
@@ -19,25 +25,27 @@ async function loadBook() {
   setText("original-title", book.original_title);
   document.querySelector("#display-title-input").value = book.display_title || book.title;
   setText("book-author", book.authors || "Autor no disponible");
-  setText("identity-state", book.merge_status === "normal" ? "Identidad confirmada" : book.merge_status === "review" ? "Identidad por revisar" : "Identidad provisional");
+  setText("identity-state", book.merge_status === "review" ? "Identidad por revisar" : "Ficha de lectura");
   setText("book-annotation-total", formatNumber.format(book.annotations.total));
   const present = book.editions.some((edition) => edition.presence === "present");
   setText("book-presence", present ? "Presente" : "Ausente");
-  setText("edition-count", formatNumber.format(book.editions.length));
-  setText("edition-detail", book.editions.map((edition) => edition.language || edition.format_hint).filter(Boolean).join(" · ") || "Sin metadatos adicionales");
+  const languages = [...new Set(book.editions.map((edition) => edition.language).filter(Boolean).map(languageName))];
+  const editionTotal = book.editions.length;
+  setText("edition-count", languages.join(" · ") || (editionTotal ? `${formatNumber.format(editionTotal)} documento${editionTotal === 1 ? "" : "s"}` : "Sin datos"));
+  setText("edition-detail", editionTotal ? `${formatNumber.format(editionTotal)} ${editionTotal === 1 ? "edición registrada" : "ediciones registradas"}` : "El Kindle no expuso datos del documento");
   if (book.progress) {
-    setText("progress-position", book.progress.last_position_native || "Disponible");
+    setText("progress-position", "Actividad registrada");
     const bits = [];
     if (book.progress.progress_fraction !== null) bits.push(`${Math.round(book.progress.progress_fraction * 100)} % estimado`);
-    if (book.progress.words_read !== null) bits.push(`${formatNumber.format(book.progress.words_read)} palabras`);
-    setText("progress-detail", bits.join(" · ") || "Posición nativa del Kindle");
+    if (book.progress.words_read !== null) bits.push(`${formatNumber.format(book.progress.words_read)} palabras registradas`);
+    setText("progress-detail", bits.join(" · ") || "El Kindle conserva una posición de lectura");
   } else {
     setText("progress-position", "Sin datos");
-    setText("progress-detail", "No se encontró un estado de lectura vinculado");
+    setText("progress-detail", "El Kindle no expuso seguimiento para este libro");
   }
   const personalTotal = book.personal.collections + book.personal.notes + book.personal.relations;
-  setText("personal-count", formatNumber.format(personalTotal));
-  setText("personal-detail", `${book.personal.collections} colecciones · ${book.personal.notes} notas · ${book.personal.relations} relaciones`);
+  setText("personal-count", personalTotal ? `${formatNumber.format(personalTotal)} ${personalTotal === 1 ? "elemento" : "elementos"}` : "Sin organizar");
+  setText("personal-detail", personalTotal ? `${book.personal.collections} colecciones · ${book.personal.notes} notas · ${book.personal.relations} relaciones` : "Podés agregar categorías, notas o relaciones");
 }
 
 function annotationCard(annotation) {
