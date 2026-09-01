@@ -32,10 +32,7 @@ function bookRow(book) {
   text(presence, book.presence === "present" ? "En el Kindle" : "Ausente");
   const annotations = document.createElement("span");
   text(annotations, `${formatNumber.format(book.annotation_count)} anotaciones`);
-  const status = document.createElement("span");
-  status.className = "identity-status";
-  text(status, book.merge_status === "normal" ? "Identidad confirmada" : book.merge_status === "review" ? "Revisar identidad" : "Identidad provisional");
-  metadata.append(presence, annotations, status);
+  metadata.append(presence, annotations);
   article.append(identity, metadata);
   return article;
 }
