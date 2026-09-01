@@ -256,9 +256,10 @@ async function saveDisplayTitle(title) {
 
 async function submitPersonal(event, action) {
   event.preventDefault();
+  const form = event.currentTarget;
   try {
     await action();
-    event.currentTarget.reset();
+    form.reset();
     feedback("Cambios guardados en la biblioteca local.");
     await Promise.all([loadPersonal(), loadOptions(), loadBook()]);
   } catch (error) {
@@ -305,14 +306,15 @@ document.querySelector("#new-conversation").addEventListener("click", async () =
 document.querySelector("#conversation-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!activeConversationId) return;
-  const button = event.currentTarget.querySelector("button");
+  const form = event.currentTarget;
+  const button = form.querySelector("button");
   button.disabled = true;
   try {
     const result = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/respond`, {
       method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({content: document.querySelector("#conversation-message").value}),
     });
-    event.currentTarget.reset();
+    form.reset();
     document.querySelector("#conversation-feedback").textContent = result.mode === "draft" ? "Mensaje guardado. No se envió a una IA porque está activo el modo borrador." : "El acompañante respondió.";
     await loadConversations(activeConversationId);
   } catch (error) {
