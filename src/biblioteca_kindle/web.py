@@ -22,6 +22,16 @@ DISPLAY_TITLE_SQL = (
     "REPLACE(w.preferred_title, '_', ' '))"
 )
 
+PILOT_COVERS = {
+    "0090294e-4a8d-5ce8-a419-86465bb89c23": {"path": "12-reglas-para-vivir.webp", "source": "Planeta de Libros"},
+    "8b1880ff-42f3-5872-a175-d0da6f27066b": {"path": "1984.jpg", "source": "Open Library"},
+    "71cbf0f0-1a6e-5bd9-aa61-beb4522351b1": {"path": "50-clasicos.jpg", "source": "Open Library"},
+    "aa83da8e-115e-50eb-bc38-81536ce04f14": {"path": "anna-karenina.jpg", "source": "Librería Nacional"},
+    "44274922-c5b3-5b15-b7c1-6a1b12396145": {"path": "antifragil.jpg", "source": "Zivals"},
+    "daa74900-192b-5894-a02c-f136b4842260": {"path": "gandhi.jpg", "source": "Editorial Océano"},
+    "8731def6-8203-5e31-9dfc-2d672c98e958": {"path": "bartleby.jpg", "source": "Librotea"},
+}
+
 PAGE_PATTERN = re.compile(r"\b(?:page|página)\s+(\d+)", re.IGNORECASE)
 LOCATION_PATTERN = re.compile(
     r"\b(?:location|ubicación|posición)\s+(\d+)(?:\s*[-–]\s*(\d+))?",
@@ -156,8 +166,13 @@ def _works_page(connection, *, query: str, presence: str, annotated: bool,
         """,
         (*parameters, page_size, (page - 1) * page_size),
     ).fetchall()
+    items = []
+    for row in rows:
+        item = dict(row)
+        item["cover"] = PILOT_COVERS.get(item["id"])
+        items.append(item)
     return {
-        "items": [dict(row) for row in rows],
+        "items": items,
         "page": page,
         "page_size": page_size,
         "total": total,

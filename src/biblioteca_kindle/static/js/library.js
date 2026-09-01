@@ -5,6 +5,7 @@ const controls = document.querySelector("#catalog-form");
 let page = 1;
 let pages = 1;
 let debounce;
+let view = localStorage.getItem("library-view") === "list" ? "list" : "grid";
 
 const text = (element, value) => { element.textContent = value; };
 
@@ -17,6 +18,22 @@ function bookRow(book) {
   const open = () => { window.location.href = `/library/${encodeURIComponent(book.id)}`; };
   article.addEventListener("click", open);
   article.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); } });
+  const cover = document.createElement("div");
+  cover.className = "book-cover";
+  if (book.cover) {
+    const image = document.createElement("img");
+    image.src = `/static/covers/${encodeURIComponent(book.cover.path)}`;
+    image.alt = `Portada de ${book.title}`;
+    image.loading = "lazy";
+    image.title = `Fuente: ${book.cover.source}`;
+    cover.append(image);
+  } else {
+    cover.classList.add("book-cover-placeholder");
+    const initials = book.title.split(/\s+/).filter(Boolean).slice(0, 3).map((word) => word[0]).join("");
+    const mark = document.createElement("span");
+    text(mark, initials || "B");
+    cover.append(mark);
+  }
   const identity = document.createElement("div");
   identity.className = "book-identity";
   const title = document.createElement("h2");
@@ -33,8 +50,15 @@ function bookRow(book) {
   const annotations = document.createElement("span");
   text(annotations, `${formatNumber.format(book.annotation_count)} anotaciones`);
   metadata.append(presence, annotations);
-  article.append(identity, metadata);
+  article.append(cover, identity, metadata);
   return article;
+}
+
+function applyView() {
+  list.classList.toggle("is-grid", view === "grid");
+  list.classList.toggle("is-list", view === "list");
+  document.querySelector("#grid-view").setAttribute("aria-pressed", String(view === "grid"));
+  document.querySelector("#list-view").setAttribute("aria-pressed", String(view === "list"));
 }
 
 async function loadBooks() {
@@ -75,4 +99,7 @@ controls.addEventListener("input", () => {
 });
 document.querySelector("#previous").addEventListener("click", () => { if (page > 1) { page -= 1; loadBooks(); } });
 document.querySelector("#next").addEventListener("click", () => { if (page < pages) { page += 1; loadBooks(); } });
+document.querySelector("#grid-view").addEventListener("click", () => { view = "grid"; localStorage.setItem("library-view", view); applyView(); });
+document.querySelector("#list-view").addEventListener("click", () => { view = "list"; localStorage.setItem("library-view", view); applyView(); });
+applyView();
 loadBooks();

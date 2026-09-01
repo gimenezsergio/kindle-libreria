@@ -43,6 +43,7 @@ class WebTests(unittest.TestCase):
             self.assertEqual(works.status_code, 200)
             self.assertEqual(works.get_json()["total"], 1)
             self.assertEqual(works.get_json()["items"][0]["title"], "Una obra")
+            self.assertIsNone(works.get_json()["items"][0]["cover"])
 
     def test_works_api_validates_filters_and_paginates(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
