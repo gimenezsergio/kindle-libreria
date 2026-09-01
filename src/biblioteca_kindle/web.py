@@ -15,6 +15,7 @@ from .personal import (
     set_work_display_title,
 )
 from .profiles import ProfileError, create_profile, update_profile
+from .cover_search import CoverSearchError, search_covers
 
 
 DISPLAY_TITLE_SQL = (
@@ -421,7 +422,7 @@ def create_app(database: Path | str) -> Flask:
                 work = connection.execute(f"SELECT {DISPLAY_TITLE_SQL} AS title FROM works w WHERE w.id = ?", (work_id,)).fetchone()
                 candidates = [dict(row) for row in connection.execute(
                     """SELECT id, local_path AS path, source_label AS source, isbn,
-                              edition_label, confidence, status
+                              edition_label, confidence, status, search_round
                        FROM cover_candidates WHERE work_id = ?
                        ORDER BY display_order, created_at""", (work_id,)
                 )]
@@ -449,6 +450,15 @@ def create_app(database: Path | str) -> Flask:
                     connection.execute("UPDATE cover_candidates SET status = 'available', updated_at = CURRENT_TIMESTAMP WHERE work_id = ? AND local_path = ?", (work_id, path))
             return jsonify(saved=True)
         finally: connection.close()
+
+    @app.post("/api/cover-setup/<work_id>/search")
+    def cover_setup_search(work_id: str):
+        try:
+            _json_body()
+            added = search_covers(database_path, work_id, Path(app.static_folder) / "covers")
+            return jsonify(added=added), 201
+        except CoverSearchError as error:
+            return jsonify(error=str(error)), 400
 
     @app.get("/api/ai-profiles")
     def ai_profiles():
