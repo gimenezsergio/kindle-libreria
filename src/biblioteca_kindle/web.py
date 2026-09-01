@@ -122,6 +122,105 @@ def _works_page(connection, *, query: str, presence: str, annotated: bool,
     }
 
 
+def _work_detail(connection, work_id: str) -> dict | None:
+    work = connection.execute(
+        """
+        SELECT w.id, w.preferred_title AS title, w.merge_status,
+               COALESCE(GROUP_CONCAT(DISTINCT co.display_name), '') AS authors
+        FROM works w
+        LEFT JOIN editions e ON e.work_id = w.id
+        LEFT JOIN edition_contributors ec ON ec.edition_id = e.id AND ec.role = 'author'
+        LEFT JOIN contributors co ON co.id = ec.contributor_id
+        WHERE w.id = ? GROUP BY w.id
+        """,
+        (work_id,),
+    ).fetchone()
+    if work is None:
+        return None
+    editions = [
+        dict(row) for row in connection.execute(
+            """
+            SELECT e.id, e.title, e.language, e.publisher, e.format_hint,
+                   CASE WHEN MAX(kd.presence = 'present') = 1 THEN 'present' ELSE 'absent' END AS presence
+            FROM editions e LEFT JOIN kindle_deliveries kd ON kd.edition_id = e.id
+            WHERE e.work_id = ? GROUP BY e.id ORDER BY e.title COLLATE NOCASE
+            """,
+            (work_id,),
+        )
+    ]
+    counts = {
+        row["kind"]: row["total"] for row in connection.execute(
+            """
+            SELECT an.kind, COUNT(*) AS total FROM annotations an
+            JOIN editions e ON e.id = an.edition_id
+            WHERE e.work_id = ? GROUP BY an.kind
+            """,
+            (work_id,),
+        )
+    }
+    progress = connection.execute(
+        """
+        SELECT rs.last_position_native, rs.last_position_type, rs.last_position_at,
+               rs.furthest_position_native, rs.progress_fraction, rs.reading_time_ms,
+               rs.words_read, rs.observed_at
+        FROM reading_states rs
+        JOIN kindle_deliveries kd ON kd.id = rs.kindle_delivery_id
+        JOIN editions e ON e.id = kd.edition_id
+        WHERE e.work_id = ? ORDER BY rs.observed_at DESC LIMIT 1
+        """,
+        (work_id,),
+    ).fetchone()
+    return {
+        **dict(work),
+        "editions": editions,
+        "annotations": {
+            "total": sum(counts.values()),
+            "highlight": counts.get("highlight", 0),
+            "note": counts.get("note", 0),
+            "bookmark": counts.get("bookmark", 0),
+        },
+        "progress": dict(progress) if progress is not None else None,
+        "personal": {
+            "collections": _count(connection, "SELECT COUNT(*) FROM work_collections WHERE work_id = ?", (work_id,)),
+            "notes": _count(connection, "SELECT COUNT(*) FROM personal_notes WHERE target_type = 'work' AND target_id = ?", (work_id,)),
+            "relations": _count(connection, "SELECT COUNT(*) FROM work_relations WHERE source_work_id = ? OR target_work_id = ?", (work_id, work_id)),
+        },
+    }
+
+
+def _annotation_page(connection, work_id: str, *, kind: str, source: str,
+                     page: int, page_size: int) -> dict:
+    conditions = ["e.work_id = ?"]
+    parameters: list[object] = [work_id]
+    if kind != "all":
+        conditions.append("an.kind = ?")
+        parameters.append(kind)
+    if source != "all":
+        conditions.append("EXISTS (SELECT 1 FROM annotation_occurrences ox WHERE ox.annotation_id = an.id AND ox.source_kind = ?)")
+        parameters.append(source)
+    where = " AND ".join(conditions)
+    total = _count(connection, f"SELECT COUNT(*) FROM annotations an JOIN editions e ON e.id = an.edition_id WHERE {where}", tuple(parameters))
+    rows = connection.execute(
+        f"""
+        SELECT an.id, an.kind, an.text, an.note_text, an.start_position_native,
+               an.end_position_native, an.position_type, an.native_created_at,
+               an.status, GROUP_CONCAT(DISTINCT ao.source_kind) AS sources
+        FROM annotations an
+        JOIN editions e ON e.id = an.edition_id
+        LEFT JOIN annotation_occurrences ao ON ao.annotation_id = an.id
+        WHERE {where}
+        GROUP BY an.id
+        ORDER BY COALESCE(an.native_created_at, an.created_at) DESC, an.id
+        LIMIT ? OFFSET ?
+        """,
+        (*parameters, page_size, (page - 1) * page_size),
+    ).fetchall()
+    return {
+        "items": [dict(row) for row in rows], "page": page, "page_size": page_size,
+        "total": total, "pages": max(1, (total + page_size - 1) // page_size),
+    }
+
+
 def create_app(database: Path | str) -> Flask:
     database_path = Path(database).expanduser().resolve()
     app = Flask(__name__)
@@ -134,6 +233,10 @@ def create_app(database: Path | str) -> Flask:
     @app.get("/library")
     def library() -> str:
         return render_template("library.html")
+
+    @app.get("/library/<work_id>")
+    def book(work_id: str) -> str:
+        return render_template("book.html", work_id=work_id)
 
     @app.get("/api/status")
     def status():
@@ -185,6 +288,40 @@ def create_app(database: Path | str) -> Flask:
                 connection, query=query, presence=presence, annotated=annotated,
                 sort=sort, page=page, page_size=page_size,
             ))
+        finally:
+            connection.close()
+
+    @app.get("/api/works/<work_id>")
+    def work_detail(work_id: str):
+        if not database_path.is_file():
+            return jsonify(database_available=False), 404
+        connection = connect_database(database_path)
+        try:
+            detail = _work_detail(connection, work_id)
+            if detail is None:
+                return jsonify(error="Obra inexistente"), 404
+            return jsonify(detail)
+        finally:
+            connection.close()
+
+    @app.get("/api/works/<work_id>/annotations")
+    def work_annotations(work_id: str):
+        kind = request.args.get("kind", "all")
+        source = request.args.get("source", "all")
+        if kind not in {"all", "highlight", "note", "bookmark", "other"}:
+            return jsonify(error="Tipo de anotación inválido"), 400
+        if source not in {"all", "clippings", "krds", "han", "other"}:
+            return jsonify(error="Fuente inválida"), 400
+        try:
+            page = max(1, int(request.args.get("page", "1")))
+            page_size = min(100, max(1, int(request.args.get("page_size", "20"))))
+        except ValueError:
+            return jsonify(error="Parámetros de paginación inválidos"), 400
+        connection = connect_database(database_path)
+        try:
+            if connection.execute("SELECT 1 FROM works WHERE id = ?", (work_id,)).fetchone() is None:
+                return jsonify(error="Obra inexistente"), 404
+            return jsonify(_annotation_page(connection, work_id, kind=kind, source=source, page=page, page_size=page_size))
         finally:
             connection.close()
 

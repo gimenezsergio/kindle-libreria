@@ -11,6 +11,12 @@ const text = (element, value) => { element.textContent = value; };
 function bookRow(book) {
   const article = document.createElement("article");
   article.className = "book-row";
+  article.tabIndex = 0;
+  article.setAttribute("role", "link");
+  article.setAttribute("aria-label", `Abrir ${book.title}`);
+  const open = () => { window.location.href = `/library/${encodeURIComponent(book.id)}`; };
+  article.addEventListener("click", open);
+  article.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); } });
   const identity = document.createElement("div");
   identity.className = "book-identity";
   const title = document.createElement("h2");

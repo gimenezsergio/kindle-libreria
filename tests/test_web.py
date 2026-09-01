@@ -66,6 +66,37 @@ class WebTests(unittest.TestCase):
             self.assertEqual(second.get_json()["items"][0]["title"], "Beta")
             self.assertEqual(invalid.status_code, 400)
 
+    def test_work_detail_and_annotation_api(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            try:
+                with connection:
+                    connection.execute("INSERT INTO works(id, preferred_title) VALUES ('work', 'Libro')")
+                    connection.execute("INSERT INTO editions(id, work_id, title, language) VALUES ('edition', 'work', 'Libro', 'es')")
+                    connection.execute(
+                        """
+                        INSERT INTO annotations(id, edition_id, kind, text, start_position_native)
+                        VALUES ('annotation', 'edition', 'highlight', 'Texto privado', '42')
+                        """
+                    )
+            finally:
+                connection.close()
+            client = create_app(database).test_client()
+            page = client.get("/library/work")
+            detail = client.get("/api/works/work")
+            annotations = client.get("/api/works/work/annotations?kind=highlight")
+            missing = client.get("/api/works/missing")
+            invalid = client.get("/api/works/work/annotations?source=invalid")
+            self.assertEqual(page.status_code, 200)
+            self.assertIn("Subrayados y notas", page.get_data(as_text=True))
+            self.assertEqual(detail.get_json()["title"], "Libro")
+            self.assertEqual(detail.get_json()["annotations"]["highlight"], 1)
+            self.assertEqual(annotations.get_json()["items"][0]["text"], "Texto privado")
+            self.assertEqual(missing.status_code, 404)
+            self.assertEqual(invalid.status_code, 400)
+
     def test_missing_database_is_reported_without_creating_it(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "missing.sqlite3"

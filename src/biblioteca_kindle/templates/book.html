@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ficha del libro · Biblioteca personal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <script>window.WORK_ID = {{ work_id|tojson }};</script>
+    <script src="{{ url_for('static', filename='js/book.js') }}" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Inicio de Biblioteca personal"><span class="brand-mark" aria-hidden="true">B</span><span>Biblioteca personal</span></a>
+      <nav aria-label="Navegación principal"><a class="nav-link" href="/">Resumen</a><a class="nav-link is-active" href="/library">Biblioteca</a></nav>
+      <span class="local-badge">Local y privada</span>
+    </header>
+    <main><article class="book-page">
+      <a class="back-link" href="/library">← Volver a la biblioteca</a>
+      <header class="book-header">
+        <div><p class="eyebrow" id="identity-state">Ficha de lectura</p><h1 id="book-title">Consultando…</h1><p class="book-author" id="book-author"></p></div>
+        <div class="book-stats"><div><strong id="book-annotation-total">—</strong><span>anotaciones</span></div><div><strong id="book-presence">—</strong><span>presencia</span></div></div>
+      </header>
+      <section class="book-overview" aria-label="Información de la obra">
+        <div class="overview-card"><span>Ediciones</span><strong id="edition-count">—</strong><p id="edition-detail"></p></div>
+        <div class="overview-card"><span>Progreso disponible</span><strong id="progress-position">—</strong><p id="progress-detail"></p></div>
+        <div class="overview-card"><span>Organización propia</span><strong id="personal-count">—</strong><p id="personal-detail"></p></div>
+      </section>
+      <section class="book-annotations" aria-labelledby="annotations-title">
+        <div class="section-heading"><div><p class="eyebrow">Memoria de lectura</p><h2 id="annotations-title">Subrayados y notas</h2></div><span id="annotation-result-count">Consultando…</span></div>
+        <form class="annotation-filters" id="annotation-filters">
+          <label>Tipo<select id="kind"><option value="all">Todos</option><option value="highlight">Subrayados</option><option value="note">Notas</option><option value="bookmark">Marcadores</option></select></label>
+          <label>Fuente<select id="source"><option value="all">Todas</option><option value="clippings">My Clippings</option><option value="krds">KRDS</option><option value="han">HAN</option></select></label>
+        </form>
+        <div class="annotation-list" id="annotation-list"></div>
+        <div class="empty-state" id="annotation-empty" hidden><strong>No hay anotaciones para estos filtros</strong><span>Probá con otro tipo o fuente.</span></div>
+        <nav class="pagination" aria-label="Páginas de anotaciones"><button id="annotation-previous" type="button">← Anterior</button><span id="annotation-page"></span><button id="annotation-next" type="button">Siguiente →</button></nav>
+      </section>
+    </article></main>
+    <footer><span>Biblioteca Kindle</span><span>Local · privada · independiente</span></footer>
+  </body>
+</html>
