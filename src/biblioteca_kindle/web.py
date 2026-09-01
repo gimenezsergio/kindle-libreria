@@ -31,13 +31,28 @@ PILOT_COVERS = {
     "daa74900-192b-5894-a02c-f136b4842260": {"path": "gandhi.jpg", "source": "Editorial Océano"},
     "8731def6-8203-5e31-9dfc-2d672c98e958": {"path": "bartleby.jpg", "source": "Librotea"},
 }
-PILOT_COVER_CANDIDATES = {
+INITIAL_COVER_CANDIDATES = {
     "0090294e-4a8d-5ce8-a419-86465bb89c23": [
         {"path": "12-reglas-para-vivir.webp", "source": "Planeta"},
         {"path": "12-reglas-candidato-2.webp", "source": "El Aleph"},
         {"path": "12-reglas-candidato-3.webp", "source": "Booket"},
     ]
 }
+
+
+def _seed_cover_candidates(connection) -> None:
+    with connection:
+        for work_id, candidates in INITIAL_COVER_CANDIDATES.items():
+            if connection.execute("SELECT 1 FROM works WHERE id = ?", (work_id,)).fetchone() is None:
+                continue
+            for order, candidate in enumerate(candidates):
+                connection.execute(
+                    """INSERT INTO cover_candidates(
+                           id, work_id, local_path, source_label, confidence, display_order)
+                       VALUES (?, ?, ?, ?, 'high', ?)
+                       ON CONFLICT(work_id, local_path) DO NOTHING""",
+                    (f"{work_id}:{order}", work_id, candidate["path"], candidate["source"], order),
+                )
 
 PAGE_PATTERN = re.compile(r"\b(?:page|página)\s+(\d+)", re.IGNORECASE)
 LOCATION_PATTERN = re.compile(
@@ -367,6 +382,11 @@ def create_app(database: Path | str) -> Flask:
     database_path = Path(database).expanduser().resolve()
     if database_path.is_file():
         migrate_database(database_path)
+        connection = connect_database(database_path)
+        try:
+            _seed_cover_candidates(connection)
+        finally:
+            connection.close()
     app = Flask(__name__)
     app.config["DATABASE"] = database_path
 
@@ -395,9 +415,16 @@ def create_app(database: Path | str) -> Flask:
         connection = connect_database(database_path)
         try:
             items = []
-            for work_id, candidates in PILOT_COVER_CANDIDATES.items():
+            work_ids = connection.execute("SELECT DISTINCT work_id FROM cover_candidates ORDER BY work_id").fetchall()
+            for work_row in work_ids:
+                work_id = work_row["work_id"]
                 work = connection.execute(f"SELECT {DISPLAY_TITLE_SQL} AS title FROM works w WHERE w.id = ?", (work_id,)).fetchone()
-                if work is None: continue
+                candidates = [dict(row) for row in connection.execute(
+                    """SELECT id, local_path AS path, source_label AS source, isbn,
+                              edition_label, confidence, status
+                       FROM cover_candidates WHERE work_id = ?
+                       ORDER BY display_order, created_at""", (work_id,)
+                )]
                 pref = connection.execute("SELECT review_status, selected_path FROM work_cover_preferences WHERE work_id = ?", (work_id,)).fetchone()
                 items.append({"id": work_id, "title": work["title"], "authors": "Jordan B. Peterson", "candidates": candidates, "status": pref["review_status"] if pref else "pending", "selected_path": pref["selected_path"] if pref else None})
             return jsonify(items=items)
@@ -408,13 +435,18 @@ def create_app(database: Path | str) -> Flask:
         payload = _json_body()
         status = payload.get("review_status")
         path = payload.get("selected_path")
-        allowed = {item["path"] for item in PILOT_COVER_CANDIDATES.get(work_id, [])}
-        if status not in {"confirmed", "none"} or (status == "confirmed" and path not in allowed):
-            return jsonify(error="Elección de portada inválida"), 400
         connection = connect_database(database_path)
+        allowed = {row["local_path"] for row in connection.execute("SELECT local_path FROM cover_candidates WHERE work_id = ?", (work_id,))}
+        if status not in {"confirmed", "none"} or (status == "confirmed" and path not in allowed):
+            connection.close()
+            return jsonify(error="Elección de portada inválida"), 400
         try:
             with connection:
                 connection.execute("INSERT INTO work_cover_preferences(work_id, selected_path, review_status) VALUES (?, ?, ?) ON CONFLICT(work_id) DO UPDATE SET selected_path=excluded.selected_path, review_status=excluded.review_status, updated_at=CURRENT_TIMESTAMP", (work_id, path, status))
+                if status == "none":
+                    connection.execute("UPDATE cover_candidates SET status = 'rejected', updated_at = CURRENT_TIMESTAMP WHERE work_id = ?", (work_id,))
+                else:
+                    connection.execute("UPDATE cover_candidates SET status = 'available', updated_at = CURRENT_TIMESTAMP WHERE work_id = ? AND local_path = ?", (work_id, path))
             return jsonify(saved=True)
         finally: connection.close()
 

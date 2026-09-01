@@ -21,6 +21,7 @@ class MigrationTests(unittest.TestCase):
                     "0004_work_display_title.sql",
                     "0005_ai_profiles.sql",
                     "0006_cover_preferences.sql",
+                    "0007_cover_candidates.sql",
                 ],
             )
 
@@ -50,6 +51,7 @@ class MigrationTests(unittest.TestCase):
                     "reading_history_records",
                     "ai_profiles",
                     "work_cover_preferences",
+                    "cover_candidates",
                 }.issubset(tables)
             )
 
@@ -66,7 +68,7 @@ class MigrationTests(unittest.TestCase):
                 ).fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(count, 6)
+            self.assertEqual(count, 7)
 
     def test_foreign_keys_are_enabled(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
