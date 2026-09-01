@@ -229,6 +229,22 @@ select { padding: .6rem 2rem .6rem .7rem; }
 .annotation-meta { color: var(--muted); font-size: .68rem; letter-spacing: .04em; text-transform: uppercase; }
 .annotation-card blockquote { max-width: 68ch; margin: 1.25rem 0 .5rem; font-family: var(--serif); font-size: 1.12rem; line-height: 1.65; white-space: pre-wrap; }
 .kindle-note { margin: 1.2rem 0 0; padding: 1rem; border-left: 2px solid #9b6b9e; background: var(--paper); font-size: .88rem; line-height: 1.55; }
+.personal-workspace { margin: 5rem 0; }
+.personal-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.personal-panel { display: flex; min-width: 0; flex-direction: column; padding: 1.5rem; border: 1px solid var(--line); background: var(--surface); }
+.personal-panel h3 { margin: 0 0 1.25rem; font-family: var(--serif); font-size: 1.45rem; font-weight: 400; }
+.personal-items { display: grid; gap: .5rem; max-height: 15rem; margin-bottom: 1.5rem; overflow-y: auto; }
+.personal-item { padding: .75rem; border-left: 2px solid var(--green); background: var(--paper); }
+.personal-item strong { font-size: .78rem; }
+.personal-item p { margin: .35rem 0 0; color: var(--muted); font-size: .75rem; line-height: 1.45; white-space: pre-wrap; }
+.personal-panel form { display: grid; gap: .75rem; margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--line); }
+.personal-panel form + form { margin-top: 1rem; }
+.personal-panel label { display: grid; gap: .4rem; color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.personal-panel input[type="text"], .personal-panel textarea { width: 100%; padding: .7rem; border: 1px solid var(--line); border-radius: .2rem; background: var(--surface); color: var(--ink); font: inherit; resize: vertical; }
+.personal-panel button { padding: .75rem 1rem; border: 0; border-radius: .2rem; background: var(--terracotta); color: var(--surface); cursor: pointer; }
+.personal-panel button:disabled { cursor: default; opacity: .45; }
+.form-feedback { min-height: 1.3rem; margin: 1rem 0 0; color: var(--green); font-size: .8rem; }
+.form-feedback.is-error { color: var(--terracotta); }
 
 footer {
   border-top: 1px solid var(--line);
@@ -251,6 +267,7 @@ footer {
   .book-header { grid-template-columns: 1fr; }
   .book-stats div { text-align: left; }
   .book-overview { grid-template-columns: 1fr; }
+  .personal-grid { grid-template-columns: 1fr; }
   .overview-card { border-right: 0; border-bottom: 1px solid var(--line); }
   .overview-card:last-child { border-bottom: 0; }
   footer { gap: 1rem; align-items: flex-start; flex-direction: column; }

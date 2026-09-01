@@ -24,6 +24,25 @@
         <div class="overview-card"><span>Progreso disponible</span><strong id="progress-position">—</strong><p id="progress-detail"></p></div>
         <div class="overview-card"><span>Organización propia</span><strong id="personal-count">—</strong><p id="personal-detail"></p></div>
       </section>
+      <section class="personal-workspace" aria-labelledby="personal-title">
+        <div class="section-heading"><div><p class="eyebrow">Cuaderno propio</p><h2 id="personal-title">Pensar esta lectura</h2></div><span>Guardado solo en esta computadora</span></div>
+        <div class="personal-grid">
+          <article class="personal-panel">
+            <h3>Colecciones</h3><div class="personal-items" id="collection-items"></div>
+            <form id="assign-collection-form"><label>Colección<select id="collection-select" required></select></label><label>Comentario<input id="collection-note" type="text" placeholder="Por qué pertenece aquí"></label><button type="submit">Asignar colección</button></form>
+            <form class="inline-create" id="create-collection-form"><label>Nueva colección<input id="collection-name" type="text" required placeholder="Ej. Poder y autoridad"></label><button type="submit">Crear</button></form>
+          </article>
+          <article class="personal-panel">
+            <h3>Notas propias</h3><div class="personal-items" id="personal-note-items"></div>
+            <form id="personal-note-form"><label>Nueva nota<textarea id="personal-note-body" required rows="5" placeholder="Una interpretación, una pregunta, una conexión…"></textarea></label><button type="submit">Guardar nota</button></form>
+          </article>
+          <article class="personal-panel">
+            <h3>Relaciones</h3><div class="personal-items" id="relation-items"></div>
+            <form id="relation-form"><label>Otra obra<select id="relation-target" required></select></label><label>Tipo<input id="relation-type" required placeholder="tema, símbolo, contraste…"></label><label>Explicación<textarea id="relation-explanation" rows="3"></textarea></label><label class="check-field"><input id="relation-symmetric" type="checkbox" checked><span>Relación simétrica</span></label><button type="submit">Crear relación</button></form>
+          </article>
+        </div>
+        <p class="form-feedback" id="personal-feedback" role="status" aria-live="polite"></p>
+      </section>
       <section class="book-annotations" aria-labelledby="annotations-title">
         <div class="section-heading"><div><p class="eyebrow">Memoria de lectura</p><h2 id="annotations-title">Subrayados y notas</h2></div><span id="annotation-result-count">Consultando…</span></div>
         <form class="annotation-filters" id="annotation-filters">

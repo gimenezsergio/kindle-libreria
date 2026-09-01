@@ -5,6 +5,13 @@ from pathlib import Path
 from flask import Flask, jsonify, render_template, request
 
 from .db import connect_database
+from .personal import (
+    PersonalDataError,
+    add_work_note,
+    add_work_relation,
+    assign_work_to_collection,
+    create_collection,
+)
 
 
 def _count(connection, query: str, parameters: tuple = ()) -> int:
@@ -221,6 +228,46 @@ def _annotation_page(connection, work_id: str, *, kind: str, source: str,
     }
 
 
+def _personal_data(connection, work_id: str) -> dict:
+    collections = [dict(row) for row in connection.execute(
+        """
+        SELECT c.id, c.name, c.description, wc.note, wc.display_order
+        FROM work_collections wc JOIN collections c ON c.id = wc.collection_id
+        WHERE wc.work_id = ? ORDER BY wc.display_order, c.name COLLATE NOCASE
+        """,
+        (work_id,),
+    )]
+    notes = [dict(row) for row in connection.execute(
+        """
+        SELECT id, body, created_at, updated_at FROM personal_notes
+        WHERE target_type = 'work' AND target_id = ? ORDER BY created_at DESC, id
+        """,
+        (work_id,),
+    )]
+    relations = [dict(row) for row in connection.execute(
+        """
+        SELECT wr.id, wr.relation_type, wr.label, wr.explanation, wr.is_symmetric,
+               CASE WHEN wr.source_work_id = ? THEN wr.target_work_id ELSE wr.source_work_id END AS other_work_id,
+               ow.preferred_title AS other_title
+        FROM work_relations wr
+        JOIN works ow ON ow.id = CASE WHEN wr.source_work_id = ? THEN wr.target_work_id ELSE wr.source_work_id END
+        WHERE wr.source_work_id = ? OR wr.target_work_id = ?
+        ORDER BY wr.updated_at DESC, wr.id
+        """,
+        (work_id, work_id, work_id, work_id),
+    )]
+    return {"collections": collections, "notes": notes, "relations": relations}
+
+
+def _json_body() -> dict:
+    if not request.is_json or request.headers.get("Sec-Fetch-Site") == "cross-site":
+        raise PersonalDataError("La operación requiere una solicitud local JSON")
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        raise PersonalDataError("El contenido enviado no es válido")
+    return payload
+
+
 def create_app(database: Path | str) -> Flask:
     database_path = Path(database).expanduser().resolve()
     app = Flask(__name__)
@@ -324,6 +371,84 @@ def create_app(database: Path | str) -> Flask:
             return jsonify(_annotation_page(connection, work_id, kind=kind, source=source, page=page, page_size=page_size))
         finally:
             connection.close()
+
+    @app.get("/api/collections")
+    def collections():
+        connection = connect_database(database_path)
+        try:
+            rows = connection.execute(
+                "SELECT id, parent_id, name, description FROM collections ORDER BY name COLLATE NOCASE"
+            ).fetchall()
+            return jsonify(items=[dict(row) for row in rows])
+        finally:
+            connection.close()
+
+    @app.post("/api/collections")
+    def collection_create():
+        try:
+            payload = _json_body()
+            result = create_collection(
+                database_path, str(payload.get("name", "")),
+                parent_id=payload.get("parent_id"), description=payload.get("description"),
+            )
+            return jsonify(id=result.id, created=result.created), 201 if result.created else 200
+        except PersonalDataError as error:
+            return jsonify(error=str(error)), 400
+
+    @app.get("/api/work-options")
+    def work_options():
+        connection = connect_database(database_path)
+        try:
+            rows = connection.execute(
+                "SELECT id, preferred_title AS title FROM works ORDER BY preferred_title COLLATE NOCASE"
+            ).fetchall()
+            return jsonify(items=[dict(row) for row in rows])
+        finally:
+            connection.close()
+
+    @app.get("/api/works/<work_id>/personal")
+    def work_personal(work_id: str):
+        connection = connect_database(database_path)
+        try:
+            if connection.execute("SELECT 1 FROM works WHERE id = ?", (work_id,)).fetchone() is None:
+                return jsonify(error="Obra inexistente"), 404
+            return jsonify(_personal_data(connection, work_id))
+        finally:
+            connection.close()
+
+    @app.post("/api/works/<work_id>/collections")
+    def work_collection_assign(work_id: str):
+        try:
+            payload = _json_body()
+            created = assign_work_to_collection(
+                database_path, work_id, str(payload.get("collection_id", "")),
+                note=payload.get("note"), display_order=int(payload.get("display_order", 0)),
+            )
+            return jsonify(created=created), 201 if created else 200
+        except (PersonalDataError, TypeError, ValueError) as error:
+            return jsonify(error=str(error)), 400
+
+    @app.post("/api/works/<work_id>/notes")
+    def work_note_create(work_id: str):
+        try:
+            payload = _json_body()
+            identifier = add_work_note(database_path, work_id, str(payload.get("body", "")))
+            return jsonify(id=identifier), 201
+        except PersonalDataError as error:
+            return jsonify(error=str(error)), 400
+
+    @app.post("/api/works/<work_id>/relations")
+    def work_relation_create(work_id: str):
+        try:
+            payload = _json_body()
+            result = add_work_relation(
+                database_path, work_id, str(payload.get("target_work_id", "")),
+                str(payload.get("relation_type", "")), label=payload.get("label"),
+                explanation=payload.get("explanation"), symmetric=bool(payload.get("symmetric", False)),
+            )
+            return jsonify(id=result.id, created=result.created), 201 if result.created else 200
+        except PersonalDataError as error:
+            return jsonify(error=str(error)), 400
 
     return app
 

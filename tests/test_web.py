@@ -97,6 +97,50 @@ class WebTests(unittest.TestCase):
             self.assertEqual(missing.status_code, 404)
             self.assertEqual(invalid.status_code, 400)
 
+    def test_personal_web_actions_write_only_to_local_database(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            try:
+                with connection:
+                    connection.executemany(
+                        "INSERT INTO works(id, preferred_title) VALUES (?, ?)",
+                        [("source", "Origen"), ("target", "Destino")],
+                    )
+            finally:
+                connection.close()
+            client = create_app(database).test_client()
+            collection = client.post("/api/collections", json={"name": "Ideas"})
+            collection_id = collection.get_json()["id"]
+            assignment = client.post(
+                "/api/works/source/collections",
+                json={"collection_id": collection_id, "note": "Eje central"},
+            )
+            note = client.post("/api/works/source/notes", json={"body": "Mi lectura"})
+            relation = client.post(
+                "/api/works/source/relations",
+                json={"target_work_id": "target", "relation_type": "tema", "symmetric": True},
+            )
+            personal = client.get("/api/works/source/personal").get_json()
+            self.assertEqual(collection.status_code, 201)
+            self.assertEqual(assignment.status_code, 201)
+            self.assertEqual(note.status_code, 201)
+            self.assertEqual(relation.status_code, 201)
+            self.assertEqual(personal["collections"][0]["name"], "Ideas")
+            self.assertEqual(personal["notes"][0]["body"], "Mi lectura")
+            self.assertEqual(personal["relations"][0]["other_title"], "Destino")
+
+    def test_personal_web_actions_require_json(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            response = create_app(database).test_client().post(
+                "/api/collections", data="name=Ideas",
+                content_type="application/x-www-form-urlencoded",
+            )
+            self.assertEqual(response.status_code, 400)
+
     def test_missing_database_is_reported_without_creating_it(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "missing.sqlite3"

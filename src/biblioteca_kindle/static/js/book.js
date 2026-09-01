@@ -3,6 +3,13 @@ const setText = (id, value) => { document.querySelector(`#${id}`).textContent = 
 let annotationPage = 1;
 let annotationPages = 1;
 
+async function jsonRequest(url, options = {}) {
+  const response = await fetch(url, options);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "No se pudo guardar");
+  return data;
+}
+
 async function loadBook() {
   const response = await fetch(`/api/works/${encodeURIComponent(window.WORK_ID)}`);
   if (!response.ok) { setText("book-title", "No encontramos esta obra"); return; }
@@ -65,8 +72,82 @@ async function loadAnnotations() {
   document.querySelector("#annotation-next").disabled = data.page >= data.pages;
 }
 
+function personalItem(title, detail = "") {
+  const item = document.createElement("div");
+  item.className = "personal-item";
+  const strong = document.createElement("strong");
+  strong.textContent = title;
+  item.append(strong);
+  if (detail) {
+    const paragraph = document.createElement("p");
+    paragraph.textContent = detail;
+    item.append(paragraph);
+  }
+  return item;
+}
+
+async function loadPersonal() {
+  const data = await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/personal`);
+  const collections = data.collections.map((item) => personalItem(item.name, item.note || ""));
+  const notes = data.notes.map((item) => personalItem("Nota personal", item.body));
+  const relations = data.relations.map((item) => personalItem(item.label || item.relation_type, `${item.other_title}${item.explanation ? ` · ${item.explanation}` : ""}`));
+  document.querySelector("#collection-items").replaceChildren(...collections);
+  document.querySelector("#personal-note-items").replaceChildren(...notes);
+  document.querySelector("#relation-items").replaceChildren(...relations);
+  for (const [selector, count, label] of [["#collection-items", collections.length, "colecciones"], ["#personal-note-items", notes.length, "notas propias"], ["#relation-items", relations.length, "relaciones"]]) {
+    const container = document.querySelector(selector);
+    if (!count) container.append(personalItem(`Sin ${label}`));
+  }
+}
+
+async function loadOptions() {
+  const [collections, works] = await Promise.all([
+    jsonRequest("/api/collections"), jsonRequest("/api/work-options"),
+  ]);
+  const collectionSelect = document.querySelector("#collection-select");
+  collectionSelect.replaceChildren(...collections.items.map((item) => new Option(item.name, item.id)));
+  collectionSelect.disabled = collections.items.length === 0;
+  const relationSelect = document.querySelector("#relation-target");
+  const alternatives = works.items.filter((item) => item.id !== window.WORK_ID);
+  relationSelect.replaceChildren(...alternatives.map((item) => new Option(item.title, item.id)));
+}
+
+function feedback(message, error = false) {
+  const element = document.querySelector("#personal-feedback");
+  element.textContent = message;
+  element.classList.toggle("is-error", error);
+}
+
+async function submitPersonal(event, action) {
+  event.preventDefault();
+  try {
+    await action();
+    event.currentTarget.reset();
+    feedback("Cambios guardados en la biblioteca local.");
+    await Promise.all([loadPersonal(), loadOptions(), loadBook()]);
+  } catch (error) {
+    feedback(error.message, true);
+  }
+}
+
+document.querySelector("#create-collection-form").addEventListener("submit", (event) => submitPersonal(event, () => jsonRequest("/api/collections", {
+  method: "POST", headers: {"Content-Type": "application/json"},
+  body: JSON.stringify({name: document.querySelector("#collection-name").value}),
+})));
+document.querySelector("#assign-collection-form").addEventListener("submit", (event) => submitPersonal(event, () => jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/collections`, {
+  method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({collection_id: document.querySelector("#collection-select").value, note: document.querySelector("#collection-note").value}),
+})));
+document.querySelector("#personal-note-form").addEventListener("submit", (event) => submitPersonal(event, () => jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/notes`, {
+  method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({body: document.querySelector("#personal-note-body").value}),
+})));
+document.querySelector("#relation-form").addEventListener("submit", (event) => submitPersonal(event, () => jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/relations`, {
+  method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({target_work_id: document.querySelector("#relation-target").value, relation_type: document.querySelector("#relation-type").value, explanation: document.querySelector("#relation-explanation").value, symmetric: document.querySelector("#relation-symmetric").checked}),
+})));
+
 document.querySelector("#annotation-filters").addEventListener("input", () => { annotationPage = 1; loadAnnotations(); });
 document.querySelector("#annotation-previous").addEventListener("click", () => { if (annotationPage > 1) { annotationPage -= 1; loadAnnotations(); } });
 document.querySelector("#annotation-next").addEventListener("click", () => { if (annotationPage < annotationPages) { annotationPage += 1; loadAnnotations(); } });
 loadBook();
 loadAnnotations();
+loadPersonal();
+loadOptions();
