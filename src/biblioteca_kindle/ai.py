@@ -84,14 +84,21 @@ def provider_from_environment() -> AIProvider:
     kind = os.getenv("BIBLIOTECA_AI_PROVIDER", "draft").strip().lower()
     if kind == "draft":
         return DraftProvider()
-    if kind not in {"openai", "openclaw"}:
-        raise AIError("BIBLIOTECA_AI_PROVIDER debe ser draft, openai u openclaw")
-    default_url = "https://api.openai.com/v1" if kind == "openai" else "http://127.0.0.1:18789/v1"
+    if kind not in {"openai", "deepseek", "openclaw"}:
+        raise AIError("BIBLIOTECA_AI_PROVIDER debe ser draft, openai, deepseek u openclaw")
+    default_urls = {
+        "openai": "https://api.openai.com/v1",
+        "deepseek": "https://api.deepseek.com",
+        "openclaw": "http://127.0.0.1:18789/v1",
+    }
     key = os.getenv("BIBLIOTECA_AI_API_KEY", "")
     if kind == "openai" and not key:
         key = os.getenv("OPENAI_API_KEY", "")
-    model = os.getenv("BIBLIOTECA_AI_MODEL", "gpt-5-mini" if kind == "openai" else "openclaw")
+    if kind == "deepseek" and not key:
+        key = os.getenv("DEEPSEEK_API_KEY", "")
+    default_models = {"openai": "gpt-5-mini", "deepseek": "deepseek-v4-flash", "openclaw": "openclaw"}
+    model = os.getenv("BIBLIOTECA_AI_MODEL", default_models[kind])
     try:
-        return ResponsesProvider(name=kind, base_url=os.getenv("BIBLIOTECA_AI_BASE_URL", default_url), api_key=key, model=model)
+        return ResponsesProvider(name=kind, base_url=os.getenv("BIBLIOTECA_AI_BASE_URL", default_urls[kind]), api_key=key, model=model)
     except AIError:
         return DraftProvider()

@@ -154,8 +154,8 @@ defecto trabaja en modo borrador: guarda los mensajes localmente y no envía
 información fuera de la computadora.
 
 La dirección elegida para el despliegue definitivo es utilizar OpenClaw como
-capa de conversación y razonamiento. El adaptador también admite una conexión
-directa opcional con OpenAI para probar el flujo antes de la mudanza.
+capa de conversación y razonamiento. El adaptador también admite conexiones
+directas opcionales con OpenAI o DeepSeek para probar el flujo antes de la mudanza.
 
 La configuración se realiza exclusivamente mediante variables de entorno; las
 credenciales no se guardan en SQLite ni en Git. Véase `.env.example`. Para

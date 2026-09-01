@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from biblioteca_kindle.conversations import (
@@ -14,6 +15,7 @@ from biblioteca_kindle.conversations import (
     build_prompt_packet,
 )
 from biblioteca_kindle.db import connect_database, migrate_database
+from biblioteca_kindle.ai import DraftProvider, ResponsesProvider, provider_from_environment
 
 
 class ConversationTests(unittest.TestCase):
@@ -117,6 +119,19 @@ class ConversationTests(unittest.TestCase):
         self.assertIn("no como autoridad", packet.instructions)
         self.assertIn("Mi hipótesis", packet.input[0]["content"])
         self.assertEqual(packet.input[-1]["content"], "¿Qué ves acá?")
+
+    def test_deepseek_provider_uses_responses_endpoint_without_persisting_key(self) -> None:
+        with patch.dict("os.environ", {
+            "BIBLIOTECA_AI_PROVIDER": "deepseek",
+            "DEEPSEEK_API_KEY": "temporary-test-key",
+        }, clear=True):
+            provider = provider_from_environment()
+        self.assertIsInstance(provider, ResponsesProvider)
+        self.assertEqual(provider.name, "deepseek")
+        self.assertEqual(provider.url, "https://api.deepseek.com/responses")
+        self.assertEqual(provider.model, "deepseek-v4-flash")
+        with patch.dict("os.environ", {"BIBLIOTECA_AI_PROVIDER": "deepseek"}, clear=True):
+            self.assertIsInstance(provider_from_environment(), DraftProvider)
 
 
 if __name__ == "__main__":
