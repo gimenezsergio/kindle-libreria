@@ -314,6 +314,14 @@ select { padding: .6rem 2rem .6rem .7rem; }
 .cover-candidate button:disabled { cursor: default; background: var(--green); }
 .cover-feedback { min-height: 1.4rem; color: var(--green); font-weight: 700; }
 .cover-review-item > .secondary-button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.cover-search-button[aria-busy="true"] { display: inline-flex; gap: .55rem; align-items: center; cursor: wait; opacity: .72; }
+.button-spinner { width: .9rem; height: .9rem; border: 2px solid rgb(38 31 26 / 25%); border-top-color: currentColor; border-radius: 50%; animation: button-spin .75s linear infinite; }
+
+@keyframes button-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .button-spinner { animation-duration: 1.5s; }
+}
 
 footer {
   border-top: 1px solid var(--line);
