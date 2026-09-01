@@ -20,8 +20,10 @@ from .conversations import (
     ConversationError,
     add_message,
     create_conversation,
+    context_options,
     get_conversation,
     list_work_conversations,
+    update_context,
 )
 
 
@@ -540,6 +542,27 @@ def create_app(database: Path | str) -> Flask:
                 content=payload.get("content"),
             )
             return jsonify(id=identifier), 201
+        except (ConversationError, PersonalDataError) as error:
+            return jsonify(error=str(error)), 400
+
+    @app.get("/api/conversations/<conversation_id>/context")
+    def conversation_context(conversation_id: str):
+        try:
+            return jsonify(context_options(database_path, conversation_id))
+        except ConversationError as error:
+            return jsonify(error=str(error)), 404
+
+    @app.put("/api/conversations/<conversation_id>/context")
+    def conversation_context_update(conversation_id: str):
+        try:
+            payload = _json_body()
+            update_context(
+                database_path,
+                conversation_id,
+                personal_note_ids=payload.get("personal_note_ids", []),
+                annotation_ids=payload.get("annotation_ids", []),
+            )
+            return jsonify(saved=True)
         except (ConversationError, PersonalDataError) as error:
             return jsonify(error=str(error)), 400
 

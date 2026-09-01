@@ -9,6 +9,8 @@ from biblioteca_kindle.conversations import (
     add_message,
     create_conversation,
     get_conversation,
+    context_options,
+    update_context,
 )
 from biblioteca_kindle.db import connect_database, migrate_database
 
@@ -90,6 +92,25 @@ class ConversationTests(unittest.TestCase):
                 role="user",
                 content="   ",
             )
+
+    def test_selected_context_is_snapshotted_for_the_conversation(self) -> None:
+        connection = connect_database(self.database)
+        with connection:
+            connection.execute("INSERT INTO personal_notes(id, target_type, target_id, body) VALUES ('note', 'work', 'work-1', 'Mi hipótesis')")
+            connection.execute("INSERT INTO editions(id, work_id, title) VALUES ('edition', 'work-1', 'Una lectura')")
+            connection.execute("INSERT INTO annotations(id, edition_id, kind, text) VALUES ('annotation', 'edition', 'highlight', 'Pasaje importante')")
+        connection.close()
+        identifier = create_conversation(self.database, work_id="work-1", profile_id="companion")
+        options = context_options(self.database, identifier)
+        self.assertEqual(options["notes"][0]["id"], "note")
+        update_context(self.database, identifier, personal_note_ids=["note"], annotation_ids=["annotation"])
+        connection = connect_database(self.database)
+        with connection:
+            connection.execute("UPDATE personal_notes SET body = 'Texto cambiado' WHERE id = 'note'")
+        connection.close()
+        context = get_conversation(self.database, identifier)["context_sources"]
+        self.assertEqual([item["source_type"] for item in context], ["annotation", "personal_note", "work"])
+        self.assertIn("Mi hipótesis", [item["content_snapshot"] for item in context])
 
 
 if __name__ == "__main__":

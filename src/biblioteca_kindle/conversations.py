@@ -69,6 +69,23 @@ def create_conversation(
                     conversation_title,
                 ),
             )
+            display_title = connection.execute(
+                """
+                SELECT COALESCE(NULLIF(TRIM(display_title), ''),
+                                REPLACE(preferred_title, '_', ' '))
+                FROM works WHERE id = ?
+                """,
+                (work_id,),
+            ).fetchone()[0]
+            connection.execute(
+                """
+                INSERT INTO conversation_context_sources(
+                    id, conversation_id, source_type, source_id,
+                    label_snapshot, content_snapshot
+                ) VALUES (?, ?, 'work', ?, 'Ficha del libro', ?)
+                """,
+                (str(uuid.uuid4()), identifier, work_id, f"Título: {display_title}"),
+            )
         return identifier
     finally:
         connection.close()
@@ -146,7 +163,127 @@ def get_conversation(database: Path | str, conversation_id: str) -> dict:
         ).fetchall()
         result = dict(conversation)
         result["messages"] = [dict(message) for message in messages]
+        result["context_sources"] = [
+            dict(row)
+            for row in connection.execute(
+                """
+                SELECT source_type, source_id, label_snapshot, content_snapshot
+                FROM conversation_context_sources
+                WHERE conversation_id = ? ORDER BY source_type, created_at, id
+                """,
+                (conversation_id,),
+            )
+        ]
         return result
+    finally:
+        connection.close()
+
+
+def context_options(database: Path | str, conversation_id: str) -> dict:
+    connection = _open_database(database)
+    try:
+        conversation = connection.execute(
+            "SELECT work_id FROM reading_conversations WHERE id = ?",
+            (conversation_id,),
+        ).fetchone()
+        if conversation is None:
+            raise ConversationError("La conversación no existe")
+        work_id = conversation["work_id"]
+        notes = [dict(row) for row in connection.execute(
+            """
+            SELECT id, body AS content FROM personal_notes
+            WHERE target_type = 'work' AND target_id = ?
+            ORDER BY created_at DESC, id
+            """,
+            (work_id,),
+        )]
+        annotations = [dict(row) for row in connection.execute(
+            """
+            SELECT an.id, an.kind,
+                   COALESCE(NULLIF(TRIM(an.text), ''), NULLIF(TRIM(an.note_text), ''),
+                            'Anotación sin texto recuperable') AS content
+            FROM annotations an JOIN editions e ON e.id = an.edition_id
+            WHERE e.work_id = ? ORDER BY COALESCE(an.native_created_at, an.created_at) DESC
+            """,
+            (work_id,),
+        )]
+        selected = connection.execute(
+            """
+            SELECT source_type, source_id FROM conversation_context_sources
+            WHERE conversation_id = ?
+            """,
+            (conversation_id,),
+        ).fetchall()
+        return {
+            "notes": notes,
+            "annotations": annotations,
+            "selected": {row["source_type"]: [] for row in selected} | {
+                kind: [row["source_id"] for row in selected if row["source_type"] == kind]
+                for kind in {row["source_type"] for row in selected}
+            },
+        }
+    finally:
+        connection.close()
+
+
+def update_context(
+    database: Path | str,
+    conversation_id: str,
+    *,
+    personal_note_ids: object,
+    annotation_ids: object,
+) -> None:
+    if not isinstance(personal_note_ids, list) or not all(isinstance(item, str) for item in personal_note_ids):
+        raise ConversationError("La selección de notas no es válida")
+    if not isinstance(annotation_ids, list) or not all(isinstance(item, str) for item in annotation_ids):
+        raise ConversationError("La selección de anotaciones no es válida")
+    note_ids = list(dict.fromkeys(personal_note_ids))
+    selected_annotation_ids = list(dict.fromkeys(annotation_ids))
+    connection = _open_database(database)
+    try:
+        conversation = connection.execute(
+            "SELECT work_id FROM reading_conversations WHERE id = ?", (conversation_id,)
+        ).fetchone()
+        if conversation is None:
+            raise ConversationError("La conversación no existe")
+        work_id = conversation["work_id"]
+        notes = {row["id"]: row for row in connection.execute(
+            "SELECT id, body FROM personal_notes WHERE target_type = 'work' AND target_id = ?",
+            (work_id,),
+        )}
+        annotations = {row["id"]: row for row in connection.execute(
+            """
+            SELECT an.id, an.kind, COALESCE(NULLIF(TRIM(an.text), ''),
+                   NULLIF(TRIM(an.note_text), ''), 'Anotación sin texto recuperable') AS content
+            FROM annotations an JOIN editions e ON e.id = an.edition_id WHERE e.work_id = ?
+            """,
+            (work_id,),
+        )}
+        if any(identifier not in notes for identifier in note_ids):
+            raise ConversationError("Una nota seleccionada no pertenece a este libro")
+        if any(identifier not in annotations for identifier in selected_annotation_ids):
+            raise ConversationError("Una anotación seleccionada no pertenece a este libro")
+        with connection:
+            connection.execute(
+                "DELETE FROM conversation_context_sources WHERE conversation_id = ? AND source_type != 'work'",
+                (conversation_id,),
+            )
+            connection.executemany(
+                """
+                INSERT INTO conversation_context_sources(
+                    id, conversation_id, source_type, source_id, label_snapshot, content_snapshot
+                ) VALUES (?, ?, 'personal_note', ?, 'Nota propia', ?)
+                """,
+                [(str(uuid.uuid4()), conversation_id, identifier, notes[identifier]["body"]) for identifier in note_ids],
+            )
+            connection.executemany(
+                """
+                INSERT INTO conversation_context_sources(
+                    id, conversation_id, source_type, source_id, label_snapshot, content_snapshot
+                ) VALUES (?, ?, 'annotation', ?, ?, ?)
+                """,
+                [(str(uuid.uuid4()), conversation_id, identifier, annotations[identifier]["kind"], annotations[identifier]["content"]) for identifier in selected_annotation_ids],
+            )
     finally:
         connection.close()
 

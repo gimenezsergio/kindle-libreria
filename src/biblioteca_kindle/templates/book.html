@@ -60,6 +60,7 @@
             <div id="conversation-active" hidden>
               <header><p class="eyebrow" id="active-conversation-profile"></p><h3 id="active-conversation-title"></h3></header>
               <div class="conversation-messages" id="conversation-messages" aria-live="polite"></div>
+              <details class="context-picker"><summary>Elegir material para esta conversación <span id="context-count"></span></summary><form id="context-form"><fieldset><legend>Notas propias</legend><div id="context-notes"></div></fieldset><fieldset><legend>Subrayados y notas del Kindle</legend><div id="context-annotations"></div></fieldset><button type="submit">Guardar contexto</button><p>La ficha del libro se incluye siempre.</p></form></details>
               <p class="provider-notice">Por ahora guardamos tus mensajes. El acompañante responderá cuando conectemos el proveedor de IA.</p>
               <form class="conversation-form" id="conversation-form"><label for="conversation-message">Tu mensaje</label><textarea id="conversation-message" rows="4" required placeholder="Una pregunta, una interpretación, algo que te dejó pensando…"></textarea><button type="submit">Guardar en la conversación</button></form>
               <p class="form-feedback" id="conversation-feedback" role="status" aria-live="polite"></p>

@@ -153,6 +153,29 @@ function messageCard(message) {
   return article;
 }
 
+function contextChoice(item, type, selected) {
+  const label = document.createElement("label");
+  const input = document.createElement("input");
+  input.type = "checkbox"; input.name = type; input.value = item.id; input.checked = selected.includes(item.id);
+  const text = document.createElement("span");
+  text.textContent = item.content;
+  label.append(input, text);
+  return label;
+}
+
+async function loadContext(identifier) {
+  const data = await jsonRequest(`/api/conversations/${encodeURIComponent(identifier)}/context`);
+  const selectedNotes = data.selected.personal_note || [];
+  const selectedAnnotations = data.selected.annotation || [];
+  document.querySelector("#context-notes").replaceChildren(...data.notes.map((item) => contextChoice(item, "personal_note", selectedNotes)));
+  document.querySelector("#context-annotations").replaceChildren(...data.annotations.map((item) => contextChoice(item, "annotation", selectedAnnotations)));
+  for (const [selector, emptyText] of [["#context-notes", "No hay notas propias"], ["#context-annotations", "No hay anotaciones recuperadas"]]) {
+    const container = document.querySelector(selector);
+    if (!container.children.length) { const empty = document.createElement("p"); empty.textContent = emptyText; container.append(empty); }
+  }
+  setText("context-count", `· ${selectedNotes.length + selectedAnnotations.length} seleccionadas`);
+}
+
 async function openConversation(identifier) {
   const conversation = await jsonRequest(`/api/conversations/${encodeURIComponent(identifier)}`);
   activeConversationId = identifier;
@@ -172,6 +195,7 @@ async function openConversation(identifier) {
   document.querySelectorAll(".conversation-list button").forEach((button) => {
     button.setAttribute("aria-current", button.dataset.id === identifier ? "true" : "false");
   });
+  await loadContext(identifier);
 }
 
 async function loadConversations(preferredId = activeConversationId) {
@@ -280,6 +304,19 @@ document.querySelector("#conversation-form").addEventListener("submit", async (e
   } catch (error) {
     document.querySelector("#conversation-feedback").textContent = error.message;
   } finally { button.disabled = false; }
+});
+document.querySelector("#context-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!activeConversationId) return;
+  const selected = (name) => [...event.currentTarget.querySelectorAll(`input[name="${name}"]:checked`)].map((input) => input.value);
+  try {
+    await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/context`, {
+      method: "PUT", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({personal_note_ids: selected("personal_note"), annotation_ids: selected("annotation")}),
+    });
+    document.querySelector("#conversation-feedback").textContent = "Contexto guardado para esta conversación.";
+    await loadContext(activeConversationId);
+  } catch (error) { document.querySelector("#conversation-feedback").textContent = error.message; }
 });
 
 document.querySelector("#annotation-filters").addEventListener("input", () => { annotationPage = 1; loadAnnotations(); });
