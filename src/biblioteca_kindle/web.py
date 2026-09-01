@@ -13,6 +13,7 @@ from .personal import (
     create_collection,
     set_work_display_title,
 )
+from .profiles import ProfileError, create_profile, update_profile
 
 
 DISPLAY_TITLE_SQL = (
@@ -295,6 +296,44 @@ def create_app(database: Path | str) -> Flask:
     @app.get("/library/<work_id>")
     def book(work_id: str) -> str:
         return render_template("book.html", work_id=work_id)
+
+    @app.get("/settings/ai-profiles")
+    def ai_profiles_settings() -> str:
+        return render_template("profiles.html")
+
+    @app.get("/api/ai-profiles")
+    def ai_profiles():
+        connection = connect_database(database_path)
+        try:
+            rows = connection.execute(
+                """SELECT id, name, description, prompt, is_default, created_at, updated_at
+                   FROM ai_profiles WHERE is_archived = 0
+                   ORDER BY is_default DESC, name COLLATE NOCASE"""
+            ).fetchall()
+            return jsonify(items=[dict(row) for row in rows])
+        finally:
+            connection.close()
+
+    @app.post("/api/ai-profiles")
+    def ai_profile_create():
+        try:
+            payload = _json_body()
+            identifier = create_profile(
+                database_path, name=payload.get("name"),
+                description=payload.get("description", ""), prompt=payload.get("prompt"),
+                is_default=bool(payload.get("is_default", False)),
+            )
+            return jsonify(id=identifier), 201
+        except ProfileError as error:
+            return jsonify(error=str(error)), 400
+
+    @app.patch("/api/ai-profiles/<profile_id>")
+    def ai_profile_update(profile_id: str):
+        try:
+            update_profile(database_path, profile_id, _json_body())
+            return jsonify(id=profile_id)
+        except ProfileError as error:
+            return jsonify(error=str(error)), 400
 
     @app.get("/api/status")
     def status():

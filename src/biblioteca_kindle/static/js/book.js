@@ -111,8 +111,8 @@ async function loadPersonal() {
 }
 
 async function loadOptions() {
-  const [collections, works] = await Promise.all([
-    jsonRequest("/api/collections"), jsonRequest("/api/work-options"),
+  const [collections, works, profiles] = await Promise.all([
+    jsonRequest("/api/collections"), jsonRequest("/api/work-options"), jsonRequest("/api/ai-profiles"),
   ]);
   const collectionSelect = document.querySelector("#collection-select");
   collectionSelect.replaceChildren(...collections.items.map((item) => new Option(item.name, item.id)));
@@ -120,6 +120,8 @@ async function loadOptions() {
   const relationSelect = document.querySelector("#relation-target");
   const alternatives = works.items.filter((item) => item.id !== window.WORK_ID);
   relationSelect.replaceChildren(...alternatives.map((item) => new Option(item.title, item.id)));
+  const profileSelect = document.querySelector("#conversation-profile");
+  profileSelect.replaceChildren(...profiles.items.map((item) => new Option(item.name, item.id, item.is_default, item.is_default)));
 }
 
 function feedback(message, error = false) {

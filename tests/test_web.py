@@ -145,6 +145,30 @@ class WebTests(unittest.TestCase):
             )
             self.assertEqual(response.status_code, 400)
 
+    def test_ai_profiles_can_be_created_edited_and_selected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            client = create_app(database).test_client()
+            page = client.get("/settings/ai-profiles")
+            initial = client.get("/api/ai-profiles").get_json()["items"]
+            created = client.post(
+                "/api/ai-profiles",
+                json={"name": "Jenna", "description": "Perspectiva personal", "prompt": "Un prompt completo", "is_default": True},
+            )
+            profile_id = created.get_json()["id"]
+            profiles = client.get("/api/ai-profiles").get_json()["items"]
+            archived = client.patch(f"/api/ai-profiles/{profile_id}", json={"is_archived": True, "is_default": False})
+            remaining = client.get("/api/ai-profiles").get_json()["items"]
+            self.assertEqual(page.status_code, 200)
+            self.assertIn("Perfiles de conversación", page.get_data(as_text=True))
+            self.assertEqual(initial[0]["name"], "Compañero de lectura")
+            self.assertEqual(created.status_code, 201)
+            self.assertEqual(profiles[0]["name"], "Jenna")
+            self.assertEqual(profiles[0]["prompt"], "Un prompt completo")
+            self.assertEqual(archived.status_code, 200)
+            self.assertEqual([item["name"] for item in remaining], ["Compañero de lectura"])
+
     def test_automatic_and_manual_display_titles(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "library.sqlite3"

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Perfiles de conversación de la biblioteca personal">
+    <title>Perfiles de conversación · Biblioteca personal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <script src="{{ url_for('static', filename='js/profiles.js') }}" defer></script>
+  </head>
+  <body>
+    <header class="site-header"><a class="brand" href="/" aria-label="Inicio de Biblioteca personal"><span class="brand-mark" aria-hidden="true">B</span><span>Biblioteca personal</span></a><nav aria-label="Navegación principal"><a class="nav-link" href="/">Resumen</a><a class="nav-link" href="/library">Biblioteca</a></nav><span class="local-badge">Local y privada</span></header>
+    <main class="settings-page">
+      <a class="back-link" href="/library">← Volver a la biblioteca</a>
+      <header class="settings-heading"><div><p class="eyebrow">Configuración</p><h1>Perfiles de conversación</h1><p>Guardá distintas perspectivas para conversar sobre tus lecturas. El prompt original se conserva completo.</p></div><button id="new-profile" type="button">Agregar perfil</button></header>
+      <section class="profile-layout" aria-label="Administración de perfiles">
+        <div class="profile-list" id="profile-list"></div>
+        <form class="profile-form" id="profile-form" hidden>
+          <input id="profile-id" type="hidden">
+          <div class="form-heading"><div><p class="eyebrow">Perfil</p><h2 id="profile-form-title">Nuevo perfil</h2></div><button class="text-button" id="close-profile" type="button">Cerrar</button></div>
+          <label>Nombre<input id="profile-name" type="text" required placeholder="Ej. Jenna"></label>
+          <label>Descripción breve<input id="profile-description" type="text" placeholder="Qué perspectiva aporta"></label>
+          <label>Prompt original<textarea id="profile-prompt" rows="14" required placeholder="Pegá acá el prompt completo, sin necesidad de reorganizarlo"></textarea></label>
+          <label class="check-field"><input id="profile-default" type="checkbox"><span>Usar como perfil predeterminado</span></label>
+          <div class="profile-actions"><button type="submit">Guardar perfil</button><button class="secondary-button" id="archive-profile" type="button" hidden>Archivar</button></div>
+          <p class="form-feedback" id="profile-feedback" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+    <footer><span>Biblioteca Kindle</span><span>Local · privada · independiente</span></footer>
+  </body>
+</html>
