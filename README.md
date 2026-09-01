@@ -146,11 +146,21 @@ necesita estar conectado para consultar una base ya sincronizada.
 Los importadores individuales y las decisiones sobre formatos están
 documentados en `docs/`.
 
-## Próximo paso: OpenClaw como interlocutor
+## Acompañante de lectura y OpenClaw
 
-La dirección elegida para incorporar inteligencia artificial es utilizar
-OpenClaw como capa de conversación y razonamiento, en lugar de conectar esta
-aplicación directamente a una segunda API de modelos.
+El acompañante ya permite crear conversaciones por libro, elegir perfiles,
+seleccionar el contexto y revisar el paquete exacto antes de enviarlo. Por
+defecto trabaja en modo borrador: guarda los mensajes localmente y no envía
+información fuera de la computadora.
+
+La dirección elegida para el despliegue definitivo es utilizar OpenClaw como
+capa de conversación y razonamiento. El adaptador también admite una conexión
+directa opcional con OpenAI para probar el flujo antes de la mudanza.
+
+La configuración se realiza exclusivamente mediante variables de entorno; las
+credenciales no se guardan en SQLite ni en Git. Véase `.env.example`. Para
+OpenClaw será necesario habilitar su endpoint Responses y definir la URL y el
+token del Gateway.
 
 La arquitectura prevista es:
 

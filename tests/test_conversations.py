@@ -11,6 +11,7 @@ from biblioteca_kindle.conversations import (
     get_conversation,
     context_options,
     update_context,
+    build_prompt_packet,
 )
 from biblioteca_kindle.db import connect_database, migrate_database
 
@@ -111,6 +112,11 @@ class ConversationTests(unittest.TestCase):
         context = get_conversation(self.database, identifier)["context_sources"]
         self.assertEqual([item["source_type"] for item in context], ["annotation", "personal_note", "work"])
         self.assertIn("Mi hipótesis", [item["content_snapshot"] for item in context])
+        add_message(self.database, conversation_id=identifier, role="user", content="¿Qué ves acá?")
+        packet = build_prompt_packet(self.database, identifier)
+        self.assertIn("no como autoridad", packet.instructions)
+        self.assertIn("Mi hipótesis", packet.input[0]["content"])
+        self.assertEqual(packet.input[-1]["content"], "¿Qué ves acá?")
 
 
 if __name__ == "__main__":

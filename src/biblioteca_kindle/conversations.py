@@ -5,6 +5,7 @@ import uuid
 from pathlib import Path
 
 from .db import connect_database
+from .ai import PromptPacket
 
 
 class ConversationError(RuntimeError):
@@ -286,6 +287,25 @@ def update_context(
             )
     finally:
         connection.close()
+
+
+def build_prompt_packet(database: Path | str, conversation_id: str) -> PromptPacket:
+    conversation = get_conversation(database, conversation_id)
+    sources = "\n\n".join(
+        f"[{item['label_snapshot']}]\n{item['content_snapshot']}"
+        for item in conversation["context_sources"]
+    )
+    instructions = (
+        f"{conversation['profile_prompt_snapshot']}\n\n"
+        "Trabajá como acompañante de lectura, no como autoridad. Distinguí datos del contexto, "
+        "inferencias e hipótesis. Si el contexto no alcanza, decilo; no inventes contenido del libro."
+    )
+    messages = [{"role": item["role"], "content": item["content"]} for item in conversation["messages"]]
+    context_message = {
+        "role": "user",
+        "content": "MATERIAL SELECCIONADO PARA ESTA CONVERSACIÓN:\n\n" + sources,
+    }
+    return PromptPacket(instructions=instructions, input=[context_message, *messages])
 
 
 def list_work_conversations(database: Path | str, work_id: str) -> list[dict]:

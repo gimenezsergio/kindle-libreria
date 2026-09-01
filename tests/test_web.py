@@ -229,6 +229,32 @@ class WebTests(unittest.TestCase):
             self.assertEqual(detail["messages"][0]["role"], "user")
             self.assertEqual(detail["messages"][0]["content"], "¿Qué tensión organiza el libro?")
 
+    def test_configured_ai_provider_saves_its_answer(self) -> None:
+        class FakeProvider:
+            name = "test"
+            ready = True
+
+            def respond(self, packet):
+                self.packet = packet
+                return "Podríamos explorar esa hipótesis."
+
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            with connection:
+                connection.execute("INSERT INTO works(id, preferred_title) VALUES ('work', 'Libro')")
+            connection.close()
+            provider = FakeProvider()
+            client = create_app(database, ai_provider=provider).test_client()
+            conversation_id = client.post("/api/works/work/conversations", json={"profile_id": "companion"}).get_json()["id"]
+            response = client.post(f"/api/conversations/{conversation_id}/respond", json={"content": "¿Qué relación ves?"})
+            detail = client.get(f"/api/conversations/{conversation_id}").get_json()
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.get_json()["mode"], "test")
+            self.assertEqual([item["role"] for item in detail["messages"]], ["user", "assistant"])
+            self.assertIn("MATERIAL SELECCIONADO", provider.packet.input[0]["content"])
+
     def test_automatic_and_manual_display_titles(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "library.sqlite3"

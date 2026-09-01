@@ -24,7 +24,9 @@ from .conversations import (
     get_conversation,
     list_work_conversations,
     update_context,
+    build_prompt_packet,
 )
+from .ai import AIError, DraftProvider, provider_from_environment
 
 
 DISPLAY_TITLE_SQL = (
@@ -388,7 +390,7 @@ def _json_body() -> dict:
     return payload
 
 
-def create_app(database: Path | str) -> Flask:
+def create_app(database: Path | str, ai_provider=None) -> Flask:
     database_path = Path(database).expanduser().resolve()
     if database_path.is_file():
         migrate_database(database_path)
@@ -399,6 +401,7 @@ def create_app(database: Path | str) -> Flask:
             connection.close()
     app = Flask(__name__)
     app.config["DATABASE"] = database_path
+    provider = ai_provider or provider_from_environment()
 
     @app.get("/")
     def index() -> str:
@@ -543,6 +546,31 @@ def create_app(database: Path | str) -> Flask:
             )
             return jsonify(id=identifier), 201
         except (ConversationError, PersonalDataError) as error:
+            return jsonify(error=str(error)), 400
+
+    @app.get("/api/ai/status")
+    def ai_status():
+        return jsonify(provider=provider.name, ready=provider.ready)
+
+    @app.get("/api/conversations/<conversation_id>/prompt-preview")
+    def conversation_prompt_preview(conversation_id: str):
+        try:
+            return jsonify(build_prompt_packet(database_path, conversation_id).as_dict())
+        except ConversationError as error:
+            return jsonify(error=str(error)), 404
+
+    @app.post("/api/conversations/<conversation_id>/respond")
+    def conversation_respond(conversation_id: str):
+        try:
+            payload = _json_body()
+            add_message(database_path, conversation_id=conversation_id, role="user", content=payload.get("content"))
+            packet = build_prompt_packet(database_path, conversation_id)
+            if not provider.ready:
+                return jsonify(mode="draft", prompt=packet.as_dict()), 202
+            answer = provider.respond(packet)
+            add_message(database_path, conversation_id=conversation_id, role="assistant", content=answer)
+            return jsonify(mode=provider.name, answer=answer)
+        except (ConversationError, PersonalDataError, AIError) as error:
             return jsonify(error=str(error)), 400
 
     @app.get("/api/conversations/<conversation_id>/context")

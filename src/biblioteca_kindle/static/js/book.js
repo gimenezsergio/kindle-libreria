@@ -176,6 +176,19 @@ async function loadContext(identifier) {
   setText("context-count", `· ${selectedNotes.length + selectedAnnotations.length} seleccionadas`);
 }
 
+async function loadPromptPreview() {
+  if (!activeConversationId) return;
+  const packet = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/prompt-preview`);
+  document.querySelector("#prompt-preview-content").textContent = `INSTRUCCIONES DEL PERFIL\n${packet.instructions}\n\nMENSAJES Y CONTEXTO\n${JSON.stringify(packet.input, null, 2)}`;
+}
+
+async function loadProviderStatus() {
+  const status = await jsonRequest("/api/ai/status");
+  document.querySelector("#provider-notice").textContent = status.ready
+    ? `Proveedor activo: ${status.provider}. El mensaje y el contexto seleccionado se enviarán al proveedor.`
+    : "Modo borrador: el mensaje se guarda, pero nada se envía fuera de esta computadora.";
+}
+
 async function openConversation(identifier) {
   const conversation = await jsonRequest(`/api/conversations/${encodeURIComponent(identifier)}`);
   activeConversationId = identifier;
@@ -196,6 +209,7 @@ async function openConversation(identifier) {
     button.setAttribute("aria-current", button.dataset.id === identifier ? "true" : "false");
   });
   await loadContext(identifier);
+  await loadPromptPreview();
 }
 
 async function loadConversations(preferredId = activeConversationId) {
@@ -294,12 +308,12 @@ document.querySelector("#conversation-form").addEventListener("submit", async (e
   const button = event.currentTarget.querySelector("button");
   button.disabled = true;
   try {
-    await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/messages`, {
+    const result = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/respond`, {
       method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({content: document.querySelector("#conversation-message").value}),
     });
     event.currentTarget.reset();
-    document.querySelector("#conversation-feedback").textContent = "Mensaje guardado localmente.";
+    document.querySelector("#conversation-feedback").textContent = result.mode === "draft" ? "Mensaje guardado. No se envió a una IA porque está activo el modo borrador." : "El acompañante respondió.";
     await loadConversations(activeConversationId);
   } catch (error) {
     document.querySelector("#conversation-feedback").textContent = error.message;
@@ -316,6 +330,7 @@ document.querySelector("#context-form").addEventListener("submit", async (event)
     });
     document.querySelector("#conversation-feedback").textContent = "Contexto guardado para esta conversación.";
     await loadContext(activeConversationId);
+    await loadPromptPreview();
   } catch (error) { document.querySelector("#conversation-feedback").textContent = error.message; }
 });
 
@@ -327,3 +342,4 @@ loadAnnotations();
 loadPersonal();
 loadOptions();
 loadConversations();
+loadProviderStatus();
