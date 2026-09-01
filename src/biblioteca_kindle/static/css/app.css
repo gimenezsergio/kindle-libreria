@@ -306,9 +306,12 @@ select { padding: .6rem 2rem .6rem .7rem; }
 .cover-review-item > div:first-child > p:last-child { color: var(--muted); }
 .cover-candidates { display: grid; grid-template-columns: repeat(3, minmax(0, 14rem)); gap: 1.5rem; margin: 2rem 0; }
 .cover-candidate { display: grid; gap: .75rem; align-content: end; }
+.cover-candidate.is-selected { padding: .65rem; outline: 3px solid var(--green); background: var(--surface); }
 .cover-candidate img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; box-shadow: 0 .5rem 1.5rem rgb(38 31 26 / 14%); }
 .cover-candidate p { margin: 0; color: var(--muted); font-size: .72rem; }
 .cover-candidate button, .cover-review-item > button { padding: .7rem; border: 0; background: var(--terracotta); color: var(--surface); cursor: pointer; }
+.cover-candidate button:disabled { cursor: default; background: var(--green); }
+.cover-feedback { min-height: 1.4rem; color: var(--green); font-weight: 700; }
 .cover-review-item > .secondary-button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
 
 footer {
