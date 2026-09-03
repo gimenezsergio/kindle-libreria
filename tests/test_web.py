@@ -297,6 +297,28 @@ class WebTests(unittest.TestCase):
             self.assertEqual(detail["messages"][-1]["library_sources"][0]["source_id"], "annotation")
             self.assertIn("Buscar conexiones en mi biblioteca", client.get("/library/source").get_data(as_text=True))
 
+    def test_library_search_uses_selected_note_as_query_seed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            with connection:
+                connection.execute("INSERT INTO works(id,preferred_title) VALUES ('source','Origen')")
+                connection.execute("INSERT INTO works(id,preferred_title) VALUES ('other','Destino')")
+                connection.execute("INSERT INTO personal_notes(id,target_type,target_id,body) VALUES ('note','work','source','Mi idea sobre vigilancia y poder')")
+                connection.execute("INSERT INTO editions(id,work_id,title) VALUES ('edition','other','Destino')")
+                connection.execute("INSERT INTO annotations(id,edition_id,kind,text) VALUES ('match','edition','highlight','La vigilancia sostiene el poder')")
+            connection.close()
+            client = create_app(database).test_client()
+            conversation_id = client.post("/api/works/source/conversations", json={"profile_id": "companion"}).get_json()["id"]
+            client.put(f"/api/conversations/{conversation_id}/context", json={"personal_note_ids": ["note"], "annotation_ids": []})
+            preview = client.post(
+                f"/api/conversations/{conversation_id}/library-search",
+                json={"search_query": "¿Con qué otros libros se relaciona?", "search_scope": "library"},
+            ).get_json()["items"]
+            self.assertEqual(preview[0]["source_id"], "match")
+            self.assertNotIn("personal_note:note", [item["key"] for item in preview])
+
     def test_automatic_and_manual_display_titles(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "library.sqlite3"

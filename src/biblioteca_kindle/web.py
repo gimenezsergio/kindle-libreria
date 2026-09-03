@@ -423,6 +423,15 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
         if scope not in {"library", "current", "selected"}:
             raise ConversationError("El alcance de búsqueda no es válido")
         conversation = get_conversation(database_path, conversation_id)
+        selected_context = [
+            item for item in conversation["context_sources"]
+            if item["source_type"] in {"personal_note", "annotation"}
+        ]
+        question = payload.get("search_query", payload.get("content"))
+        if not isinstance(question, str):
+            raise LibrarySearchError("Escribí una consulta para buscar en la biblioteca")
+        seed = " ".join(item["content_snapshot"] for item in selected_context)
+        search_query = f"{question} {seed[:2000]}".strip()
         work_ids = None
         if scope == "current":
             work_ids = [conversation["work_id"]]
@@ -432,9 +441,13 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
                 raise ConversationError("La selección de libros no es válida")
             work_ids = supplied
         results = search_library(
-            database_path, payload.get("search_query", payload.get("content")),
+            database_path, search_query,
             work_ids=work_ids, limit=12,
         )
+        selected_context_keys = {
+            f"{item['source_type']}:{item['source_id']}" for item in selected_context
+        }
+        results = [item for item in results if item["key"] not in selected_context_keys]
         selected_keys = payload.get("library_source_keys")
         if selected_keys is None:
             return results[:8]

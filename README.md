@@ -238,6 +238,27 @@ proveedor conversacional. Por eso el mismo resultado trazable puede enviarse a
 DeepSeek durante las pruebas o a OpenClaw en el servidor cambiando solamente la
 configuración del adaptador.
 
+### Recuperación de contexto disponible
+
+En cada conversación se puede activar **Consultar la biblioteca al enviar** y
+elegir entre toda la biblioteca, el libro actual o un grupo concreto de obras.
+Antes de enviar, **Ver contexto sugerido** permite revisar hasta doce candidatos,
+descartar los que no sirvan y fijar notas, subrayados o fichas para mensajes
+posteriores. Si la pregunta es genérica (por ejemplo, «¿con qué otros libros se
+relaciona?»), el buscador también usa el material seleccionado de la conversación
+como semilla temática.
+
+La primera versión usa coincidencia textual local y entrega como máximo ocho
+resultados al proveedor. Cada respuesta conserva una instantánea de las fuentes
+recibidas —obra, tipo, fragmento y referencia disponible— y las muestra con
+identificadores `[B1]`, `[B2]`, etc. Los resultados se calculan dentro de la
+aplicación; cambiar `BIBLIOTECA_AI_PROVIDER=deepseek` por `openclaw` no cambia la
+búsqueda ni su trazabilidad.
+
+La búsqueda semántica y la indexación opcional de textos completos quedan como
+mejoras futuras. La búsqueda actual nunca presupone que un modelo conoce o puede
+consultar el contenido íntegro de una obra.
+
 La dirección elegida para el despliegue definitivo es utilizar OpenClaw como
 capa de conversación y razonamiento. El adaptador también admite conexiones
 directas opcionales con OpenAI o DeepSeek para probar el flujo antes de la mudanza.
