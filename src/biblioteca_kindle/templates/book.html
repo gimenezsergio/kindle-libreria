@@ -54,30 +54,40 @@
           <div><p class="eyebrow">Acompañante de lectura</p><h2 id="conversation-title">Conversar sobre esta lectura</h2><p>Conversá con el perfil que elijas y, si querés, buscá evidencia en toda tu biblioteca.</p></div>
           <div class="companion-start"><label>Perfil<select id="conversation-profile"><option>Cargando perfiles…</option></select></label><button id="new-conversation" type="button">Nueva conversación</button><a href="/settings/ai-profiles">Administrar perfiles</a></div>
         </header>
-        <div class="companion-layout">
+        <div class="companion-layout companion-workbench">
           <nav class="conversation-list" id="conversation-list" aria-label="Conversaciones de este libro"></nav>
           <div class="conversation-panel">
             <div class="conversation-empty" id="conversation-empty"><strong>Todavía no hay una conversación abierta</strong><p>Elegí un perfil y creá una para empezar a registrar tus preguntas.</p></div>
-            <div id="conversation-active" hidden>
-              <header><p class="eyebrow" id="active-conversation-profile"></p><h3 id="active-conversation-title"></h3></header>
-              <div class="conversation-messages" id="conversation-messages" aria-live="polite"></div>
-              <details class="context-picker"><summary>Elegir material para esta conversación <span id="context-count"></span></summary><form id="context-form"><fieldset><legend>Notas propias</legend><div id="context-notes"></div></fieldset><fieldset><legend>Subrayados y notas del Kindle</legend><div id="context-annotations"></div></fieldset><button type="submit">Guardar contexto</button><p>La ficha del libro se incluye siempre.</p></form></details>
-              <details class="library-search" open>
-                <summary>Buscar conexiones en mi biblioteca</summary>
-                <div class="library-search-controls">
-                  <label class="check-field"><input id="library-search-enabled" type="checkbox" checked><span>Consultar la biblioteca al enviar</span></label>
-                  <label>Alcance<select id="library-search-scope"><option value="library">Toda la biblioteca</option><option value="current">Solo este libro</option><option value="selected">Libros elegidos</option></select></label>
-                  <label id="library-search-works-label" hidden>Libros<select id="library-search-works" multiple size="5"></select></label>
-                  <button class="secondary-button" id="preview-library-search" type="button">Ver contexto sugerido</button>
+            <div class="conversation-active" id="conversation-active" hidden>
+              <section class="chat-column" aria-label="Conversación">
+                <header class="active-conversation-header"><div><p class="eyebrow" id="active-conversation-profile"></p><h3 id="active-conversation-title"></h3></div><span class="attached-count" id="attached-count">Sin material adjunto</span></header>
+                <div class="conversation-messages" id="conversation-messages" aria-live="polite"></div>
+                <div class="chat-composer">
+                  <p class="provider-notice" id="provider-notice">Consultando el modo de IA…</p>
+                  <form class="conversation-form" id="conversation-form"><label for="conversation-message">Tu mensaje</label><div class="composer-row"><textarea id="conversation-message" rows="3" required placeholder="Una pregunta, una interpretación, algo que te dejó pensando…"></textarea><button type="submit">Enviar</button></div></form>
+                  <p class="form-feedback" id="conversation-feedback" role="status" aria-live="polite"></p>
                 </div>
-                <p class="library-search-help">Busca en títulos, autoría, categorías, relaciones, notas y subrayados. No contiene el texto completo de los libros.</p>
-                <div class="library-search-results" id="library-search-results"><p>Escribí tu mensaje y pedí una vista previa para revisar las fuentes.</p></div>
-                <button class="text-button" id="pin-library-context" type="button" hidden>Fijar seleccionados para mensajes posteriores</button>
-              </details>
-              <details class="prompt-preview"><summary>Ver exactamente qué se enviará</summary><pre id="prompt-preview-content">Abrí esta sección para preparar la vista previa.</pre></details>
-              <p class="provider-notice" id="provider-notice">Consultando el modo de IA…</p>
-              <form class="conversation-form" id="conversation-form"><label for="conversation-message">Tu mensaje</label><textarea id="conversation-message" rows="4" required placeholder="Una pregunta, una interpretación, algo que te dejó pensando…"></textarea><button type="submit">Enviar al acompañante</button></form>
-              <p class="form-feedback" id="conversation-feedback" role="status" aria-live="polite"></p>
+              </section>
+              <aside class="material-column" aria-label="Material para la conversación">
+                <details class="companion-material" open><summary><span>Material para conversar</span><span id="material-summary-count">0 adjuntos</span></summary>
+                  <div class="material-column-content">
+                    <details class="context-picker" open><summary>Notas y subrayados <span id="context-count"></span></summary><form id="context-form"><fieldset><legend>Notas propias</legend><div id="context-notes"></div></fieldset><fieldset><legend>Subrayados y notas del Kindle</legend><div id="context-annotations"></div></fieldset><button type="submit">Guardar selección</button><p>La ficha del libro se incluye siempre.</p></form></details>
+                    <details class="library-search" open>
+                      <summary>Buscar conexiones en mi biblioteca</summary>
+                      <div class="library-search-controls">
+                        <label class="check-field"><input id="library-search-enabled" type="checkbox" checked><span>Consultar al enviar</span></label>
+                        <label>Alcance<select id="library-search-scope"><option value="library">Toda la biblioteca</option><option value="current">Solo este libro</option><option value="selected">Libros elegidos</option></select></label>
+                        <label id="library-search-works-label" hidden>Libros<select id="library-search-works" multiple size="5"></select></label>
+                        <button class="secondary-button" id="preview-library-search" type="button">Ver contexto sugerido</button>
+                      </div>
+                      <p class="library-search-help">Busca en títulos, autoría, categorías, relaciones, notas y subrayados. No contiene el texto completo.</p>
+                      <div class="library-search-results" id="library-search-results"><p>Escribí tu mensaje y pedí una vista previa para revisar las fuentes.</p></div>
+                      <button class="text-button" id="pin-library-context" type="button" hidden>Fijar seleccionados</button>
+                    </details>
+                    <details class="prompt-preview"><summary>Ver exactamente qué se enviará</summary><pre id="prompt-preview-content">Abrí esta sección para preparar la vista previa.</pre></details>
+                  </div>
+                </details>
+              </aside>
             </div>
           </div>
         </div>

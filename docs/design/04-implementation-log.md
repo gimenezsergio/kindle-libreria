@@ -39,3 +39,17 @@ experimentos sin contexto.
 - Pruebas: 80 automatizadas y navegación visual en escritorio y 390 × 844 px.
 - Commit de interfaz: `8477b3e`.
 - Pendiente: observación de uso real y ajustes de densidad según contenido propio.
+
+## 2026-09-03 — Mesa de trabajo del acompañante
+
+- Problema anterior: historial, selección de material, búsqueda y compositor se
+  apilaban verticalmente; para escribir había que abandonar visualmente el chat.
+- Decisión: usar una mesa de trabajo con navegación de conversaciones, chat y
+  panel lateral de fuentes.
+- Implementación: el compositor permanece al pie del historial, las fuentes
+  tienen scroll independiente y un contador muestra cuántos fragmentos están
+  adjuntos. El acompañante puede usar hasta 96 rem de ancho.
+- Móvil: el material pasa a una sección plegable y el chat usa todo el ancho.
+- Preservado: contratos de API, identificadores del DOM y reglas que determinan
+  qué contexto se envía a la IA.
+- Pendiente: validar la densidad de la columna lateral con conversaciones reales.

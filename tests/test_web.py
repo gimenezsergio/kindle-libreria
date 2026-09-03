@@ -112,6 +112,16 @@ class WebTests(unittest.TestCase):
             self.assertIn("Subrayados y notas", page_text)
             self.assertIn("Datos del documento", page_text)
             self.assertIn("Seguimiento de lectura", page_text)
+            self.assertIn('class="chat-column"', page_text)
+            self.assertIn('class="material-column"', page_text)
+            self.assertLess(
+                page_text.index('id="conversation-messages"'),
+                page_text.index('id="conversation-form"'),
+            )
+            self.assertLess(
+                page_text.index('id="conversation-form"'),
+                page_text.index('id="context-form"'),
+            )
             self.assertNotIn("Progreso disponible", page_text)
             self.assertEqual(detail.get_json()["title"], "Libro")
             self.assertEqual(detail.get_json()["annotations"]["highlight"], 1)

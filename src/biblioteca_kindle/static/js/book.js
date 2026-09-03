@@ -251,7 +251,10 @@ async function loadContext(identifier) {
     const container = document.querySelector(selector);
     if (!container.children.length) { const empty = document.createElement("p"); empty.textContent = emptyText; container.append(empty); }
   }
-  setText("context-count", `· ${selectedNotes.length + selectedAnnotations.length} seleccionadas`);
+  const selectedCount = selectedNotes.length + selectedAnnotations.length;
+  setText("context-count", `· ${selectedCount} seleccionadas`);
+  setText("material-summary-count", `${selectedCount} ${selectedCount === 1 ? "adjunto" : "adjuntos"}`);
+  setText("attached-count", selectedCount ? `${selectedCount} ${selectedCount === 1 ? "fragmento adjunto" : "fragmentos adjuntos"}` : "Sin material adjunto");
 }
 
 function currentContextSelection() {
@@ -289,6 +292,7 @@ async function openConversation(identifier) {
     empty.textContent = "La conversación está lista. Escribí el primer mensaje.";
     container.append(empty);
   }
+  container.scrollTop = container.scrollHeight;
   document.querySelectorAll(".conversation-list button").forEach((button) => {
     button.setAttribute("aria-current", button.dataset.id === identifier ? "true" : "false");
   });
@@ -465,6 +469,9 @@ document.querySelectorAll("[data-book-tab]").forEach((tab) => {
 const requestedPanel = location.hash.replace("#panel-", "");
 const requestedTab = document.querySelector(`[data-book-tab="${requestedPanel}"]`);
 if (requestedTab) requestedTab.click();
+if (window.matchMedia("(max-width: 760px)").matches) {
+  document.querySelector(".companion-material").open = false;
+}
 loadBook();
 loadAnnotations();
 loadPersonal();
