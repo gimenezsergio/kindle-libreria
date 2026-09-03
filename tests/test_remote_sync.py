@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 import unittest
+import tempfile
+import json
+from pathlib import Path
 
+from biblioteca_kindle.db import connect_database, migrate_database
 from biblioteca_kindle.remote_sync import (
     SyncPackageError,
     load_sync_schema,
     validate_sync_package,
     validate_sync_response,
+    build_sync_package,
+    write_sync_package,
 )
 
 
@@ -27,11 +33,16 @@ def valid_package() -> dict:
         "entities": {
             "works": [{"id": "work-1"}],
             "editions": [{"id": "edition-1"}],
+            "contributors": [],
+            "edition_contributors": [],
             "deliveries": [{"id": "delivery-1"}],
+            "external_identifiers": [],
+            "title_aliases": [],
             "source_observations": [],
             "annotations": [],
             "annotation_occurrences": [],
             "reading_states": [],
+            "reading_history_records": [],
         },
         "present_delivery_ids": ["delivery-1"],
         "warnings": [],
@@ -109,6 +120,45 @@ class RemoteSyncContractTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(SyncPackageError, "no negativos"):
             validate_sync_response(response)
+
+    def test_exports_latest_completed_snapshot_without_book_content(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            database = root / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            try:
+                with connection:
+                    connection.execute(
+                        "INSERT INTO device_snapshots(id, device_key, mount_point, mount_read_only, status, started_at, completed_at) VALUES ('snapshot', 'device', ?, 1, 'completed', '2026-09-03T13:00:00+00:00', '2026-09-03T13:01:00+00:00')",
+                        (str(root / "Kindle"),),
+                    )
+                    connection.execute("INSERT INTO works(id, preferred_title) VALUES ('work', 'Book')")
+                    connection.execute("INSERT INTO editions(id, work_id, title) VALUES ('edition', 'work', 'Book')")
+                    connection.execute(
+                        "INSERT INTO kindle_deliveries(id, edition_id, document_format, relative_path, file_size, first_seen_at, last_seen_at, presence) VALUES ('delivery', 'edition', 'KFX', 'documents/book.kfx', 999, '2026-09-03', '2026-09-03', 'present')"
+                    )
+            finally:
+                connection.close()
+            package = build_sync_package(
+                database,
+                agent_id="22222222-2222-4222-8222-222222222222",
+                source_timezone="America/Argentina/Buenos_Aires",
+            )
+            output = root / "out" / "package.json"
+            result = write_sync_package(package, output)
+            loaded = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(loaded["present_delivery_ids"], ["delivery"])
+            self.assertEqual(loaded["entities"]["works"][0]["preferred_title"], "Book")
+            self.assertNotIn("_local_mount_point", loaded)
+            self.assertEqual(result.entity_count, 3)
+            self.assertGreater(result.byte_count, 0)
+
+    def test_refuses_to_write_package_inside_kindle(self) -> None:
+        package = valid_package()
+        package["_local_mount_point"] = "/media/user/Kindle"
+        with self.assertRaisesRegex(SyncPackageError, "dentro del Kindle"):
+            write_sync_package(package, "/media/user/Kindle/package.json")
 
 
 if __name__ == "__main__":

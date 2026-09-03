@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 from typing import Sequence
 
@@ -21,6 +22,7 @@ from .personal import (
 )
 from .reports import ReportError, library_summary, work_card
 from .web import run_server
+from .remote_sync import SyncPackageError, build_sync_package, write_sync_package
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -93,6 +95,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
     )
 
+    export_sync = subparsers.add_parser(
+        "export-sync", help="Crear un paquete local para sincronización remota"
+    )
+    export_sync.add_argument("--database", required=True, type=Path)
+    export_sync.add_argument("--output", required=True, type=Path)
+    export_sync.add_argument("--agent-id", required=True)
+    export_sync.add_argument(
+        "--timezone",
+        default=os.environ.get("KINDLE_TIMEZONE", "America/Argentina/Buenos_Aires"),
+        help="Zona IANA configurada en el Kindle",
+    )
+
     collection_add = subparsers.add_parser(
         "collection-add", help="Crear una colección local"
     )
@@ -148,6 +162,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"Migraciones aplicadas: {', '.join(applied)}")
         else:
             print("La base ya estaba actualizada.")
+        return 0
+    if args.command == "export-sync":
+        try:
+            package = build_sync_package(
+                args.database, agent_id=args.agent_id, source_timezone=args.timezone
+            )
+            result = write_sync_package(package, args.output)
+        except (SyncPackageError, OSError) as error:
+            print(f"Error de exportación: {error}")
+            return 1
+        print(
+            f"Paquete creado: {result.output} ({result.entity_count} entidades; "
+            f"{result.byte_count} bytes; sha256 {result.sha256}; id {result.package_id})."
+        )
         return 0
     if args.command == "inventory":
         try:

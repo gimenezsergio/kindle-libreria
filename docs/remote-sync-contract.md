@@ -84,10 +84,16 @@ comprimirse durante el transporte. La envoltura mínima será:
   "entities": {
     "works": [],
     "editions": [],
+    "contributors": [],
+    "edition_contributors": [],
     "deliveries": [],
+    "external_identifiers": [],
+    "title_aliases": [],
+    "source_observations": [],
     "annotations": [],
     "annotation_occurrences": [],
-    "reading_states": []
+    "reading_states": [],
+    "reading_history_records": []
   },
   "present_delivery_ids": [],
   "warnings": []
@@ -220,3 +226,17 @@ quedar visible en el historial o en la lista de procesos.
 6. Preparar migración y copia de seguridad de la base actual.
 7. Configurar HTTPS, secretos y despliegue en el servidor.
 8. Conectar OpenClaw mediante una interfaz separada y de permisos limitados.
+
+Los pasos 1 y 2 ya están implementados. El exportador se ejecuta sin red con:
+
+```bash
+PYTHONPATH=src python3 -m biblioteca_kindle export-sync \
+  --database work/library.sqlite3 \
+  --output work/sync-package.json \
+  --agent-id UUID-ESTABLE-DE-ESTA-PC
+```
+
+El archivo contiene datos privados y debe permanecer dentro de `work/` o de otro
+directorio protegido y excluido de Git. La huella e ID que muestra el comando
+identifican exactamente el paquete que más adelante se reenviará por HTTPS.
+La escritura es atómica y el archivo nuevo queda limitado al usuario local.

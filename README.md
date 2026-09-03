@@ -185,6 +185,16 @@ El diseño, el contrato de paquetes, los reintentos, la autenticación, las
 ausencias y el tratamiento de zonas horarias están documentados en
 [`docs/remote-sync-contract.md`](docs/remote-sync-contract.md).
 
+El exportador local ya puede generar y validar un paquete sin conectarse a la
+red. Debe guardarse fuera del Kindle y en un directorio privado:
+
+```bash
+PYTHONPATH=src python3 -m biblioteca_kindle export-sync \
+  --database work/library.sqlite3 \
+  --output work/sync-package.json \
+  --agent-id UUID-ESTABLE-DE-ESTA-PC
+```
+
 ## Acompañante de lectura y OpenClaw
 
 El acompañante ya permite crear conversaciones por libro, elegir perfiles,
