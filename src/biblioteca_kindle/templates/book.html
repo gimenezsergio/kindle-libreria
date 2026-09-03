@@ -9,8 +9,8 @@
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="/" aria-label="Inicio de Biblioteca personal"><span class="brand-mark" aria-hidden="true">B</span><span>Biblioteca personal</span></a>
-      <nav aria-label="Navegación principal"><a class="nav-link" href="/">Resumen</a><a class="nav-link is-active" href="/library">Biblioteca</a></nav>
+      <a class="brand" href="/" aria-label="Inicio de Biblioteca personal"><span class="brand-mark" aria-hidden="true">B</span><span><strong>Biblioteca Kindle</strong><small>Cuaderno y archivo personal</small></span></a>
+      <nav aria-label="Navegación principal"><a class="nav-link" href="/">Resumen</a><a class="nav-link is-active" href="/library">Biblioteca</a><a class="nav-link" href="/settings/covers">Portadas</a><a class="nav-link" href="/settings/ai-profiles">Perfiles IA</a></nav>
       <span class="local-badge">Local y privada</span>
     </header>
     <main><article class="book-page">
@@ -29,7 +29,8 @@
         <div class="overview-card"><span>Seguimiento de lectura</span><strong id="progress-position">—</strong><p id="progress-detail"></p></div>
         <div class="overview-card"><span>Organización propia</span><strong id="personal-count">—</strong><p id="personal-detail"></p></div>
       </section>
-      <section class="personal-workspace" aria-labelledby="personal-title">
+      <nav class="book-tabs" role="tablist" aria-label="Secciones del libro"><button type="button" role="tab" aria-selected="true" aria-controls="panel-memory" data-book-tab="memory">Memoria de lectura</button><button type="button" role="tab" aria-selected="false" aria-controls="panel-notebook" data-book-tab="notebook">Cuaderno propio</button><button type="button" role="tab" aria-selected="false" aria-controls="panel-companion" data-book-tab="companion">Acompañante</button></nav>
+      <section class="personal-workspace book-panel" id="panel-notebook" data-book-panel="notebook" aria-labelledby="personal-title" hidden>
         <div class="section-heading"><div><p class="eyebrow">Cuaderno propio</p><h2 id="personal-title">Pensar esta lectura</h2></div><span>Guardado solo en esta computadora</span></div>
         <div class="personal-grid">
           <article class="personal-panel">
@@ -48,7 +49,7 @@
         </div>
         <p class="form-feedback" id="personal-feedback" role="status" aria-live="polite"></p>
       </section>
-      <section class="reading-companion" aria-labelledby="conversation-title">
+      <section class="reading-companion book-panel" id="panel-companion" data-book-panel="companion" aria-labelledby="conversation-title" hidden>
         <header class="companion-heading">
           <div><p class="eyebrow">Acompañante de lectura</p><h2 id="conversation-title">Conversar sobre esta lectura</h2><p>Conversá con el perfil que elijas y, si querés, buscá evidencia en toda tu biblioteca.</p></div>
           <div class="companion-start"><label>Perfil<select id="conversation-profile"><option>Cargando perfiles…</option></select></label><button id="new-conversation" type="button">Nueva conversación</button><a href="/settings/ai-profiles">Administrar perfiles</a></div>
@@ -81,7 +82,7 @@
           </div>
         </div>
       </section>
-      <section class="book-annotations" aria-labelledby="annotations-title">
+      <section class="book-annotations book-panel" id="panel-memory" data-book-panel="memory" aria-labelledby="annotations-title">
         <div class="section-heading"><div><p class="eyebrow">Memoria de lectura</p><h2 id="annotations-title">Subrayados y notas</h2></div><span id="annotation-result-count">Consultando…</span></div>
         <form class="annotation-filters" id="annotation-filters">
           <label>Tipo<select id="kind"><option value="all">Todos</option><option value="highlight">Subrayados</option><option value="note">Notas</option><option value="bookmark">Marcadores</option></select></label>
@@ -93,5 +94,6 @@
       </section>
     </article></main>
     <footer><span>Biblioteca Kindle</span><span>Local · privada · independiente</span></footer>
+    <nav class="mobile-nav" aria-label="Navegación móvil"><a href="/">Resumen</a><a href="/library">Biblioteca</a><a class="is-active" href="#panel-memory">Lectura</a><a href="/settings/ai-profiles">Ajustes</a></nav>
   </body>
 </html>

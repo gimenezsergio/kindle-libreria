@@ -442,6 +442,22 @@ document.querySelector("#context-form").addEventListener("submit", async (event)
 document.querySelector("#annotation-filters").addEventListener("input", () => { annotationPage = 1; loadAnnotations(); });
 document.querySelector("#annotation-previous").addEventListener("click", () => { if (annotationPage > 1) { annotationPage -= 1; loadAnnotations(); } });
 document.querySelector("#annotation-next").addEventListener("click", () => { if (annotationPage < annotationPages) { annotationPage += 1; loadAnnotations(); } });
+document.querySelectorAll("[data-book-tab]").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const selected = tab.dataset.bookTab;
+    document.querySelectorAll("[data-book-tab]").forEach((item) => {
+      item.setAttribute("aria-selected", String(item === tab));
+      item.tabIndex = item === tab ? 0 : -1;
+    });
+    document.querySelectorAll("[data-book-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.bookPanel !== selected;
+    });
+    history.replaceState(null, "", `#panel-${selected}`);
+  });
+});
+const requestedPanel = location.hash.replace("#panel-", "");
+const requestedTab = document.querySelector(`[data-book-tab="${requestedPanel}"]`);
+if (requestedTab) requestedTab.click();
 loadBook();
 loadAnnotations();
 loadPersonal();

@@ -8,10 +8,10 @@
     <script src="{{ url_for('static', filename='js/profiles.js') }}" defer></script>
   </head>
   <body>
-    <header class="site-header"><a class="brand" href="/" aria-label="Inicio de Biblioteca personal"><span class="brand-mark" aria-hidden="true">B</span><span>Biblioteca personal</span></a><nav aria-label="Navegación principal"><a class="nav-link" href="/">Resumen</a><a class="nav-link" href="/library">Biblioteca</a></nav><span class="local-badge">Local y privada</span></header>
+    <header class="site-header"><a class="brand" href="/" aria-label="Inicio de Biblioteca personal"><span class="brand-mark" aria-hidden="true">B</span><span><strong>Biblioteca Kindle</strong><small>Cuaderno y archivo personal</small></span></a><nav aria-label="Navegación principal"><a class="nav-link" href="/">Resumen</a><a class="nav-link" href="/library">Biblioteca</a><a class="nav-link" href="/settings/covers">Portadas</a><a class="nav-link is-active" href="/settings/ai-profiles">Perfiles IA</a></nav><span class="local-badge">Local y privada</span></header>
     <main class="settings-page">
       <a class="back-link" href="/library">← Volver a la biblioteca</a>
-      <header class="settings-heading"><div><p class="eyebrow">Configuración</p><h1>Perfiles de conversación</h1><p>Guardá distintas perspectivas para conversar sobre tus lecturas. El prompt original se conserva completo.</p></div><button id="new-profile" type="button">Agregar perfil</button></header>
+      <header class="settings-heading"><div><p class="eyebrow">Acompañante de lectura</p><h1>Perfiles de conversación</h1><p>Definí distintas perspectivas para conversar sobre tus lecturas. El prompt original se conserva completo.</p></div><button id="new-profile" type="button">Crear nuevo perfil</button></header>
       <section class="profile-layout" aria-label="Administración de perfiles">
         <div class="profile-list" id="profile-list"></div>
         <form class="profile-form" id="profile-form" hidden>
@@ -27,5 +27,6 @@
       </section>
     </main>
     <footer><span>Biblioteca Kindle</span><span>Local · privada · independiente</span></footer>
+    <nav class="mobile-nav" aria-label="Navegación móvil"><a href="/">Resumen</a><a href="/library">Biblioteca</a><a class="is-active" href="/settings/ai-profiles">Perfiles</a><a href="/settings/covers">Ajustes</a></nav>
   </body>
 </html>
