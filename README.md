@@ -348,6 +348,7 @@ OpenClaw ayuda a conversar y razonar sobre ellos.**
 - `src/biblioteca_kindle/migrations/`: evolución reproducible de SQLite.
 - `tests/`: pruebas unitarias y de integración.
 - `docs/`: inspecciones, formatos y decisiones de diseño.
+- `docs/design/`: evaluación de Stitch, sistema visual, mapa de páginas y bitácora del rediseño.
 - `work/`: base y resultados privados locales, excluidos de Git.
 
 ## Estado y hoja de ruta
