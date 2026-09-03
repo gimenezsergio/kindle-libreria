@@ -175,8 +175,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"Cambios: {result.manifests.created} libros nuevos; "
             f"{result.manifests.updated} libros ya conocidos actualizados; "
-            f"{new_annotations} anotaciones nuevas; "
-            f"{existing_annotations} anotaciones ya conocidas; "
+            f"{new_annotations} registros de anotación nuevos; "
+            f"{existing_annotations} registros de fuente ya conocidos; "
             f"{result.marked_absent} libros marcados como ausentes."
         )
         print(
@@ -195,6 +195,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"Datos complementarios: {result.progress.imported} estados de lectura; "
             f"{result.summary.personal_notes} notas propias; "
             f"{result.reconciliation.resolved_aliases} identidades reconciliadas; "
+            f"{result.reconciliation.merged_annotations} duplicados entre fuentes unificados; "
             f"{result.inventory.warning_count + result.annotations.warnings + result.progress.warnings} advertencias."
         )
         return 0

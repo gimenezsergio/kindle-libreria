@@ -145,6 +145,9 @@ pero actualiza el catálogo de manera incremental e idempotente:
   el acompañante no dependen de la presencia del libro en el Kindle y se conservan.
 - Las identidades provisionales creadas desde `My Clippings.txt` se reconcilian cuando
   luego aparece una edición Kindle identificable de manera inequívoca.
+- Cuando `My Clippings.txt` y KRDS/HAN describen la misma anotación del mismo libro,
+  tipo y momento, se conserva una sola anotación lógica con el texto de Clippings,
+  las posiciones nativas y todas sus procedencias. Los casos ambiguos no se fusionan.
 
 La sincronización genera una instantánea nueva para conservar procedencia y fechas de
 observación. Al terminar informa los cambios de esa ejecución y los totales resultantes:

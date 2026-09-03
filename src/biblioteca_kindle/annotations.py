@@ -321,11 +321,13 @@ def import_annotations(
                 occurrence_id = _stable_id("source-occurrence", logical_key)
                 found = connection.execute(
                     """
-                    SELECT 1 FROM annotation_occurrences
+                    SELECT annotation_id FROM annotation_occurrences
                     WHERE source_kind = ? AND source_record_key = ?
                     """,
                     (record.source_kind, record.source_key),
                 ).fetchone()
+                if found is not None:
+                    annotation_id = found["annotation_id"]
                 connection.execute(
                     """
                     INSERT INTO annotations(
@@ -337,12 +339,12 @@ def import_annotations(
                     ON CONFLICT(id) DO UPDATE SET
                         edition_id = excluded.edition_id,
                         kind = excluded.kind,
-                        text = excluded.text,
-                        note_text = excluded.note_text,
-                        start_position_native = excluded.start_position_native,
-                        end_position_native = excluded.end_position_native,
-                        native_created_at = excluded.native_created_at,
-                        native_modified_at = excluded.native_modified_at,
+                        text = COALESCE(excluded.text, annotations.text),
+                        note_text = COALESCE(excluded.note_text, annotations.note_text),
+                        start_position_native = COALESCE(excluded.start_position_native, annotations.start_position_native),
+                        end_position_native = COALESCE(excluded.end_position_native, annotations.end_position_native),
+                        native_created_at = COALESCE(annotations.native_created_at, excluded.native_created_at),
+                        native_modified_at = COALESCE(excluded.native_modified_at, annotations.native_modified_at),
                         updated_at = CURRENT_TIMESTAMP
                     """,
                     (

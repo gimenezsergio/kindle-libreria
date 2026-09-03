@@ -275,11 +275,13 @@ def import_clippings(
                 occurrence_id = _stable_id("clipping-occurrence", record.source_key)
                 already_exists = connection.execute(
                     """
-                    SELECT 1 FROM annotation_occurrences
+                    SELECT annotation_id FROM annotation_occurrences
                     WHERE source_kind = 'clippings' AND source_record_key = ?
                     """,
                     (record.source_key,),
                 ).fetchone()
+                if already_exists is not None:
+                    annotation_id = already_exists["annotation_id"]
                 text = record.content if record.kind == "highlight" else None
                 note_text = record.content if record.kind == "note" else None
                 connection.execute(
@@ -291,9 +293,9 @@ def import_clippings(
                     ON CONFLICT(id) DO UPDATE SET
                         edition_id = excluded.edition_id,
                         kind = excluded.kind,
-                        text = excluded.text,
-                        note_text = excluded.note_text,
-                        native_created_at = excluded.native_created_at,
+                        text = COALESCE(excluded.text, annotations.text),
+                        note_text = COALESCE(excluded.note_text, annotations.note_text),
+                        native_created_at = COALESCE(excluded.native_created_at, annotations.native_created_at),
                         updated_at = CURRENT_TIMESTAMP
                     """,
                     (
@@ -352,4 +354,3 @@ def import_clippings(
         )
     finally:
         connection.close()
-
