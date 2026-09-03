@@ -200,6 +200,18 @@ desarrollo puede probarse en `localhost`; fuera de la máquina solo debe
 publicarse mediante HTTPS. El token y el límite de carga se configuran con
 `BIBLIOTECA_SYNC_TOKEN` y `BIBLIOTECA_SYNC_MAX_BYTES`.
 
+El flujo manual completo se ejecuta con:
+
+```bash
+PYTHONPATH=src python3 -m biblioteca_kindle push /media/usuario/Kindle \
+  --database work/library.sqlite3
+```
+
+El comando carga `work/.env`, sincroniza el Kindle local, genera el paquete y lo
+envía al servidor configurado. Si no recibe una confirmación válida, conserva
+el paquete en `work/sync-agent/` y reenvía exactamente el mismo contenido en el
+próximo intento.
+
 ## Acompañante de lectura y OpenClaw
 
 El acompañante ya permite crear conversaciones por libro, elegir perfiles,

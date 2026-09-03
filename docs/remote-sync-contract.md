@@ -224,7 +224,7 @@ quedar visible en el historial o en la lista de procesos.
 3. Crear el receptor local autenticado y transaccional. **Implementado.**
 4. Probar reenvíos, cortes, paquetes corruptos y ausencias con `localhost`.
    **Implementado.**
-5. Incorporar el comando `push` y su resumen legible.
+5. Incorporar el comando `push` y su resumen legible. **Implementado.**
 6. Preparar migración y copia de seguridad de la base actual.
 7. Configurar HTTPS, secretos y despliegue en el servidor.
 8. Conectar OpenClaw mediante una interfaz separada y de permisos limitados.
@@ -259,3 +259,17 @@ superan el límite, reenvíos exactos, reutilización conflictiva de IDs, rollba
 por referencias inválidas y ausencias. Una ausencia conserva las anotaciones y
 los datos propios; un paquete inválido no cambia presencias ni publica una
 recepción parcial.
+
+El comando manual completo es:
+
+```bash
+PYTHONPATH=src python3 -m biblioteca_kindle push /media/usuario/Kindle \
+  --database work/library.sqlite3
+```
+
+Lee la configuración privada desde `work/.env`, ejecuta primero la sincronización
+USB de solo lectura y luego realiza hasta tres intentos de entrega. Una falla de
+red conserva `work/sync-agent/pending-sync-package.json`; una ejecución posterior
+prioriza ese mismo paquete. Solo una confirmación válida y correspondiente a su
+ID permite eliminarlo. HTTP se admite únicamente contra `localhost`; cualquier
+servidor remoto requiere HTTPS.

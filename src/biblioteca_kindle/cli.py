@@ -23,6 +23,7 @@ from .personal import (
 from .reports import ReportError, library_summary, work_card
 from .web import run_server
 from .remote_sync import SyncPackageError, build_sync_package, write_sync_package
+from .remote_client import RemotePushError, push_sync
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -107,6 +108,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Zona IANA configurada en el Kindle",
     )
 
+    push = subparsers.add_parser(
+        "push", help="Leer el Kindle y enviar una sincronización al servidor"
+    )
+    push.add_argument("mount", type=Path, help="Punto de montaje del Kindle")
+    push.add_argument("--database", required=True, type=Path)
+    push.add_argument("--server")
+    push.add_argument("--state-dir", type=Path)
+    push.add_argument(
+        "--timezone",
+        default=None,
+    )
+
     collection_add = subparsers.add_parser(
         "collection-add", help="Crear una colección local"
     )
@@ -175,6 +188,44 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"Paquete creado: {result.output} ({result.entity_count} entidades; "
             f"{result.byte_count} bytes; sha256 {result.sha256}; id {result.package_id})."
+        )
+        return 0
+    if args.command == "push":
+        load_environment_file(args.database.parent / ".env")
+        server_url = args.server or os.environ.get("BIBLIOTECA_SERVER_URL")
+        source_timezone = args.timezone or os.environ.get(
+            "KINDLE_TIMEZONE", "America/Argentina/Buenos_Aires"
+        )
+        if not server_url:
+            print("Error de envío: falta BIBLIOTECA_SERVER_URL o --server")
+            return 1
+        try:
+            local = synchronize(args.mount, args.database)
+            pushed = push_sync(
+                args.database,
+                server_url=server_url,
+                token=os.environ.get("BIBLIOTECA_SYNC_TOKEN", ""),
+                state_directory=args.state_dir or args.database.parent / "sync-agent",
+                source_timezone=source_timezone,
+            )
+        except (InventoryError, ManifestImportError, VocabularyImportError,
+                ClippingsImportError, ProgressImportError, AnnotationImportError,
+                SyncPackageError, RemotePushError, OSError) as error:
+            print(f"Error de envío: {error}")
+            return 1
+        response = pushed.response
+        changes, totals = response["changes"], response["totals"]
+        print(
+            f"Sincronización remota confirmada en {pushed.attempts} intento(s): "
+            f"{changes.get('works_created', 0)} obras nuevas; "
+            f"{changes.get('annotations_created', 0)} anotaciones nuevas; "
+            f"{changes.get('books_marked_absent', 0)} libros ausentes."
+        )
+        print(
+            f"Servidor: {totals.get('works', 0)} obras; "
+            f"{totals.get('books_present', 0)} libros presentes; "
+            f"{totals.get('annotations', 0)} anotaciones. "
+            f"Kindle local: {local.inventory.file_count} fuentes leídas."
         )
         return 0
     if args.command == "inventory":
