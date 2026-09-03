@@ -20,7 +20,7 @@ Actualmente se puede:
 - reenviar paquetes pendientes mediante el comando `push`;
 - crear respaldos SQLite consistentes, verificables y privados.
 
-La suite actual contiene 73 pruebas automatizadas.
+La suite actual contiene 80 pruebas automatizadas.
 
 ## Sincronización remota
 
@@ -59,6 +59,16 @@ rollback.
 
 ## Mejoras posteriores no bloqueantes
 
+- Incorporar búsqueda semántica para el acompañante de lectura. La versión
+  actual ordena coincidencias textuales de forma determinista; una etapa futura
+  debería generar representaciones vectoriales de títulos, subrayados, notas,
+  categorías y relaciones para recuperar conexiones conceptuales aunque no
+  compartan las mismas palabras. La selección recuperada debe seguir siendo
+  pequeña, visible, editable y trazable mediante referencias `[B1]`, `[B2]`,
+  etc. La IA conversacional no debe acceder indiscriminadamente a toda la
+  biblioteca ni reemplazar el algoritmo de recuperación. Antes de implementarlo
+  habrá que decidir el modelo de embeddings, dónde se ejecuta, cómo se actualiza
+  incrementalmente y qué datos privados pueden salir del servidor.
 - Interfaz visual para iniciar y revisar sincronizaciones.
 - Ejecución automática al conectar el Kindle.
 - Transporte incremental real; el primer paquete actual contiene toda la
@@ -90,4 +100,3 @@ commits funcionales actuales.
 - `docs/server-migration.md`: respaldo y traslado inicial.
 - `docs/sync-contract.md`: sincronización USB local.
 - `docs/mvp-scope.md`: alcance del MVP.
-
