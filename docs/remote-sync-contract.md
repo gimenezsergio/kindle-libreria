@@ -225,7 +225,7 @@ quedar visible en el historial o en la lista de procesos.
 4. Probar reenvíos, cortes, paquetes corruptos y ausencias con `localhost`.
    **Implementado.**
 5. Incorporar el comando `push` y su resumen legible. **Implementado.**
-6. Preparar migración y copia de seguridad de la base actual.
+6. Preparar migración y copia de seguridad de la base actual. **Implementado.**
 7. Configurar HTTPS, secretos y despliegue en el servidor.
 8. Conectar OpenClaw mediante una interfaz separada y de permisos limitados.
 

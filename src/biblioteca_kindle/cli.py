@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import sqlite3
 from pathlib import Path
 from typing import Sequence
 
@@ -24,6 +25,7 @@ from .reports import ReportError, library_summary, work_card
 from .web import run_server
 from .remote_sync import SyncPackageError, build_sync_package, write_sync_package
 from .remote_client import RemotePushError, push_sync
+from .backup import BackupError, create_database_backup
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -120,6 +122,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
     )
 
+    backup = subparsers.add_parser(
+        "backup", help="Crear una copia consistente y verificable de SQLite"
+    )
+    backup.add_argument("--database", required=True, type=Path)
+    backup.add_argument("--output", required=True, type=Path)
+
     collection_add = subparsers.add_parser(
         "collection-add", help="Crear una colección local"
     )
@@ -188,6 +196,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"Paquete creado: {result.output} ({result.entity_count} entidades; "
             f"{result.byte_count} bytes; sha256 {result.sha256}; id {result.package_id})."
+        )
+        return 0
+    if args.command == "backup":
+        try:
+            result = create_database_backup(args.database, args.output)
+        except (BackupError, OSError, sqlite3.Error) as error:
+            print(f"Error de respaldo: {error}")
+            return 1
+        print(
+            f"Respaldo verificado: {result.output} ({result.byte_count} bytes; "
+            f"integridad {result.integrity}; sha256 {result.sha256})."
         )
         return 0
     if args.command == "push":

@@ -212,6 +212,10 @@ envía al servidor configurado. Si no recibe una confirmación válida, conserva
 el paquete en `work/sync-agent/` y reenvía exactamente el mismo contenido en el
 próximo intento.
 
+La preparación del traslado inicial, el respaldo consistente, los permisos y
+las verificaciones del servidor están en
+[`docs/server-migration.md`](docs/server-migration.md).
+
 ## Acompañante de lectura y OpenClaw
 
 El acompañante ya permite crear conversaciones por libro, elegir perfiles,
