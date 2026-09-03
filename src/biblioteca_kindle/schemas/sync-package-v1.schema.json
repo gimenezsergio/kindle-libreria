@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://biblioteca-kindle.local/schemas/sync-package-v1.schema.json",
+  "title": "Biblioteca Kindle sync package v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "package_id", "created_at_utc", "agent_id", "device_key", "snapshot", "entities", "present_delivery_ids", "warnings"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "package_id": {"type": "string", "format": "uuid"},
+    "created_at_utc": {"type": "string", "format": "date-time"},
+    "agent_id": {"type": "string", "format": "uuid"},
+    "device_key": {"type": "string", "minLength": 1, "maxLength": 256},
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "started_at_utc", "completed_at_utc", "mount_read_only", "source_timezone"],
+      "properties": {
+        "kind": {"const": "full"},
+        "started_at_utc": {"type": "string", "format": "date-time"},
+        "completed_at_utc": {"type": "string", "format": "date-time"},
+        "mount_read_only": {"type": "boolean"},
+        "source_timezone": {"type": "string", "minLength": 1, "maxLength": 128}
+      }
+    },
+    "entities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["works", "editions", "deliveries", "source_observations", "annotations", "annotation_occurrences", "reading_states"],
+      "properties": {
+        "works": {"type": "array", "items": {"$ref": "#/$defs/entity"}},
+        "editions": {"type": "array", "items": {"$ref": "#/$defs/entity"}},
+        "deliveries": {"type": "array", "items": {"$ref": "#/$defs/entity"}},
+        "source_observations": {"type": "array", "items": {"$ref": "#/$defs/entity"}},
+        "annotations": {"type": "array", "items": {"$ref": "#/$defs/entity"}},
+        "annotation_occurrences": {"type": "array", "items": {"$ref": "#/$defs/entity"}},
+        "reading_states": {"type": "array", "items": {"$ref": "#/$defs/entity"}}
+      }
+    },
+    "present_delivery_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "warnings": {"type": "array", "items": {"type": "string", "maxLength": 2000}}
+  },
+  "$defs": {
+    "entity": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {"id": {"type": "string", "minLength": 1, "maxLength": 256}}
+    }
+  }
+}

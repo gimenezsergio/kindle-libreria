@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://biblioteca-kindle.local/schemas/sync-response-v1.schema.json",
+  "title": "Biblioteca Kindle sync response v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "package_id", "status", "changes", "totals", "warnings"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "package_id": {"type": "string", "format": "uuid"},
+    "status": {"enum": ["applied", "already_applied"]},
+    "changes": {"$ref": "#/$defs/counts"},
+    "totals": {"$ref": "#/$defs/counts"},
+    "warnings": {"type": "array", "items": {"type": "string", "maxLength": 2000}}
+  },
+  "$defs": {
+    "counts": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    }
+  }
+}

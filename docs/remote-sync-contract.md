@@ -94,9 +94,11 @@ comprimirse durante el transporte. La envoltura mínima será:
 }
 ```
 
-El contrato definitivo deberá expresarse como JSON Schema antes de habilitar el
-endpoint público. Los identificadores de entidades serán las claves estables que
-ya usa la aplicación; nunca números consecutivos dependientes de una base local.
+La versión inicial del contrato está expresada como JSON Schema en
+`src/biblioteca_kindle/schemas/`. El validador local agrega comprobaciones
+semánticas de identificadores, presencias y contenido prohibido. Los
+identificadores de entidades serán las claves estables que ya usa la aplicación;
+nunca números consecutivos dependientes de una base local.
 
 ## Sincronización inicial e incremental
 
@@ -218,4 +220,3 @@ quedar visible en el historial o en la lista de procesos.
 6. Preparar migración y copia de seguridad de la base actual.
 7. Configurar HTTPS, secretos y despliegue en el servidor.
 8. Conectar OpenClaw mediante una interfaz separada y de permisos limitados.
-

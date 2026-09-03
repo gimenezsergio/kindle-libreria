@@ -18,6 +18,7 @@ where = ["src"]
 [tool.setuptools.package-data]
 biblioteca_kindle = [
     "migrations/*.sql",
+    "schemas/*.json",
     "static/css/*.css",
     "static/js/*.js",
     "templates/*.html",
