@@ -174,6 +174,17 @@ necesita estar conectado para consultar una base ya sincronizada.
 Los importadores individuales y las decisiones sobre formatos están
 documentados en `docs/`.
 
+### Sincronización con un servidor remoto
+
+Cuando la aplicación viva en el servidor junto a OpenClaw, el Kindle continuará
+conectándose a la computadora del usuario. Un agente Python local lo leerá en
+modo de solo lectura y enviará por HTTPS únicamente catálogo, anotaciones,
+progreso y metadatos derivados; no enviará los archivos de los libros.
+
+El diseño, el contrato de paquetes, los reintentos, la autenticación, las
+ausencias y el tratamiento de zonas horarias están documentados en
+[`docs/remote-sync-contract.md`](docs/remote-sync-contract.md).
+
 ## Acompañante de lectura y OpenClaw
 
 El acompañante ya permite crear conversaciones por libro, elegir perfiles,
