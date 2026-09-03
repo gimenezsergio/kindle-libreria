@@ -122,6 +122,25 @@ class ConversationTests(unittest.TestCase):
         self.assertIn("Mi hipótesis", packet.input[0]["content"])
         self.assertEqual(packet.input[-1]["content"], "¿Qué ves acá?")
 
+    def test_current_context_is_placed_immediately_before_latest_question(self) -> None:
+        connection = connect_database(self.database)
+        with connection:
+            connection.execute("INSERT INTO editions(id,work_id,title) VALUES ('edition','work-1','Una lectura')")
+            connection.execute("INSERT INTO annotations(id,edition_id,kind,text) VALUES ('new-selection','edition','highlight','En principio, un miembro del Partido no tenía tiempo libre')")
+        connection.close()
+        identifier = create_conversation(self.database, work_id="work-1", profile_id="companion")
+        add_message(self.database, conversation_id=identifier, role="user", content="No veo la cita")
+        add_message(self.database, conversation_id=identifier, role="assistant", content="Parece que no llegó")
+        update_context(self.database, identifier, personal_note_ids=[], annotation_ids=["new-selection"])
+        add_message(self.database, conversation_id=identifier, role="user", content="Compará esta selección")
+
+        packet = build_prompt_packet(self.database, identifier)
+
+        self.assertEqual(packet.input[-1]["content"], "Compará esta selección")
+        self.assertIn("CONTEXTO VIGENTE", packet.input[-2]["content"])
+        self.assertIn("En principio, un miembro", packet.input[-2]["content"])
+        self.assertEqual(packet.input[-3]["content"], "Parece que no llegó")
+
     def test_deepseek_provider_uses_responses_endpoint_without_persisting_key(self) -> None:
         with patch.dict("os.environ", {
             "BIBLIOTECA_AI_PROVIDER": "deepseek",

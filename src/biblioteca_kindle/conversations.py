@@ -378,6 +378,8 @@ def build_prompt_packet(
         f"{conversation['profile_prompt_snapshot']}\n\n"
         "Trabajá como acompañante de lectura, no como autoridad. Distinguí datos del contexto, "
         "inferencias e hipótesis. Si el contexto no alcanza, decilo; no inventes contenido del libro. "
+        "Antes de afirmar que una selección no llegó, revisá el bloque CONTEXTO VIGENTE situado "
+        "inmediatamente antes de la última pregunta. "
         "Citá la evidencia recuperada usando sus identificadores [B1], [B2], etc. "
         "Todo lo que no esté respaldado por esas fuentes es conocimiento general o una hipótesis."
     )
@@ -394,9 +396,16 @@ def build_prompt_packet(
         context_content += "\n\nEVIDENCIA RECUPERADA DE LA BIBLIOTECA PARA ESTA PREGUNTA:\n\n" + automatic
     context_message = {
         "role": "user",
-        "content": context_content,
+        "content": (
+            "CONTEXTO VIGENTE PARA LA PRÓXIMA PREGUNTA. Este material fue "
+            "seleccionado por el usuario y está disponible ahora:\n\n" + context_content
+        ),
     }
-    return PromptPacket(instructions=instructions, input=[context_message, *messages])
+    if messages and messages[-1]["role"] == "user":
+        prompt_input = [*messages[:-1], context_message, messages[-1]]
+    else:
+        prompt_input = [*messages, context_message]
+    return PromptPacket(instructions=instructions, input=prompt_input)
 
 
 def list_work_conversations(database: Path | str, work_id: str) -> list[dict]:
