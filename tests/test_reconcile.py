@@ -9,6 +9,34 @@ from biblioteca_kindle.reconcile import reconcile_provisional_titles
 
 
 class AnnotationSourceReconciliationTests(unittest.TestCase):
+    def test_merges_superseded_clipping_into_native_backed_revision(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            try:
+                with connection:
+                    connection.execute("INSERT INTO works(id,preferred_title) VALUES ('work','Book')")
+                    connection.execute("INSERT INTO editions(id,work_id,title) VALUES ('edition','work','Book')")
+                    connection.execute("INSERT INTO device_snapshots(id,device_key,mount_point,mount_read_only,status,started_at) VALUES ('snapshot','device','/Kindle',1,'completed','2026-09-03')")
+                    for source, source_type in (("old-source","clippings"),("new-source","clippings"),("native-source","sidecar")):
+                        connection.execute("INSERT INTO source_observations(id,snapshot_id,source_type,source_relative_path,file_size,file_hash,observed_at,parse_status) VALUES (?,'snapshot',?,?,1,?,'2026-09-03','parsed')", (source,source_type,source,source))
+                    connection.execute("INSERT INTO annotations(id,edition_id,kind,text,native_created_at) VALUES ('old','edition','highlight','escribe: «Quien vive de lo igual»','Location 122-123 | Added on Thursday, 13 August 2026 15:35:30')")
+                    connection.execute("INSERT INTO annotations(id,edition_id,kind,text,native_created_at) VALUES ('current','edition','highlight','«Quien vive de lo igual»','Location 122-123 | Added on Thursday, 13 August 2026 15:35:47')")
+                    connection.execute("INSERT INTO annotation_occurrences(id,annotation_id,source_observation_id,source_kind,source_record_key,observed_at) VALUES ('old-occ','old','old-source','clippings','old','2026-09-03')")
+                    connection.execute("INSERT INTO annotation_occurrences(id,annotation_id,source_observation_id,source_kind,source_record_key,observed_at) VALUES ('new-occ','current','new-source','clippings','new','2026-09-03')")
+                    connection.execute("INSERT INTO annotation_occurrences(id,annotation_id,source_observation_id,source_kind,source_record_key,observed_at) VALUES ('native-occ','current','native-source','krds','native','2026-09-03')")
+                    result = reconcile_provisional_titles(connection)
+                    second = reconcile_provisional_titles(connection)
+                annotations = connection.execute("SELECT id,text FROM annotations").fetchall()
+                occurrences = connection.execute("SELECT COUNT(*) FROM annotation_occurrences WHERE annotation_id='current'").fetchone()[0]
+            finally:
+                connection.close()
+            self.assertEqual(result.revised_annotations, 1)
+            self.assertEqual(second.revised_annotations, 0)
+            self.assertEqual([tuple(row) for row in annotations], [("current", "«Quien vive de lo igual»")])
+            self.assertEqual(occurrences, 3)
+
     def test_merges_exact_cross_source_match_and_preserves_provenance(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "library.sqlite3"

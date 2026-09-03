@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import sqlite3
 import re
+import sqlite3
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -16,6 +17,7 @@ class ReconciliationResult:
     removed_provisional_editions: int
     removed_provisional_works: int
     merged_annotations: int = 0
+    revised_annotations: int = 0
 
 
 _MONTHS = {
@@ -173,6 +175,85 @@ def reconcile_annotation_sources(connection: sqlite3.Connection) -> int:
     return merged
 
 
+def _clipping_location(value: str | None) -> tuple[int, int] | None:
+    match = re.search(r"(?:Location|Ubicación|Posición)\s+(\d+)(?:\s*[-–]\s*(\d+))?", value or "", re.IGNORECASE)
+    if not match:
+        return None
+    start = int(match.group(1))
+    return start, int(match.group(2) or start)
+
+
+def _move_annotation_references(
+    connection: sqlite3.Connection, source_id: str, target_id: str
+) -> None:
+    connection.execute(
+        "UPDATE annotation_occurrences SET annotation_id=? WHERE annotation_id=?",
+        (target_id, source_id),
+    )
+    connection.execute(
+        "UPDATE personal_notes SET target_id=? WHERE target_type='annotation' AND target_id=?",
+        (target_id, source_id),
+    )
+    for context in connection.execute(
+        "SELECT id,conversation_id FROM conversation_context_sources WHERE source_type='annotation' AND source_id=?",
+        (source_id,),
+    ).fetchall():
+        duplicate = connection.execute(
+            "SELECT 1 FROM conversation_context_sources WHERE conversation_id=? AND source_type='annotation' AND source_id=?",
+            (context["conversation_id"], target_id),
+        ).fetchone()
+        if duplicate:
+            connection.execute("DELETE FROM conversation_context_sources WHERE id=?", (context["id"],))
+        else:
+            connection.execute(
+                "UPDATE conversation_context_sources SET source_id=? WHERE id=?",
+                (target_id, context["id"]),
+            )
+    connection.execute("DELETE FROM annotations WHERE id=?", (source_id,))
+
+
+def reconcile_clipping_revisions(connection: sqlite3.Connection) -> int:
+    """Collapse a superseded Clippings-only selection into its native-backed revision."""
+    rows = connection.execute(
+        """
+        SELECT DISTINCT a.id,a.edition_id,a.kind,a.text,a.native_created_at
+        FROM annotations a
+        JOIN annotation_occurrences ao ON ao.annotation_id=a.id AND ao.source_kind='clippings'
+        WHERE a.text IS NOT NULL AND TRIM(a.text)<>''
+        """
+    ).fetchall()
+    native_backed = {
+        row["annotation_id"] for row in connection.execute(
+            "SELECT DISTINCT annotation_id FROM annotation_occurrences WHERE source_kind IN ('krds','han')"
+        )
+    }
+    prepared_by_location = defaultdict(list)
+    for row in rows:
+        timestamp = _clipping_local_timestamp(row["native_created_at"])
+        location = _clipping_location(row["native_created_at"])
+        text = " ".join(row["text"].split()).casefold()
+        if timestamp and location and text:
+            key = (row["edition_id"], row["kind"], location)
+            prepared_by_location[key].append((row, timestamp, text))
+    revised = 0
+    for prepared in prepared_by_location.values():
+        for old, old_time, old_text in prepared:
+            if old["id"] in native_backed:
+                continue
+            matches = [
+                current
+                for current, current_time, current_text in prepared
+                if current["id"] in native_backed
+                and old_time < current_time <= old_time + timedelta(minutes=2)
+                and (old_text in current_text or current_text in old_text)
+            ]
+            if len(matches) != 1:
+                continue
+            _move_annotation_references(connection, old["id"], matches[0]["id"])
+            revised += 1
+    return revised
+
+
 def reconcile_provisional_titles(
     connection: sqlite3.Connection,
 ) -> ReconciliationResult:
@@ -257,6 +338,7 @@ def reconcile_provisional_titles(
                 removed_works += 1
 
     merged_annotations = reconcile_annotation_sources(connection)
+    revised_annotations = reconcile_clipping_revisions(connection)
     return ReconciliationResult(
         resolved_aliases=resolved,
         moved_annotations=moved,
@@ -264,4 +346,5 @@ def reconcile_provisional_titles(
         removed_provisional_editions=removed_editions,
         removed_provisional_works=removed_works,
         merged_annotations=merged_annotations,
+        revised_annotations=revised_annotations,
     )

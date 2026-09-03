@@ -148,6 +148,9 @@ pero actualiza el catálogo de manera incremental e idempotente:
 - Cuando `My Clippings.txt` y KRDS/HAN describen la misma anotación del mismo libro,
   tipo y momento, se conserva una sola anotación lógica con el texto de Clippings,
   las posiciones nativas y todas sus procedencias. Los casos ambiguos no se fusionan.
+- Si el Kindle conserva dos versiones consecutivas del mismo rango porque se ajustó
+  una selección, la versión solo-Clippings se integra en la posterior respaldada por
+  KRDS/HAN cuando los textos se contienen y no hay más de un candidato posible.
 
 La sincronización genera una instantánea nueva para conservar procedencia y fechas de
 observación. Al terminar informa los cambios de esa ejecución y los totales resultantes:

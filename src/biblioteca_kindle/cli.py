@@ -294,6 +294,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"{result.summary.personal_notes} notas propias; "
             f"{result.reconciliation.resolved_aliases} identidades reconciliadas; "
             f"{result.reconciliation.merged_annotations} duplicados entre fuentes unificados; "
+            f"{result.reconciliation.revised_annotations} revisiones de subrayado unificadas; "
             f"{result.inventory.warning_count + result.annotations.warnings + result.progress.warnings} advertencias."
         )
         return 0
