@@ -222,6 +222,8 @@ class WebTests(unittest.TestCase):
             ).get_json()
 
             self.assertIn("Acompañante de lectura", page.get_data(as_text=True))
+            self.assertIn('role="tablist"', page.get_data(as_text=True))
+            self.assertIn("Memoria de lectura", page.get_data(as_text=True))
             self.assertEqual(created.status_code, 201)
             self.assertEqual(message.status_code, 201)
             self.assertEqual(conversations[0]["message_count"], 1)

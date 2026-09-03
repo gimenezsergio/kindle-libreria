@@ -454,6 +454,13 @@ document.querySelectorAll("[data-book-tab]").forEach((tab) => {
     });
     history.replaceState(null, "", `#panel-${selected}`);
   });
+  tab.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    const tabs = [...document.querySelectorAll("[data-book-tab]")];
+    const direction = event.key === "ArrowRight" ? 1 : -1;
+    const next = tabs[(tabs.indexOf(tab) + direction + tabs.length) % tabs.length];
+    event.preventDefault(); next.focus(); next.click();
+  });
 });
 const requestedPanel = location.hash.replace("#panel-", "");
 const requestedTab = document.querySelector(`[data-book-tab="${requestedPanel}"]`);

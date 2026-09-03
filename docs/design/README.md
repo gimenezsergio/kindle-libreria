@@ -10,6 +10,7 @@ generado con Google Stitch el 3 de septiembre de 2026.
 2. [`02-design-decisions.md`](02-design-decisions.md): sistema visual y decisiones de producto.
 3. [`03-page-mapping.md`](03-page-mapping.md): correspondencia entre pantallas y funciones reales.
 4. [`04-implementation-log.md`](04-implementation-log.md): bitácora verificable de implementación.
+5. [`05-accessibility-and-validation.md`](05-accessibility-and-validation.md): criterios y comprobaciones finales.
 
 Los HTML de Stitch no son código fuente del producto: contienen Tailwind por CDN,
 imágenes remotas, datos ficticios y pantallas separadas para escritorio y móvil.
