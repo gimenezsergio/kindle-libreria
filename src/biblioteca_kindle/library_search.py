@@ -14,8 +14,9 @@ class LibrarySearchError(RuntimeError):
 
 _STOP_WORDS = {
     "alguna", "como", "con", "cual", "cuando", "del", "desde", "donde",
-    "esta", "este", "estos", "hacer", "las", "los", "para", "pero", "por",
-    "que", "sobre", "sus", "una", "uno", "unos",
+    "biblioteca", "comparacion", "comparar", "compara", "esta", "este", "estos",
+    "hacer", "las", "libro", "libros", "los", "otros", "para", "pero", "por",
+    "que", "relacion", "relaciona", "sobre", "sus", "una", "uno", "unos",
 }
 
 
