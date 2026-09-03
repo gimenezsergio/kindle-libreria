@@ -16,7 +16,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 SCHEMA_VERSION = 1
 ENTITY_GROUPS = (
     "works", "editions", "contributors", "edition_contributors", "deliveries",
-    "external_identifiers", "title_aliases", "source_observations", "annotations",
+    "external_identifiers", "title_aliases", "device_snapshots", "source_observations", "annotations",
     "annotation_occurrences", "reading_states", "reading_history_records",
 )
 FORBIDDEN_CONTENT_KEYS = {
@@ -232,10 +232,8 @@ def build_sync_package(
             "deliveries": _rows(connection, "kindle_deliveries"),
             "external_identifiers": _rows(connection, "external_identifiers"),
             "title_aliases": _rows(connection, "title_aliases"),
-            "source_observations": [
-                {key: value for key, value in dict(row).items() if key != "snapshot_id"}
-                for row in connection.execute("SELECT * FROM source_observations ORDER BY rowid")
-            ],
+            "device_snapshots": _rows(connection, "device_snapshots"),
+            "source_observations": _rows(connection, "source_observations"),
             "annotations": _rows(connection, "annotations"),
             "annotation_occurrences": _rows(connection, "annotation_occurrences"),
             "reading_states": _rows(connection, "reading_states"),

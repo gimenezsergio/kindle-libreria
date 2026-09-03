@@ -38,6 +38,7 @@ def valid_package() -> dict:
             "deliveries": [{"id": "delivery-1"}],
             "external_identifiers": [],
             "title_aliases": [],
+            "device_snapshots": [],
             "source_observations": [],
             "annotations": [],
             "annotation_occurrences": [],
@@ -151,7 +152,7 @@ class RemoteSyncContractTests(unittest.TestCase):
             self.assertEqual(loaded["present_delivery_ids"], ["delivery"])
             self.assertEqual(loaded["entities"]["works"][0]["preferred_title"], "Book")
             self.assertNotIn("_local_mount_point", loaded)
-            self.assertEqual(result.entity_count, 3)
+            self.assertEqual(result.entity_count, 4)
             self.assertGreater(result.byte_count, 0)
 
     def test_refuses_to_write_package_inside_kindle(self) -> None:

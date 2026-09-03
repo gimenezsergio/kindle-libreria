@@ -195,6 +195,11 @@ PYTHONPATH=src python3 -m biblioteca_kindle export-sync \
   --agent-id UUID-ESTABLE-DE-ESTA-PC
 ```
 
+El servidor incluye el receptor autenticado `POST /api/sync/v1/packages`. En
+desarrollo puede probarse en `localhost`; fuera de la máquina solo debe
+publicarse mediante HTTPS. El token y el límite de carga se configuran con
+`BIBLIOTECA_SYNC_TOKEN` y `BIBLIOTECA_SYNC_MAX_BYTES`.
+
 ## Acompañante de lectura y OpenClaw
 
 El acompañante ya permite crear conversaciones por libro, elegir perfiles,

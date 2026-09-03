@@ -89,6 +89,7 @@ comprimirse durante el transporte. La envoltura mínima será:
     "deliveries": [],
     "external_identifiers": [],
     "title_aliases": [],
+    "device_snapshots": [],
     "source_observations": [],
     "annotations": [],
     "annotation_occurrences": [],
@@ -220,7 +221,7 @@ quedar visible en el historial o en la lista de procesos.
 
 1. Definir y probar el JSON Schema del paquete y la respuesta.
 2. Crear el exportador local sin red y verificar que no incluya libros.
-3. Crear el receptor local autenticado y transaccional.
+3. Crear el receptor local autenticado y transaccional. **Implementado.**
 4. Probar reenvíos, cortes, paquetes corruptos y ausencias con `localhost`.
 5. Incorporar el comando `push` y su resumen legible.
 6. Preparar migración y copia de seguridad de la base actual.
@@ -240,3 +241,14 @@ El archivo contiene datos privados y debe permanecer dentro de `work/` o de otro
 directorio protegido y excluido de Git. La huella e ID que muestra el comando
 identifican exactamente el paquete que más adelante se reenviará por HTTPS.
 La escritura es atómica y el archivo nuevo queda limitado al usuario local.
+
+El receptor está disponible mediante `POST /api/sync/v1/packages`. Requiere
+`Authorization: Bearer <token>`, valida el paquete antes de escribir y aplica
+todos sus registros dentro de una única transacción. Un primer envío responde
+`201 applied`; la repetición exacta responde `200 already_applied`. Reutilizar
+el mismo ID con otro contenido se rechaza.
+
+Para las pruebas locales se configura `BIBLIOTECA_SYNC_TOKEN` en `work/.env`.
+El límite predeterminado es 32 MiB y puede reducirse con
+`BIBLIOTECA_SYNC_MAX_BYTES`. En producción este endpoint solo se expondrá detrás
+de HTTPS.

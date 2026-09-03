@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import re
+import hmac
+import os
+import sqlite3
 from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
@@ -27,6 +30,8 @@ from .conversations import (
     build_prompt_packet,
 )
 from .ai import AIError, DraftProvider, load_environment_file, provider_from_environment
+from .remote_sync import SyncPackageError
+from .sync_receiver import apply_sync_package
 
 
 DISPLAY_TITLE_SQL = (
@@ -402,7 +407,25 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
             connection.close()
     app = Flask(__name__)
     app.config["DATABASE"] = database_path
+    app.config["MAX_CONTENT_LENGTH"] = int(
+        os.environ.get("BIBLIOTECA_SYNC_MAX_BYTES", str(32 * 1024 * 1024))
+    )
+    sync_token = os.environ.get("BIBLIOTECA_SYNC_TOKEN", "")
     provider = ai_provider or provider_from_environment()
+
+    @app.post("/api/sync/v1/packages")
+    def receive_sync_package():
+        authorization = request.headers.get("Authorization", "")
+        supplied = authorization[7:] if authorization.startswith("Bearer ") else ""
+        if not sync_token or not hmac.compare_digest(supplied, sync_token):
+            return jsonify(error="Autenticación de sincronización inválida"), 401
+        if not request.is_json:
+            return jsonify(error="El paquete debe enviarse como JSON"), 415
+        try:
+            response = apply_sync_package(database_path, request.get_json(silent=True))
+            return jsonify(response), 200 if response["status"] == "already_applied" else 201
+        except (SyncPackageError, sqlite3.IntegrityError, KeyError, TypeError) as error:
+            return jsonify(error=str(error)), 400
 
     @app.get("/")
     def index() -> str:
