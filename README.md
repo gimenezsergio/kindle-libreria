@@ -313,3 +313,11 @@ OpenClaw ayuda a conversar y razonar sobre ellos.**
 - `tests/`: pruebas unitarias y de integración.
 - `docs/`: inspecciones, formatos y decisiones de diseño.
 - `work/`: base y resultados privados locales, excluidos de Git.
+
+## Estado y hoja de ruta
+
+El MVP local y siete de los ocho pasos de sincronización remota están
+terminados. El despliegue real queda pendiente hasta contar con los datos del
+servidor. El inventario completo de capacidades, requisitos de producción,
+mejoras opcionales y archivos pendientes está en
+[`docs/project-status.md`](docs/project-status.md).
