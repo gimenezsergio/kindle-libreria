@@ -26,6 +26,7 @@ class MigrationTests(unittest.TestCase):
                     "0009_reading_conversations.sql",
                     "0010_conversation_context.sql",
                     "0011_remote_sync.sql",
+                    "0012_conversation_retrieval.sql",
                 ],
             )
 
@@ -59,6 +60,7 @@ class MigrationTests(unittest.TestCase):
                     "reading_conversations",
                     "conversation_messages",
                     "conversation_context_sources",
+                    "conversation_message_sources",
                     "remote_sync_packages",
                 }.issubset(tables)
             )
@@ -76,7 +78,7 @@ class MigrationTests(unittest.TestCase):
                 ).fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(count, 11)
+            self.assertEqual(count, 12)
 
     def test_foreign_keys_are_enabled(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

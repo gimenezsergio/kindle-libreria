@@ -226,6 +226,18 @@ seleccionar el contexto y revisar el paquete exacto antes de enviarlo. Por
 defecto trabaja en modo borrador: guarda los mensajes localmente y no envía
 información fuera de la computadora.
 
+La biblioteca no contiene el texto completo de los libros. La recuperación
+automática consulta únicamente el catálogo, la autoría, los subrayados, las
+notas propias y las categorías almacenadas en SQLite. El conocimiento general
+del modelo puede complementar ese material, pero no se presenta como si hubiese
+consultado el ejemplar. Incorporar textos completos, cuando se disponga de ellos
+legalmente, es una ampliación opcional y no un requisito de esta arquitectura.
+
+La búsqueda de contexto pertenece a Biblioteca Kindle y es independiente del
+proveedor conversacional. Por eso el mismo resultado trazable puede enviarse a
+DeepSeek durante las pruebas o a OpenClaw en el servidor cambiando solamente la
+configuración del adaptador.
+
 La dirección elegida para el despliegue definitivo es utilizar OpenClaw como
 capa de conversación y razonamiento. El adaptador también admite conexiones
 directas opcionales con OpenAI o DeepSeek para probar el flujo antes de la mudanza.
