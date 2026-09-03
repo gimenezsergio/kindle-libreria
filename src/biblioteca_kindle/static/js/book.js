@@ -4,6 +4,8 @@ const languageNames = {de: "Alemán", en: "Inglés", es: "Español", fr: "Franc�
 let annotationPage = 1;
 let annotationPages = 1;
 let activeConversationId = null;
+let librarySearchResults = [];
+let previewSearchQuery = "";
 
 function languageName(code) {
   const normalized = String(code || "").trim().toLowerCase();
@@ -140,6 +142,8 @@ async function loadOptions() {
   const profileSelect = document.querySelector("#conversation-profile");
   profileSelect.replaceChildren(...profiles.items.map((item) => new Option(item.name, item.id, item.is_default, item.is_default)));
   document.querySelector("#new-conversation").disabled = profiles.items.length === 0;
+  const searchWorks = document.querySelector("#library-search-works");
+  searchWorks.replaceChildren(...works.items.map((item) => new Option(item.title, item.id)));
 }
 
 function messageCard(message) {
@@ -150,7 +154,81 @@ function messageCard(message) {
   const content = document.createElement("p");
   content.textContent = message.content;
   article.append(label, content);
+  if (message.role === "assistant" && message.library_sources?.length) {
+    const details = document.createElement("details");
+    details.className = "answer-sources";
+    const summary = document.createElement("summary");
+    summary.textContent = `${message.library_sources.length} fuentes de la biblioteca usadas`;
+    const list = document.createElement("ol");
+    message.library_sources.forEach((source, index) => {
+      const item = document.createElement("li");
+      const heading = document.createElement("strong");
+      heading.textContent = `[B${index + 1}] ${source.label} · ${source.work_title}`;
+      const excerpt = document.createElement("p");
+      excerpt.textContent = `${source.content}${source.reference ? ` · ${source.reference}` : ""}`;
+      item.append(heading, excerpt); list.append(item);
+    });
+    details.append(summary, list); article.append(details);
+  }
   return article;
+}
+
+function searchScopePayload() {
+  const scope = document.querySelector("#library-search-scope").value;
+  return {
+    search_scope: scope,
+    search_work_ids: scope === "selected"
+      ? [...document.querySelector("#library-search-works").selectedOptions].map((option) => option.value)
+      : [],
+  };
+}
+
+function selectedLibraryKeys() {
+  return [...document.querySelectorAll('#library-search-results input[type="checkbox"]:checked')]
+    .map((input) => input.value);
+}
+
+function librarySearchPayload() {
+  const content = document.querySelector("#conversation-message").value.trim();
+  const payload = {
+    search_library: document.querySelector("#library-search-enabled").checked,
+    search_query: content,
+    ...searchScopePayload(),
+  };
+  if (previewSearchQuery === content) payload.library_source_keys = selectedLibraryKeys();
+  return payload;
+}
+
+function renderLibraryResults(items) {
+  const container = document.querySelector("#library-search-results");
+  if (!items.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "No encontramos evidencia textual para esta consulta.";
+    container.replaceChildren(empty);
+    document.querySelector("#pin-library-context").hidden = true;
+    return;
+  }
+  const cards = items.map((item) => {
+    const label = document.createElement("label"); label.className = "library-result";
+    const input = document.createElement("input"); input.type = "checkbox"; input.value = item.key; input.checked = true;
+    const body = document.createElement("span");
+    const heading = document.createElement("strong"); heading.textContent = `${item.label} · ${item.work_title}`;
+    const content = document.createElement("span"); content.textContent = `${item.content}${item.reference ? ` · ${item.reference}` : ""}`;
+    body.append(heading, content); label.append(input, body); return label;
+  });
+  container.replaceChildren(...cards);
+  document.querySelector("#pin-library-context").hidden = false;
+}
+
+async function previewLibrarySearch() {
+  if (!activeConversationId) return;
+  const query = document.querySelector("#conversation-message").value.trim();
+  if (!query) throw new Error("Escribí primero la pregunta que querés explorar.");
+  const data = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/library-search`, {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({search_query: query, ...searchScopePayload()}),
+  });
+  librarySearchResults = data.items; previewSearchQuery = query; renderLibraryResults(data.items);
 }
 
 function contextChoice(item, type, selected) {
@@ -197,6 +275,7 @@ async function loadProviderStatus() {
 async function openConversation(identifier) {
   const conversation = await jsonRequest(`/api/conversations/${encodeURIComponent(identifier)}`);
   activeConversationId = identifier;
+  librarySearchResults = []; previewSearchQuery = "";
   document.querySelector("#conversation-empty").hidden = true;
   document.querySelector("#conversation-active").hidden = false;
   setText("active-conversation-profile", conversation.profile_name_snapshot);
@@ -317,7 +396,7 @@ document.querySelector("#conversation-form").addEventListener("submit", async (e
   try {
     const result = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/respond`, {
       method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({content: document.querySelector("#conversation-message").value, ...currentContextSelection()}),
+      body: JSON.stringify({content: document.querySelector("#conversation-message").value, ...currentContextSelection(), ...librarySearchPayload()}),
     });
     form.reset();
     document.querySelector("#conversation-feedback").textContent = result.mode === "draft" ? "Mensaje guardado. No se envió a una IA porque está activo el modo borrador." : "El acompañante respondió.";
@@ -325,6 +404,26 @@ document.querySelector("#conversation-form").addEventListener("submit", async (e
   } catch (error) {
     document.querySelector("#conversation-feedback").textContent = error.message;
   } finally { button.disabled = false; }
+});
+document.querySelector("#library-search-scope").addEventListener("change", (event) => {
+  document.querySelector("#library-search-works-label").hidden = event.target.value !== "selected";
+  librarySearchResults = []; previewSearchQuery = "";
+});
+document.querySelector("#preview-library-search").addEventListener("click", async (event) => {
+  const button = event.currentTarget; button.disabled = true;
+  try { await previewLibrarySearch(); }
+  catch (error) { document.querySelector("#conversation-feedback").textContent = error.message; }
+  finally { button.disabled = false; }
+});
+document.querySelector("#pin-library-context").addEventListener("click", async () => {
+  try {
+    const payload = {...librarySearchPayload(), library_source_keys: selectedLibraryKeys()};
+    const result = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/library-context/pin`, {
+      method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload),
+    });
+    document.querySelector("#conversation-feedback").textContent = `${result.pinned} fuentes quedaron fijadas.`;
+    await loadContext(activeConversationId); await loadPromptPreview();
+  } catch (error) { document.querySelector("#conversation-feedback").textContent = error.message; }
 });
 document.querySelector("#context-form").addEventListener("submit", async (event) => {
   event.preventDefault();

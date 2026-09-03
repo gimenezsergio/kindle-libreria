@@ -257,6 +257,46 @@ class WebTests(unittest.TestCase):
             self.assertIn("MATERIAL SELECCIONADO", provider.packet.input[0]["content"])
             self.assertIn("Mi nota sobre el poder", provider.packet.input[0]["content"])
 
+    def test_chat_can_preview_and_use_library_search(self) -> None:
+        class FakeProvider:
+            name = "test"
+            ready = True
+
+            def respond(self, packet):
+                self.packet = packet
+                return "Veo una conexión respaldada por [B1]."
+
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            with connection:
+                connection.execute("INSERT INTO works(id,preferred_title) VALUES ('source','Origen')")
+                connection.execute("INSERT INTO works(id,preferred_title) VALUES ('other','Otra_obra')")
+                connection.execute("INSERT INTO editions(id,work_id,title) VALUES ('edition','other','Otra obra')")
+                connection.execute("INSERT INTO annotations(id,edition_id,kind,text) VALUES ('annotation','edition','highlight','El poder modifica el lenguaje común')")
+            connection.close()
+            provider = FakeProvider()
+            client = create_app(database, ai_provider=provider).test_client()
+            conversation_id = client.post(
+                "/api/works/source/conversations", json={"profile_id": "companion"}
+            ).get_json()["id"]
+            preview = client.post(
+                f"/api/conversations/{conversation_id}/library-search",
+                json={"search_query": "poder y lenguaje", "search_scope": "library"},
+            )
+            key = preview.get_json()["items"][0]["key"]
+            response = client.post(
+                f"/api/conversations/{conversation_id}/respond",
+                json={"content": "Compará el poder y el lenguaje", "search_library": True,
+                      "search_scope": "library", "library_source_keys": [key]},
+            )
+            detail = client.get(f"/api/conversations/{conversation_id}").get_json()
+            self.assertEqual(response.status_code, 200)
+            self.assertIn("[B1]", provider.packet.input[0]["content"])
+            self.assertEqual(detail["messages"][-1]["library_sources"][0]["source_id"], "annotation")
+            self.assertIn("Buscar conexiones en mi biblioteca", client.get("/library/source").get_data(as_text=True))
+
     def test_automatic_and_manual_display_titles(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "library.sqlite3"

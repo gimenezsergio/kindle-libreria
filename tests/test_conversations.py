@@ -13,6 +13,8 @@ from biblioteca_kindle.conversations import (
     context_options,
     update_context,
     build_prompt_packet,
+    attach_library_sources,
+    pin_library_sources,
 )
 from biblioteca_kindle.db import connect_database, migrate_database
 from biblioteca_kindle.ai import DraftProvider, ResponsesProvider, load_environment_file, provider_from_environment
@@ -132,6 +134,31 @@ class ConversationTests(unittest.TestCase):
         self.assertEqual(provider.model, "deepseek-v4-flash")
         with patch.dict("os.environ", {"BIBLIOTECA_AI_PROVIDER": "deepseek"}, clear=True):
             self.assertIsInstance(provider_from_environment(), DraftProvider)
+
+    def test_retrieved_sources_are_sent_persisted_and_can_be_pinned(self) -> None:
+        identifier = create_conversation(
+            self.database, work_id="work-1", profile_id="companion"
+        )
+        source = {
+            "source_type": "work", "source_id": "work-1", "work_id": "work-1",
+            "work_title": "Una lectura", "label": "Ficha del libro",
+            "content": "Título: Una lectura", "reference": None, "score": 5.0,
+        }
+        packet = build_prompt_packet(
+            self.database, identifier, library_sources=[source]
+        )
+        self.assertIn("[B1] Ficha del libro", packet.input[0]["content"])
+        message_id = add_message(
+            self.database, conversation_id=identifier, role="assistant", content="Respuesta"
+        )
+        attach_library_sources(self.database, message_id, [source])
+        self.assertEqual(
+            get_conversation(self.database, identifier)["messages"][0]["library_sources"][0]["source_id"],
+            "work-1",
+        )
+        self.assertEqual(pin_library_sources(self.database, identifier, [source]), 1)
+        pinned = get_conversation(self.database, identifier)["context_sources"]
+        self.assertTrue(pinned[0]["is_pinned"])
 
     def test_environment_file_does_not_override_exported_values(self) -> None:
         environment = Path(self.temporary.name) / ".env"

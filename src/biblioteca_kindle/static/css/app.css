@@ -308,6 +308,22 @@ select { padding: .6rem 2rem .6rem .7rem; }
 .context-picker label span { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .context-picker button { justify-self: start; padding: .7rem 1rem; border: 0; background: var(--green); color: var(--surface); cursor: pointer; }
 .context-picker form > p { margin: .5rem 0 0; color: var(--muted); font-size: .7rem; }
+.library-search { margin-top: 1rem; padding: 1rem; border: 1px solid var(--line); background: #f5efe5; }
+.library-search summary { color: var(--terracotta); cursor: pointer; font-weight: 700; }
+.library-search-controls { display: flex; flex-wrap: wrap; gap: .8rem; align-items: end; margin-top: 1rem; }
+.library-search-controls > label:not(.check-field) { display: grid; gap: .35rem; min-width: 11rem; color: var(--muted); font-size: .68rem; font-weight: 700; text-transform: uppercase; }
+.library-search-controls select { padding: .55rem; border: 1px solid var(--line); background: var(--paper); }
+.library-search-controls select[multiple] { min-width: 18rem; }
+.library-search-controls button { padding: .65rem .8rem; cursor: pointer; }
+.library-search-help { color: var(--muted); font-size: .72rem; line-height: 1.5; }
+.library-search-results { display: grid; gap: .55rem; margin-top: .75rem; }
+.library-result { display: grid; grid-template-columns: auto 1fr; gap: .65rem; padding: .75rem; border: 1px solid var(--line); background: var(--surface); font-size: .74rem; line-height: 1.45; }
+.library-result > span, .library-result > span > span { display: grid; gap: .25rem; }
+.library-result > span > span { color: var(--muted); }
+.answer-sources { margin-top: .8rem; padding-top: .65rem; border-top: 1px solid var(--line); font-size: .72rem; }
+.answer-sources summary { color: var(--terracotta); cursor: pointer; }
+.answer-sources ol { display: grid; gap: .65rem; padding-left: 1.4rem; }
+.answer-sources li p { margin-top: .2rem; color: var(--muted); }
 .prompt-preview { margin-top: 1rem; }
 .prompt-preview summary { color: var(--terracotta); cursor: pointer; font-size: .75rem; }
 .prompt-preview pre { max-height: 22rem; padding: 1rem; overflow: auto; border: 1px solid var(--line); background: #292521; color: #f6f0e7; font: .72rem/1.55 monospace; white-space: pre-wrap; }

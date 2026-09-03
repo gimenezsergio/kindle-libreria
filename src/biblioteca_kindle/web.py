@@ -28,8 +28,11 @@ from .conversations import (
     list_work_conversations,
     update_context,
     build_prompt_packet,
+    attach_library_sources,
+    pin_library_sources,
 )
 from .ai import AIError, DraftProvider, load_environment_file, provider_from_environment
+from .library_search import LibrarySearchError, search_library
 from .remote_sync import SyncPackageError
 from .sync_receiver import apply_sync_package
 
@@ -413,6 +416,33 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
     sync_token = os.environ.get("BIBLIOTECA_SYNC_TOKEN", "")
     provider = ai_provider or provider_from_environment()
 
+    def requested_library_sources(conversation_id: str, payload: dict) -> list[dict]:
+        if not bool(payload.get("search_library", False)):
+            return []
+        scope = payload.get("search_scope", "library")
+        if scope not in {"library", "current", "selected"}:
+            raise ConversationError("El alcance de búsqueda no es válido")
+        conversation = get_conversation(database_path, conversation_id)
+        work_ids = None
+        if scope == "current":
+            work_ids = [conversation["work_id"]]
+        elif scope == "selected":
+            supplied = payload.get("search_work_ids", [])
+            if not isinstance(supplied, list):
+                raise ConversationError("La selección de libros no es válida")
+            work_ids = supplied
+        results = search_library(
+            database_path, payload.get("search_query", payload.get("content")),
+            work_ids=work_ids, limit=12,
+        )
+        selected_keys = payload.get("library_source_keys")
+        if selected_keys is None:
+            return results[:8]
+        if not isinstance(selected_keys, list) or not all(isinstance(key, str) for key in selected_keys):
+            raise ConversationError("La selección de resultados no es válida")
+        allowed = set(selected_keys)
+        return [item for item in results if item["key"] in allowed][:8]
+
     @app.errorhandler(413)
     def sync_payload_too_large(_error):
         return jsonify(error="El paquete supera el límite de sincronización"), 413
@@ -587,6 +617,26 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
         except ConversationError as error:
             return jsonify(error=str(error)), 404
 
+    @app.post("/api/conversations/<conversation_id>/library-search")
+    def conversation_library_search(conversation_id: str):
+        try:
+            payload = _json_body()
+            payload["search_library"] = True
+            return jsonify(items=requested_library_sources(conversation_id, payload))
+        except (ConversationError, PersonalDataError, LibrarySearchError, ValueError) as error:
+            return jsonify(error=str(error)), 400
+
+    @app.post("/api/conversations/<conversation_id>/library-context/pin")
+    def conversation_library_context_pin(conversation_id: str):
+        try:
+            payload = _json_body()
+            payload["search_library"] = True
+            sources = requested_library_sources(conversation_id, payload)
+            count = pin_library_sources(database_path, conversation_id, sources)
+            return jsonify(pinned=count)
+        except (ConversationError, PersonalDataError, LibrarySearchError, ValueError) as error:
+            return jsonify(error=str(error)), 400
+
     @app.post("/api/conversations/<conversation_id>/respond")
     def conversation_respond(conversation_id: str):
         try:
@@ -598,14 +648,18 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
                     personal_note_ids=payload.get("personal_note_ids", []),
                     annotation_ids=payload.get("annotation_ids", []),
                 )
+            library_sources = requested_library_sources(conversation_id, payload)
             add_message(database_path, conversation_id=conversation_id, role="user", content=payload.get("content"))
-            packet = build_prompt_packet(database_path, conversation_id)
+            packet = build_prompt_packet(
+                database_path, conversation_id, library_sources=library_sources
+            )
             if not provider.ready:
-                return jsonify(mode="draft", prompt=packet.as_dict()), 202
+                return jsonify(mode="draft", prompt=packet.as_dict(), library_sources=library_sources), 202
             answer = provider.respond(packet)
-            add_message(database_path, conversation_id=conversation_id, role="assistant", content=answer)
-            return jsonify(mode=provider.name, answer=answer)
-        except (ConversationError, PersonalDataError, AIError) as error:
+            message_id = add_message(database_path, conversation_id=conversation_id, role="assistant", content=answer)
+            attach_library_sources(database_path, message_id, library_sources)
+            return jsonify(mode=provider.name, answer=answer, library_sources=library_sources)
+        except (ConversationError, PersonalDataError, LibrarySearchError, AIError, ValueError) as error:
             return jsonify(error=str(error)), 400
 
     @app.get("/api/conversations/<conversation_id>/context")

@@ -27,6 +27,7 @@ class MigrationTests(unittest.TestCase):
                     "0010_conversation_context.sql",
                     "0011_remote_sync.sql",
                     "0012_conversation_retrieval.sql",
+                    "0013_pinned_context.sql",
                 ],
             )
 
@@ -78,7 +79,7 @@ class MigrationTests(unittest.TestCase):
                 ).fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(count, 12)
+            self.assertEqual(count, 13)
 
     def test_foreign_keys_are_enabled(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

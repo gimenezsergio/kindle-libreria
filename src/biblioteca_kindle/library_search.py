@@ -158,6 +158,25 @@ def search_library(
         ):
             results.append(_result(row, "collection", f"Categoría: {row['name']}", row["content"] or row["name"], None, query))
 
+        relation_scope = ""
+        relation_parameters: list[object] = []
+        if work_ids is not None:
+            relation_scope = f" AND wr.source_work_id IN ({','.join('?' for _ in selected)})"
+            relation_parameters.extend(selected)
+        for row in connection.execute(
+            f"""
+            SELECT wr.id AS source_id, wr.source_work_id AS work_id,
+                   {_work_title_sql()} AS work_title, wr.relation_type,
+                   COALESCE(wr.label, '') || ' ' || COALESCE(wr.explanation, '') ||
+                   ' Relacionado con ' || {_work_title_sql('other')} AS content
+            FROM work_relations wr JOIN works w ON w.id=wr.source_work_id
+            JOIN works other ON other.id=wr.target_work_id
+            WHERE 1=1 {relation_scope}
+            """,
+            relation_parameters,
+        ):
+            results.append(_result(row, "relation", f"Relación: {row['relation_type']}", row["content"], None, query))
+
         ranked = [item for item in results if item["score"] > 0]
         ranked.sort(key=lambda item: (-item["score"], item["work_title"].casefold(), item["key"]))
         return ranked[:limit]

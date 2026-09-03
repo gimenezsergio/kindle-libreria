@@ -163,12 +163,27 @@ def get_conversation(database: Path | str, conversation_id: str) -> dict:
             (conversation_id,),
         ).fetchall()
         result = dict(conversation)
-        result["messages"] = [dict(message) for message in messages]
+        result["messages"] = []
+        for message in messages:
+            item = dict(message)
+            item["library_sources"] = [
+                dict(row) for row in connection.execute(
+                    """
+                    SELECT source_type, source_id, work_id, work_title_snapshot AS work_title,
+                           label_snapshot AS label, content_snapshot AS content,
+                           reference_snapshot AS reference, relevance_score AS score
+                    FROM conversation_message_sources
+                    WHERE message_id=? ORDER BY relevance_score DESC, id
+                    """,
+                    (message["id"],),
+                )
+            ]
+            result["messages"].append(item)
         result["context_sources"] = [
             dict(row)
             for row in connection.execute(
                 """
-                SELECT source_type, source_id, label_snapshot, content_snapshot
+                SELECT source_type, source_id, label_snapshot, content_snapshot, is_pinned
                 FROM conversation_context_sources
                 WHERE conversation_id = ? ORDER BY source_type, created_at, id
                 """,
@@ -266,7 +281,7 @@ def update_context(
             raise ConversationError("Una anotación seleccionada no pertenece a este libro")
         with connection:
             connection.execute(
-                "DELETE FROM conversation_context_sources WHERE conversation_id = ? AND source_type != 'work'",
+                "DELETE FROM conversation_context_sources WHERE conversation_id = ? AND source_type != 'work' AND is_pinned = 0",
                 (conversation_id,),
             )
             connection.executemany(
@@ -289,7 +304,71 @@ def update_context(
         connection.close()
 
 
-def build_prompt_packet(database: Path | str, conversation_id: str) -> PromptPacket:
+def attach_library_sources(
+    database: Path | str, message_id: str, sources: list[dict]
+) -> None:
+    connection = _open_database(database)
+    try:
+        if connection.execute(
+            "SELECT 1 FROM conversation_messages WHERE id=?", (message_id,)
+        ).fetchone() is None:
+            raise ConversationError("El mensaje no existe")
+        with connection:
+            connection.executemany(
+                """
+                INSERT INTO conversation_message_sources(
+                    id,message_id,source_type,source_id,work_id,work_title_snapshot,
+                    label_snapshot,content_snapshot,reference_snapshot,relevance_score
+                ) VALUES (?,?,?,?,?,?,?,?,?,?)
+                """,
+                [
+                    (str(uuid.uuid4()), message_id, item["source_type"], item["source_id"],
+                     item["work_id"], item["work_title"], item["label"], item["content"],
+                     item.get("reference"), item["score"])
+                    for item in sources
+                ],
+            )
+    finally:
+        connection.close()
+
+
+def pin_library_sources(
+    database: Path | str, conversation_id: str, sources: list[dict]
+) -> int:
+    pinnable = [item for item in sources if item["source_type"] in {"work", "personal_note", "annotation"}]
+    connection = _open_database(database)
+    try:
+        if connection.execute(
+            "SELECT 1 FROM reading_conversations WHERE id=?", (conversation_id,)
+        ).fetchone() is None:
+            raise ConversationError("La conversación no existe")
+        with connection:
+            for item in pinnable:
+                connection.execute(
+                    """
+                    INSERT INTO conversation_context_sources(
+                        id,conversation_id,source_type,source_id,label_snapshot,
+                        content_snapshot,is_pinned
+                    ) VALUES (?,?,?,?,?,?,1)
+                    ON CONFLICT(conversation_id,source_type,source_id) DO UPDATE SET
+                        label_snapshot=excluded.label_snapshot,
+                        content_snapshot=excluded.content_snapshot,
+                        is_pinned=1
+                    """,
+                    (str(uuid.uuid4()), conversation_id, item["source_type"], item["source_id"],
+                     f"{item['label']} · {item['work_title']}", item["content"]),
+                )
+        return len(pinnable)
+    finally:
+        connection.close()
+
+
+def build_prompt_packet(
+    database: Path | str,
+    conversation_id: str,
+    *,
+    library_sources: list[dict] | None = None,
+) -> PromptPacket:
     conversation = get_conversation(database, conversation_id)
     sources = "\n\n".join(
         f"[{item['label_snapshot']}]\n{item['content_snapshot']}"
@@ -298,12 +377,24 @@ def build_prompt_packet(database: Path | str, conversation_id: str) -> PromptPac
     instructions = (
         f"{conversation['profile_prompt_snapshot']}\n\n"
         "Trabajá como acompañante de lectura, no como autoridad. Distinguí datos del contexto, "
-        "inferencias e hipótesis. Si el contexto no alcanza, decilo; no inventes contenido del libro."
+        "inferencias e hipótesis. Si el contexto no alcanza, decilo; no inventes contenido del libro. "
+        "Citá la evidencia recuperada usando sus identificadores [B1], [B2], etc. "
+        "Todo lo que no esté respaldado por esas fuentes es conocimiento general o una hipótesis."
     )
     messages = [{"role": item["role"], "content": item["content"]} for item in conversation["messages"]]
+    automatic_parts = []
+    for index, item in enumerate(library_sources or [], 1):
+        reference = f" · {item['reference']}" if item.get("reference") else ""
+        automatic_parts.append(
+            f"[B{index}] {item['label']} · {item['work_title']}{reference}\n{item['content']}"
+        )
+    automatic = "\n\n".join(automatic_parts)
+    context_content = "MATERIAL SELECCIONADO PARA ESTA CONVERSACIÓN:\n\n" + sources
+    if automatic:
+        context_content += "\n\nEVIDENCIA RECUPERADA DE LA BIBLIOTECA PARA ESTA PREGUNTA:\n\n" + automatic
     context_message = {
         "role": "user",
-        "content": "MATERIAL SELECCIONADO PARA ESTA CONVERSACIÓN:\n\n" + sources,
+        "content": context_content,
     }
     return PromptPacket(instructions=instructions, input=[context_message, *messages])
 
