@@ -66,6 +66,11 @@ def apply_sync_package(database: Path | str, package: dict[str, Any]) -> dict[st
                 return response
             before_works = _count(connection, "SELECT COUNT(*) FROM works")
             before_annotations = _count(connection, "SELECT COUNT(*) FROM annotations")
+            previously_present = {
+                row["id"] for row in connection.execute(
+                    "SELECT id FROM kindle_deliveries WHERE presence='present'"
+                )
+            }
             snapshot_id = package["package_id"]
             snapshot = package["snapshot"]
             connection.execute(
@@ -93,7 +98,9 @@ def apply_sync_package(database: Path | str, package: dict[str, Any]) -> dict[st
                 "books_present": _count(connection, "SELECT COUNT(*) FROM kindle_deliveries WHERE presence='present'"),
                 "annotations": _count(connection, "SELECT COUNT(*) FROM annotations"),
             }
-            response = {"schema_version": SCHEMA_VERSION, "package_id": package["package_id"], "status": "applied", "changes": {"works_created": totals["works"] - before_works, "annotations_created": totals["annotations"] - before_annotations}, "totals": totals, "warnings": package["warnings"]}
+            for row in connection.execute("SELECT kind,COUNT(*) total FROM annotations GROUP BY kind"):
+                totals[{"highlight": "highlights", "note": "notes", "bookmark": "bookmarks", "other": "other_annotations"}[row["kind"]]] = row["total"]
+            response = {"schema_version": SCHEMA_VERSION, "package_id": package["package_id"], "status": "applied", "changes": {"works_created": totals["works"] - before_works, "annotations_created": totals["annotations"] - before_annotations, "books_marked_absent": len(previously_present - set(present))}, "totals": totals, "warnings": package["warnings"]}
             connection.execute(
                 "INSERT INTO remote_sync_packages(package_id,content_hash,agent_id,device_key,response_json) VALUES (?,?,?,?,?)",
                 (package["package_id"], digest, package["agent_id"], package["device_key"], json.dumps(response, ensure_ascii=False, sort_keys=True)),

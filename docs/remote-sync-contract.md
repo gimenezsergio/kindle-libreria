@@ -223,6 +223,7 @@ quedar visible en el historial o en la lista de procesos.
 2. Crear el exportador local sin red y verificar que no incluya libros.
 3. Crear el receptor local autenticado y transaccional. **Implementado.**
 4. Probar reenvíos, cortes, paquetes corruptos y ausencias con `localhost`.
+   **Implementado.**
 5. Incorporar el comando `push` y su resumen legible.
 6. Preparar migración y copia de seguridad de la base actual.
 7. Configurar HTTPS, secretos y despliegue en el servidor.
@@ -252,3 +253,9 @@ Para las pruebas locales se configura `BIBLIOTECA_SYNC_TOKEN` en `work/.env`.
 El límite predeterminado es 32 MiB y puede reducirse con
 `BIBLIOTECA_SYNC_MAX_BYTES`. En producción este endpoint solo se expondrá detrás
 de HTTPS.
+
+Las pruebas automatizadas verifican tokens ausentes, JSON truncado, cargas que
+superan el límite, reenvíos exactos, reutilización conflictiva de IDs, rollback
+por referencias inválidas y ausencias. Una ausencia conserva las anotaciones y
+los datos propios; un paquete inválido no cambia presencias ni publica una
+recepción parcial.

@@ -413,6 +413,10 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
     sync_token = os.environ.get("BIBLIOTECA_SYNC_TOKEN", "")
     provider = ai_provider or provider_from_environment()
 
+    @app.errorhandler(413)
+    def sync_payload_too_large(_error):
+        return jsonify(error="El paquete supera el límite de sincronización"), 413
+
     @app.post("/api/sync/v1/packages")
     def receive_sync_package():
         authorization = request.headers.get("Authorization", "")

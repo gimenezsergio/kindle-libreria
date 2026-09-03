@@ -85,6 +85,52 @@ class SyncReceiverTests(unittest.TestCase):
             finally:
                 connection.close()
 
+    def test_complete_snapshot_marks_absent_without_deleting_private_data(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "server.sqlite3"
+            apply_sync_package(database, package())
+            connection = connect_database(database)
+            try:
+                with connection:
+                    connection.execute(
+                        "INSERT INTO personal_notes(id,target_type,target_id,body) VALUES ('note','work','work','Private')"
+                    )
+            finally:
+                connection.close()
+            next_package = copy.deepcopy(package())
+            next_package["package_id"] = "33333333-3333-4333-8333-333333333333"
+            next_package["present_delivery_ids"] = []
+            response = apply_sync_package(database, next_package)
+            connection = connect_database(database)
+            try:
+                presence = connection.execute("SELECT presence FROM kindle_deliveries").fetchone()[0]
+                notes = connection.execute("SELECT COUNT(*) FROM personal_notes").fetchone()[0]
+            finally:
+                connection.close()
+            self.assertEqual(response["changes"]["books_marked_absent"], 1)
+            self.assertEqual(presence, "absent")
+            self.assertEqual(notes, 1)
+
+    def test_malformed_or_oversized_http_body_changes_nothing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, patch.dict(
+            "os.environ",
+            {"BIBLIOTECA_SYNC_TOKEN": "secret", "BIBLIOTECA_SYNC_MAX_BYTES": "100"},
+        ):
+            database = Path(directory) / "server.sqlite3"
+            migrate_database(database)
+            client = create_app(database).test_client()
+            headers = {"Authorization": "Bearer secret", "Content-Type": "application/json"}
+            malformed = client.post("/api/sync/v1/packages", data=b'{"broken":', headers=headers)
+            oversized = client.post("/api/sync/v1/packages", data=b'{' + b' ' * 200 + b'}', headers=headers)
+            self.assertEqual(malformed.status_code, 400)
+            self.assertEqual(oversized.status_code, 413)
+            connection = connect_database(database)
+            try:
+                self.assertEqual(connection.execute("SELECT COUNT(*) FROM remote_sync_packages").fetchone()[0], 0)
+                self.assertEqual(connection.execute("SELECT COUNT(*) FROM works").fetchone()[0], 0)
+            finally:
+                connection.close()
+
 
 if __name__ == "__main__":
     unittest.main()
