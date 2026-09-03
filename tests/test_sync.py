@@ -60,6 +60,12 @@ class SyncTests(unittest.TestCase):
             self.assertEqual(second.manifests.updated, 1)
             self.assertEqual(first.clippings.created, 1)
             self.assertEqual(second.clippings.existing, 1)
+            self.assertEqual(second.summary.works, 1)
+            self.assertEqual(second.summary.deliveries_present, 1)
+            self.assertEqual(second.summary.deliveries_absent, 0)
+            self.assertEqual(second.summary.annotations, 1)
+            self.assertEqual(second.summary.highlights, 1)
+            self.assertEqual(second.summary.notes, 0)
             connection = connect_database(database)
             try:
                 counts = {
@@ -134,8 +140,11 @@ class SyncTests(unittest.TestCase):
                 connection.close()
             self.assertEqual(presence, "absent")
             self.assertEqual(annotations, 1)
+            self.assertEqual(result.summary.works, 1)
+            self.assertEqual(result.summary.deliveries_present, 0)
+            self.assertEqual(result.summary.deliveries_absent, 1)
+            self.assertEqual(result.summary.annotations, 1)
 
 
 if __name__ == "__main__":
     unittest.main()
-

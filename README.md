@@ -130,6 +130,31 @@ PYTHONPATH=src python3 -m biblioteca_kindle sync /media/usuario/Kindle \
   --database work/library.sqlite3
 ```
 
+### Cómo se comporta la sincronización
+
+Cada ejecución vuelve a inventariar los archivos relevantes que el Kindle expone,
+pero actualiza el catálogo de manera incremental e idempotente:
+
+- Un libro, subrayado o nota ya conocido se actualiza o se reconoce sin duplicarlo.
+- Los libros y las anotaciones nuevos se incorporan al catálogo.
+- Si un libro que había sido sincronizado deja de estar en el dispositivo, su entrega
+  se marca como ausente, pero no se borran la obra, sus anotaciones ni su historial.
+- Una anotación anterior que ya no aparezca en las fuentes actuales se conserva como
+  información histórica; una ausencia no se interpreta automáticamente como borrado.
+- Las categorías, notas propias, relaciones, portadas elegidas y conversaciones con
+  el acompañante no dependen de la presencia del libro en el Kindle y se conservan.
+- Las identidades provisionales creadas desde `My Clippings.txt` se reconcilian cuando
+  luego aparece una edición Kindle identificable de manera inequívoca.
+
+La sincronización genera una instantánea nueva para conservar procedencia y fechas de
+observación. Al terminar informa los cambios de esa ejecución y los totales resultantes:
+obras, libros presentes y ausentes, subrayados, notas Kindle, marcadores, otras
+anotaciones, notas propias, estados de lectura, reconciliaciones y advertencias.
+
+La aplicación nunca escribe en el Kindle. Antes de sincronizar conviene comprobar que
+Linux lo haya montado como solo lectura; si el montaje admite escritura, la herramienta
+lo advierte en el inventario.
+
 La base debe estar fuera del Kindle. El directorio `work/` está excluido de Git
 porque contiene información privada derivada de las lecturas.
 

@@ -23,6 +23,20 @@ class SyncResult:
     annotations: AnnotationImportResult
     reconciliation: ReconciliationResult
     marked_absent: int
+    summary: SyncSummary
+
+
+@dataclass(frozen=True)
+class SyncSummary:
+    works: int
+    deliveries_present: int
+    deliveries_absent: int
+    annotations: int
+    highlights: int
+    notes: int
+    bookmarks: int
+    other_annotations: int
+    personal_notes: int
 
 
 def _snapshot_has_path(
@@ -65,6 +79,38 @@ def _finish_reconciliation(database: Path, snapshot_id: str) -> tuple[Reconcilia
         connection.close()
 
 
+def _catalog_summary(database: Path) -> SyncSummary:
+    connection = connect_database(database)
+    try:
+        annotation_counts = {
+            row["kind"]: int(row["total"])
+            for row in connection.execute(
+                "SELECT kind, COUNT(*) AS total FROM annotations GROUP BY kind"
+            )
+        }
+
+        def count(query: str) -> int:
+            return int(connection.execute(query).fetchone()[0])
+
+        return SyncSummary(
+            works=count("SELECT COUNT(*) FROM works"),
+            deliveries_present=count(
+                "SELECT COUNT(*) FROM kindle_deliveries WHERE presence = 'present'"
+            ),
+            deliveries_absent=count(
+                "SELECT COUNT(*) FROM kindle_deliveries WHERE presence = 'absent'"
+            ),
+            annotations=sum(annotation_counts.values()),
+            highlights=annotation_counts.get("highlight", 0),
+            notes=annotation_counts.get("note", 0),
+            bookmarks=annotation_counts.get("bookmark", 0),
+            other_annotations=annotation_counts.get("other", 0),
+            personal_notes=count("SELECT COUNT(*) FROM personal_notes"),
+        )
+    finally:
+        connection.close()
+
+
 def synchronize(
     kindle_root: Path | str,
     database: Path | str,
@@ -103,6 +149,7 @@ def synchronize(
     reconciliation, marked_absent = _finish_reconciliation(
         database_path, snapshot_id
     )
+    summary = _catalog_summary(database_path)
     return SyncResult(
         inventory=inventory,
         manifests=manifests,
@@ -112,4 +159,5 @@ def synchronize(
         annotations=annotations,
         reconciliation=reconciliation,
         marked_absent=marked_absent,
+        summary=summary,
     )

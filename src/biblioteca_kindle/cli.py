@@ -167,14 +167,35 @@ def main(argv: Sequence[str] | None = None) -> int:
                 ClippingsImportError, ProgressImportError, AnnotationImportError) as error:
             print(f"Error de sincronización: {error}")
             return 1
+        clippings_created = result.clippings.created if result.clippings else 0
+        new_annotations = clippings_created + result.annotations.created
+        existing_clippings = result.clippings.existing if result.clippings else 0
+        existing_annotations = existing_clippings + result.annotations.existing
+        print("Sincronización completa.")
         print(
-            f"Sincronización completa: {result.inventory.file_count} fuentes; "
-            f"{result.manifests.imported} manifiestos; "
-            f"{result.clippings.entries if result.clippings else 0} clippings; "
-            f"{result.progress.imported} estados; "
-            f"{result.annotations.created} anotaciones locales nuevas; "
-            f"{result.reconciliation.resolved_aliases} aliases reconciliados; "
-            f"{result.marked_absent} entregas marcadas ausentes."
+            f"Cambios: {result.manifests.created} libros nuevos; "
+            f"{result.manifests.updated} libros ya conocidos actualizados; "
+            f"{new_annotations} anotaciones nuevas; "
+            f"{existing_annotations} anotaciones ya conocidas; "
+            f"{result.marked_absent} libros marcados como ausentes."
+        )
+        print(
+            f"Biblioteca: {result.summary.works} obras; "
+            f"{result.summary.deliveries_present} libros presentes; "
+            f"{result.summary.deliveries_absent} ausentes."
+        )
+        print(
+            f"Anotaciones Kindle: {result.summary.annotations} en total "
+            f"({result.summary.highlights} subrayados; "
+            f"{result.summary.notes} notas; "
+            f"{result.summary.bookmarks} marcadores; "
+            f"{result.summary.other_annotations} otras)."
+        )
+        print(
+            f"Datos complementarios: {result.progress.imported} estados de lectura; "
+            f"{result.summary.personal_notes} notas propias; "
+            f"{result.reconciliation.resolved_aliases} identidades reconciliadas; "
+            f"{result.inventory.warning_count + result.annotations.warnings + result.progress.warnings} advertencias."
         )
         return 0
     if args.command == "collection-add":
