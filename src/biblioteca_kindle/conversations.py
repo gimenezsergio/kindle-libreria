@@ -215,7 +215,8 @@ def context_options(database: Path | str, conversation_id: str) -> dict:
         )]
         annotations = [dict(row) for row in connection.execute(
             """
-            SELECT an.id, an.kind,
+            SELECT an.id, an.kind, an.position_type,
+                   an.start_position_native, an.end_position_native,
                    COALESCE(NULLIF(TRIM(an.text), ''), NULLIF(TRIM(an.note_text), ''),
                             'Anotación sin texto recuperable') AS content
             FROM annotations an JOIN editions e ON e.id = an.edition_id

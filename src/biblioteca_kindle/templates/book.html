@@ -54,8 +54,11 @@
           <div><p class="eyebrow">Acompañante de lectura</p><h2 id="conversation-title">Conversar sobre esta lectura</h2><p>Conversá con el perfil que elijas y, si querés, buscá evidencia en toda tu biblioteca.</p></div>
           <div class="companion-start"><label>Perfil<select id="conversation-profile"><option>Cargando perfiles…</option></select></label><button id="new-conversation" type="button">Nueva conversación</button><a href="/settings/ai-profiles">Administrar perfiles</a></div>
         </header>
+        <div class="conversation-toolbar">
+          <label>Conversación<select id="conversation-list" aria-label="Conversaciones de este libro"><option>Cargando…</option></select></label>
+          <details class="provider-status"><summary id="provider-notice">Consultando IA…</summary><p id="provider-description"></p></details>
+        </div>
         <div class="companion-layout companion-workbench">
-          <nav class="conversation-list" id="conversation-list" aria-label="Conversaciones de este libro"></nav>
           <div class="conversation-panel">
             <div class="conversation-empty" id="conversation-empty"><strong>Todavía no hay una conversación abierta</strong><p>Elegí un perfil y creá una para empezar a registrar tus preguntas.</p></div>
             <div class="conversation-active" id="conversation-active" hidden>
@@ -63,19 +66,18 @@
                 <header class="active-conversation-header"><div><p class="eyebrow" id="active-conversation-profile"></p><h3 id="active-conversation-title"></h3></div><span class="attached-count" id="attached-count">Sin material adjunto</span></header>
                 <div class="conversation-messages" id="conversation-messages" aria-live="polite"></div>
                 <div class="chat-composer">
-                  <p class="provider-notice" id="provider-notice">Consultando el modo de IA…</p>
                   <form class="conversation-form" id="conversation-form"><label for="conversation-message">Tu mensaje</label><div class="composer-row"><textarea id="conversation-message" rows="3" required placeholder="Una pregunta, una interpretación, algo que te dejó pensando…"></textarea><button type="submit">Enviar</button></div></form>
                   <p class="form-feedback" id="conversation-feedback" role="status" aria-live="polite"></p>
                 </div>
               </section>
               <aside class="material-column" aria-label="Material para la conversación">
-                <details class="companion-material" open><summary><span>Material para conversar</span><span id="material-summary-count">0 adjuntos</span></summary>
-                  <div class="material-column-content">
-                    <details class="context-picker" open><summary>Notas y subrayados <span id="context-count"></span></summary><form id="context-form"><fieldset><legend>Notas propias</legend><div id="context-notes"></div></fieldset><fieldset><legend>Subrayados y notas del Kindle</legend><div id="context-annotations"></div></fieldset><button type="submit">Guardar selección</button><p>La ficha del libro se incluye siempre.</p></form></details>
-                    <details class="library-search" open>
-                      <summary>Buscar conexiones en mi biblioteca</summary>
+                <div class="material-column-content">
+                  <header><div><p class="eyebrow">Contexto adjunto</p><h3>Material para conversar</h3></div><span id="material-summary-count">0 adjuntos</span></header>
+                  <div class="attached-material" id="attached-material"><p>La ficha del libro se incluye siempre.</p></div>
+                  <button class="add-material-button" id="open-context-picker" type="button">+ Agregar material</button>
+                  <details class="library-search">
+                      <summary><span>Buscar conexiones en mi biblioteca</span><input id="library-search-enabled" type="checkbox" checked aria-label="Consultar la biblioteca al enviar"></summary>
                       <div class="library-search-controls">
-                        <label class="check-field"><input id="library-search-enabled" type="checkbox" checked><span>Consultar al enviar</span></label>
                         <label>Alcance<select id="library-search-scope"><option value="library">Toda la biblioteca</option><option value="current">Solo este libro</option><option value="selected">Libros elegidos</option></select></label>
                         <label id="library-search-works-label" hidden>Libros<select id="library-search-works" multiple size="5"></select></label>
                         <button class="secondary-button" id="preview-library-search" type="button">Ver contexto sugerido</button>
@@ -83,15 +85,24 @@
                       <p class="library-search-help">Busca en títulos, autoría, categorías, relaciones, notas y subrayados. No contiene el texto completo.</p>
                       <div class="library-search-results" id="library-search-results"><p>Escribí tu mensaje y pedí una vista previa para revisar las fuentes.</p></div>
                       <button class="text-button" id="pin-library-context" type="button" hidden>Fijar seleccionados</button>
-                    </details>
-                    <details class="prompt-preview"><summary>Ver exactamente qué se enviará</summary><pre id="prompt-preview-content">Abrí esta sección para preparar la vista previa.</pre></details>
-                  </div>
-                </details>
+                  </details>
+                  <details class="prompt-preview"><summary>Detalles y privacidad</summary><p>Revisá el contexto exacto que recibirá el proveedor activo.</p><pre id="prompt-preview-content">Abrí esta sección para preparar la vista previa.</pre></details>
+                </div>
               </aside>
             </div>
           </div>
         </div>
       </section>
+      <dialog class="context-dialog" id="context-dialog" aria-labelledby="context-dialog-title">
+        <form method="dialog" class="dialog-heading"><div><p class="eyebrow">Contexto de la conversación</p><h2 id="context-dialog-title">Agregar material</h2></div><button class="dialog-close" value="cancel" aria-label="Cerrar selector">×</button></form>
+        <form id="context-form">
+          <label class="context-search">Buscar en notas y subrayados<input id="context-search" type="search" placeholder="Una palabra o frase…"></label>
+          <div class="context-tabs" role="tablist" aria-label="Tipos de material"><button type="button" role="tab" aria-selected="true" data-context-tab="annotation">Subrayados <span id="annotation-option-count"></span></button><button type="button" role="tab" aria-selected="false" data-context-tab="personal_note">Notas propias <span id="note-option-count"></span></button></div>
+          <fieldset class="context-options" data-context-panel="annotation"><legend>Subrayados y notas del Kindle</legend><div id="context-annotations"></div></fieldset>
+          <fieldset class="context-options" data-context-panel="personal_note" hidden><legend>Notas propias</legend><div id="context-notes"></div></fieldset>
+          <footer class="dialog-actions"><span id="context-count">0 seleccionadas</span><button class="secondary-button" id="cancel-context-picker" type="button">Cancelar</button><button type="submit">Guardar selección</button></footer>
+        </form>
+      </dialog>
       <section class="book-annotations book-panel" id="panel-memory" data-book-panel="memory" aria-labelledby="annotations-title">
         <div class="section-heading"><div><p class="eyebrow">Memoria de lectura</p><h2 id="annotations-title">Subrayados y notas</h2></div><span id="annotation-result-count">Consultando…</span></div>
         <form class="annotation-filters" id="annotation-filters">

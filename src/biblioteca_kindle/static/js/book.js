@@ -6,6 +6,7 @@ let annotationPages = 1;
 let activeConversationId = null;
 let librarySearchResults = [];
 let previewSearchQuery = "";
+let contextOptionsData = {notes: [], annotations: []};
 
 function languageName(code) {
   const normalized = String(code || "").trim().toLowerCase();
@@ -233,16 +234,50 @@ async function previewLibrarySearch() {
 
 function contextChoice(item, type, selected) {
   const label = document.createElement("label");
+  const readableStart = /^\d+$/.test(item.start_position_native || "");
+  const readableEnd = /^\d+$/.test(item.end_position_native || "");
+  const position = readableStart
+    ? `${item.position_type === "page" ? "Página" : "Ubicación"} ${item.start_position_native}${readableEnd && item.end_position_native !== item.start_position_native ? `–${item.end_position_native}` : ""}`
+    : "";
+  label.dataset.searchText = `${item.content} ${position}`.toLocaleLowerCase("es");
   const input = document.createElement("input");
   input.type = "checkbox"; input.name = type; input.value = item.id; input.checked = selected.includes(item.id);
-  const text = document.createElement("span");
-  text.textContent = item.content;
-  label.append(input, text);
+  const body = document.createElement("span");
+  if (position) { const meta = document.createElement("small"); meta.textContent = position; body.append(meta); }
+  const text = document.createElement("span"); text.textContent = item.content;
+  body.append(text); label.append(input, body);
   return label;
+}
+
+function renderAttachedMaterial(data, selectedNotes, selectedAnnotations) {
+  const selectedItems = [
+    ...data.notes.filter((item) => selectedNotes.includes(item.id)).map((item) => ({...item, type: "personal_note", label: "Nota propia"})),
+    ...data.annotations.filter((item) => selectedAnnotations.includes(item.id)).map((item) => ({...item, type: "annotation", label: item.kind === "note" ? "Nota Kindle" : "Subrayado"})),
+  ];
+  const container = document.querySelector("#attached-material");
+  const cards = selectedItems.map((item) => {
+    const article = document.createElement("article"); article.className = "attached-item";
+    const body = document.createElement("div");
+    const label = document.createElement("strong"); label.textContent = item.label;
+    const content = document.createElement("p"); content.textContent = item.content;
+    const remove = document.createElement("button"); remove.type = "button"; remove.className = "remove-attached"; remove.setAttribute("aria-label", `Quitar ${item.label}`); remove.textContent = "×";
+    remove.addEventListener("click", async () => {
+      const checkbox = document.querySelector(`#context-form input[name="${item.type}"][value="${CSS.escape(item.id)}"]`);
+      if (checkbox) checkbox.checked = false;
+      await saveContextSelection();
+    });
+    body.append(label, content); article.append(body, remove); return article;
+  });
+  if (!cards.length) {
+    const empty = document.createElement("p"); empty.textContent = "No agregaste fragmentos todavía. La ficha del libro se incluye siempre.";
+    cards.push(empty);
+  }
+  container.replaceChildren(...cards);
 }
 
 async function loadContext(identifier) {
   const data = await jsonRequest(`/api/conversations/${encodeURIComponent(identifier)}/context`);
+  contextOptionsData = data;
   const selectedNotes = data.selected.personal_note || [];
   const selectedAnnotations = data.selected.annotation || [];
   document.querySelector("#context-notes").replaceChildren(...data.notes.map((item) => contextChoice(item, "personal_note", selectedNotes)));
@@ -252,14 +287,22 @@ async function loadContext(identifier) {
     if (!container.children.length) { const empty = document.createElement("p"); empty.textContent = emptyText; container.append(empty); }
   }
   const selectedCount = selectedNotes.length + selectedAnnotations.length;
-  setText("context-count", `· ${selectedCount} seleccionadas`);
+  setText("context-count", `${selectedCount} ${selectedCount === 1 ? "seleccionada" : "seleccionadas"}`);
+  setText("annotation-option-count", `(${data.annotations.length})`);
+  setText("note-option-count", `(${data.notes.length})`);
   setText("material-summary-count", `${selectedCount} ${selectedCount === 1 ? "adjunto" : "adjuntos"}`);
   setText("attached-count", selectedCount ? `${selectedCount} ${selectedCount === 1 ? "fragmento adjunto" : "fragmentos adjuntos"}` : "Sin material adjunto");
+  renderAttachedMaterial(data, selectedNotes, selectedAnnotations);
 }
 
 function currentContextSelection() {
   const selected = (name) => [...document.querySelectorAll(`#context-form input[name="${name}"]:checked`)].map((input) => input.value);
   return {personal_note_ids: selected("personal_note"), annotation_ids: selected("annotation")};
+}
+
+function updateContextSelectionCount() {
+  const count = document.querySelectorAll('#context-form input[type="checkbox"]:checked').length;
+  setText("context-count", `${count} ${count === 1 ? "seleccionada" : "seleccionadas"}`);
 }
 
 async function loadPromptPreview() {
@@ -271,8 +314,11 @@ async function loadPromptPreview() {
 async function loadProviderStatus() {
   const status = await jsonRequest("/api/ai/status");
   document.querySelector("#provider-notice").textContent = status.ready
-    ? `Proveedor activo: ${status.provider}. El mensaje y el contexto seleccionado se enviarán al proveedor.`
-    : "Modo borrador: el mensaje se guarda, pero nada se envía fuera de esta computadora.";
+    ? `● ${status.provider} activo`
+    : "● Modo borrador";
+  document.querySelector("#provider-description").textContent = status.ready
+    ? "El mensaje y el contexto seleccionado se enviarán a este proveedor."
+    : "El mensaje se guarda, pero nada se envía fuera de esta computadora.";
 }
 
 async function openConversation(identifier) {
@@ -293,9 +339,7 @@ async function openConversation(identifier) {
     container.append(empty);
   }
   container.scrollTop = container.scrollHeight;
-  document.querySelectorAll(".conversation-list button").forEach((button) => {
-    button.setAttribute("aria-current", button.dataset.id === identifier ? "true" : "false");
-  });
+  document.querySelector("#conversation-list").value = identifier;
   await loadContext(identifier);
   await loadPromptPreview();
 }
@@ -303,23 +347,13 @@ async function openConversation(identifier) {
 async function loadConversations(preferredId = activeConversationId) {
   const data = await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/conversations`);
   const list = document.querySelector("#conversation-list");
-  const buttons = data.items.map((conversation) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.dataset.id = conversation.id;
-    const title = document.createElement("strong");
-    title.textContent = conversation.title || "Conversación sobre la lectura";
-    const detail = document.createElement("span");
-    detail.textContent = `${conversation.profile_name_snapshot} · ${conversation.message_count} mensajes`;
-    button.append(title, detail);
-    button.addEventListener("click", () => openConversation(conversation.id));
-    return button;
-  });
-  list.replaceChildren(...buttons);
-  if (!buttons.length) {
-    const empty = document.createElement("p");
-    empty.textContent = "Sin conversaciones";
-    list.append(empty);
+  const options = data.items.map((conversation) => new Option(
+    `${conversation.title || "Conversación sobre la lectura"} · ${conversation.message_count} mensajes`, conversation.id,
+  ));
+  list.replaceChildren(...options);
+  list.disabled = !options.length;
+  if (!options.length) {
+    list.append(new Option("Sin conversaciones", ""));
     return;
   }
   const next = data.items.some((item) => item.id === preferredId) ? preferredId : data.items[0].id;
@@ -391,6 +425,9 @@ document.querySelector("#new-conversation").addEventListener("click", async () =
     document.querySelector("#conversation-feedback").textContent = error.message;
   } finally { button.disabled = false; }
 });
+document.querySelector("#conversation-list").addEventListener("change", (event) => {
+  if (event.target.value) openConversation(event.target.value);
+});
 document.querySelector("#conversation-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!activeConversationId) return;
@@ -429,18 +466,46 @@ document.querySelector("#pin-library-context").addEventListener("click", async (
     await loadContext(activeConversationId); await loadPromptPreview();
   } catch (error) { document.querySelector("#conversation-feedback").textContent = error.message; }
 });
+async function saveContextSelection() {
+  if (!activeConversationId) return;
+  await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/context`, {
+    method: "PUT", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(currentContextSelection()),
+  });
+  document.querySelector("#conversation-feedback").textContent = "Contexto guardado para esta conversación.";
+  await loadContext(activeConversationId);
+  await loadPromptPreview();
+}
 document.querySelector("#context-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (!activeConversationId) return;
   try {
-    await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/context`, {
-      method: "PUT", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(currentContextSelection()),
-    });
-    document.querySelector("#conversation-feedback").textContent = "Contexto guardado para esta conversación.";
-    await loadContext(activeConversationId);
-    await loadPromptPreview();
+    await saveContextSelection();
+    document.querySelector("#context-dialog").close();
   } catch (error) { document.querySelector("#conversation-feedback").textContent = error.message; }
+});
+document.querySelector("#open-context-picker").addEventListener("click", () => {
+  document.querySelector("#context-search").value = "";
+  document.querySelectorAll(".context-options label").forEach((label) => { label.hidden = false; });
+  document.querySelector("#context-dialog").showModal();
+  document.querySelector("#context-search").focus();
+});
+document.querySelector("#cancel-context-picker").addEventListener("click", () => {
+  document.querySelector("#context-dialog").close();
+  loadContext(activeConversationId);
+});
+document.querySelector("#context-search").addEventListener("input", (event) => {
+  const query = event.target.value.trim().toLocaleLowerCase("es");
+  document.querySelectorAll(".context-options label").forEach((label) => {
+    label.hidden = Boolean(query) && !label.dataset.searchText.includes(query);
+  });
+});
+document.querySelector("#context-form").addEventListener("change", updateContextSelectionCount);
+document.querySelector("#library-search-enabled").addEventListener("click", (event) => event.stopPropagation());
+document.querySelectorAll("[data-context-tab]").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll("[data-context-tab]").forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
+    document.querySelectorAll("[data-context-panel]").forEach((panel) => { panel.hidden = panel.dataset.contextPanel !== tab.dataset.contextTab; });
+  });
 });
 
 document.querySelector("#annotation-filters").addEventListener("input", () => { annotationPage = 1; loadAnnotations(); });
@@ -469,9 +534,6 @@ document.querySelectorAll("[data-book-tab]").forEach((tab) => {
 const requestedPanel = location.hash.replace("#panel-", "");
 const requestedTab = document.querySelector(`[data-book-tab="${requestedPanel}"]`);
 if (requestedTab) requestedTab.click();
-if (window.matchMedia("(max-width: 760px)").matches) {
-  document.querySelector(".companion-material").open = false;
-}
 loadBook();
 loadAnnotations();
 loadPersonal();
