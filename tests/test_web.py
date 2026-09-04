@@ -112,6 +112,10 @@ class WebTests(unittest.TestCase):
             self.assertIn("Subrayados y notas", page_text)
             self.assertIn("Datos del documento", page_text)
             self.assertIn("Seguimiento de lectura", page_text)
+            self.assertIn('class="book-header book-header-compact"', page_text)
+            self.assertIn('id="book-header-cover"', page_text)
+            self.assertIn("Detalles del documento", page_text)
+            self.assertNotIn('class="book-overview"', page_text)
             self.assertIn('class="chat-column"', page_text)
             self.assertIn('class="material-column"', page_text)
             self.assertIn('class="conversation-toolbar"', page_text)
@@ -129,6 +133,7 @@ class WebTests(unittest.TestCase):
             )
             self.assertNotIn("Progreso disponible", page_text)
             self.assertEqual(detail.get_json()["title"], "Libro")
+            self.assertIsNone(detail.get_json()["cover"])
             self.assertEqual(detail.get_json()["annotations"]["highlight"], 1)
             self.assertEqual(annotations.get_json()["items"][0]["text"], "Texto privado")
             self.assertEqual(

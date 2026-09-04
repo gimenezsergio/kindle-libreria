@@ -73,3 +73,17 @@ experimentos sin contexto.
   el selector temporal administran colecciones largas.
 - Preservado: almacenamiento del contexto, recuperación bibliotecaria, perfiles,
   proveedor y contratos de respuesta de la API.
+
+## 2026-09-04 — Cabecera compacta del libro
+
+- Problema anterior: el título, los contadores y tres tarjetas de metadatos
+  ocupaban gran parte de la primera pantalla antes de llegar a las pestañas.
+- Decisión: tratar el libro como contexto de trabajo y no como una portada de
+  presentación independiente.
+- Implementación: portada pequeña, título de escala moderada, autor y una línea
+  con presencia, anotaciones, idioma y actividad.
+- Los datos de edición, seguimiento, organización y edición del título pasaron a
+  `Detalles del documento`, disponible bajo demanda.
+- Las pestañas quedaron inmediatamente después de la cabecera.
+- Móvil: portada reducida, resumen abreviado y detalles apilados al desplegarse.
+- Preservado: todos los datos anteriores; cambió su jerarquía, no su contenido.
