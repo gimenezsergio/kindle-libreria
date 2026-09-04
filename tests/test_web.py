@@ -123,6 +123,10 @@ class WebTests(unittest.TestCase):
             self.assertIn('id="context-search"', page_text)
             self.assertIn("Detalles y privacidad", page_text)
             self.assertNotIn('class="conversation-list"', page_text)
+            book_script = (Path(__file__).parents[1] / "src/biblioteca_kindle/static/js/book.js").read_text()
+            self.assertIn('button.textContent = "Pensando…"', book_script)
+            self.assertIn('className = "thinking-dots"', book_script)
+            self.assertIn("appendTransientExchange(content)", book_script)
             self.assertLess(
                 page_text.index('id="conversation-messages"'),
                 page_text.index('id="conversation-form"'),

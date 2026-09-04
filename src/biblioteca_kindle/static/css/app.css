@@ -298,6 +298,15 @@ select { padding: .6rem 2rem .6rem .7rem; }
 .conversation-message.assistant { justify-self: start; border-left: 3px solid var(--green); }
 .conversation-message strong { font-size: .68rem; text-transform: uppercase; }
 .conversation-message p { margin: .35rem 0 0; line-height: 1.55; white-space: pre-wrap; }
+.conversation-message-pending { color: var(--muted); }
+.conversation-message-error { border-left-color: var(--terracotta) !important; color: var(--terracotta); }
+.thinking-status { display: flex; gap: .45rem; align-items: center; }
+.thinking-dots { display: inline-flex; gap: .2rem; align-items: center; min-width: 1.6rem; }
+.thinking-dots i { width: .32rem; height: .32rem; border-radius: 50%; background: currentColor; animation: thinking-pulse 1.15s ease-in-out infinite; }
+.thinking-dots i:nth-child(2) { animation-delay: .16s; }
+.thinking-dots i:nth-child(3) { animation-delay: .32s; }
+@keyframes thinking-pulse { 0%, 60%, 100% { opacity: .3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-.18rem); } }
+@media (prefers-reduced-motion: reduce) { .thinking-dots i { animation: none; opacity: .65; } }
 .context-picker { margin-top: 1.5rem; padding: 1rem; border: 1px solid var(--line); background: var(--paper); }
 .context-picker summary { color: var(--terracotta); cursor: pointer; font-weight: 700; }
 .context-picker form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }

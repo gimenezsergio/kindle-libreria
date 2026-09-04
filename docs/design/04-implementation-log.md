@@ -87,3 +87,16 @@ experimentos sin contexto.
 - Las pestañas quedaron inmediatamente después de la cabecera.
 - Móvil: portada reducida, resumen abreviado y detalles apilados al desplegarse.
 - Preservado: todos los datos anteriores; cambió su jerarquía, no su contenido.
+
+## 2026-09-04 — Respuesta en curso del acompañante
+
+- Problema anterior: al enviar una consulta, la única señal de actividad era el
+  botón deshabilitado y no resultaba claro si la IA seguía trabajando.
+- Implementación: el mensaje propio aparece inmediatamente y el acompañante
+  agrega una burbuja temporal con su nombre, el texto `Está pensando` y tres
+  puntos animados. El historial se desplaza hasta ese intercambio.
+- El botón muestra `Pensando…` mientras espera y recupera su estado al terminar.
+- Si el proveedor falla, la burbuja temporal se convierte en un error visible y
+  el texto escrito permanece en el compositor para poder revisarlo o reenviarlo.
+- Accesibilidad: el estado se anuncia mediante `role=status` y la animación se
+  desactiva cuando el sistema solicita movimiento reducido.

@@ -191,6 +191,42 @@ function messageCard(message) {
   return article;
 }
 
+function pendingMessageCard(profileName) {
+  const article = document.createElement("article");
+  article.className = "conversation-message assistant conversation-message-pending";
+  article.setAttribute("role", "status");
+  const label = document.createElement("strong");
+  label.textContent = profileName || "Acompañante";
+  const content = document.createElement("p");
+  content.className = "thinking-status";
+  content.append(document.createTextNode("Está pensando"));
+  const dots = document.createElement("span");
+  dots.className = "thinking-dots";
+  dots.setAttribute("aria-hidden", "true");
+  dots.innerHTML = "<i></i><i></i><i></i>";
+  content.append(dots);
+  article.append(label, content);
+  return article;
+}
+
+function appendTransientExchange(content) {
+  const container = document.querySelector("#conversation-messages");
+  container.querySelectorAll(".conversation-message-empty, .conversation-message-transient").forEach((item) => item.remove());
+  const user = messageCard({role: "user", content});
+  const pending = pendingMessageCard(document.querySelector("#active-conversation-profile").textContent);
+  user.classList.add("conversation-message-transient");
+  pending.classList.add("conversation-message-transient");
+  container.append(user, pending);
+  container.scrollTop = container.scrollHeight;
+  return pending;
+}
+
+function showResponseError(card, message) {
+  card.classList.remove("conversation-message-pending");
+  card.classList.add("conversation-message-error");
+  card.querySelector("p").textContent = `No pude responder: ${message}`;
+}
+
 function searchScopePayload() {
   const scope = document.querySelector("#library-search-scope").value;
   return {
@@ -452,18 +488,31 @@ document.querySelector("#conversation-form").addEventListener("submit", async (e
   if (!activeConversationId) return;
   const form = event.currentTarget;
   const button = form.querySelector("button");
+  const textarea = document.querySelector("#conversation-message");
+  const content = textarea.value.trim();
+  if (!content) return;
+  const payload = {content, ...currentContextSelection(), ...librarySearchPayload()};
+  const pendingCard = appendTransientExchange(content);
   button.disabled = true;
+  button.textContent = "Pensando…";
+  form.setAttribute("aria-busy", "true");
+  document.querySelector("#conversation-feedback").textContent = "";
   try {
     const result = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/respond`, {
       method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({content: document.querySelector("#conversation-message").value, ...currentContextSelection(), ...librarySearchPayload()}),
+      body: JSON.stringify(payload),
     });
     form.reset();
     document.querySelector("#conversation-feedback").textContent = result.mode === "draft" ? "Mensaje guardado. No se envió a una IA porque está activo el modo borrador." : "El acompañante respondió.";
     await loadConversations(activeConversationId);
   } catch (error) {
+    showResponseError(pendingCard, error.message);
     document.querySelector("#conversation-feedback").textContent = error.message;
-  } finally { button.disabled = false; }
+  } finally {
+    button.disabled = false;
+    button.textContent = "Enviar";
+    form.removeAttribute("aria-busy");
+  }
 });
 document.querySelector("#library-search-scope").addEventListener("change", (event) => {
   document.querySelector("#library-search-works-label").hidden = event.target.value !== "selected";
