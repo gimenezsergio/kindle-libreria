@@ -66,8 +66,8 @@ rollback.
   debería generar representaciones vectoriales de títulos, subrayados, notas,
   categorías y relaciones para recuperar conexiones conceptuales aunque no
   compartan las mismas palabras. La selección recuperada debe seguir siendo
-  pequeña, visible, editable y trazable mediante referencias `[B1]`, `[B2]`,
-  etc. La IA conversacional no debe acceder indiscriminadamente a toda la
+  pequeña, visible, editable y trazable mediante el tipo de fuente, la obra y
+  la posición de lectura disponibles. La IA conversacional no debe acceder indiscriminadamente a toda la
   biblioteca ni reemplazar el algoritmo de recuperación. Antes de implementarlo
   habrá que decidir el modelo de embeddings, dónde se ejecuta, cómo se actualiza
   incrementalmente y qué datos privados pueden salir del servidor.

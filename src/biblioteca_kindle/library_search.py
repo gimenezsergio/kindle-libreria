@@ -262,6 +262,23 @@ def _result(row, source_type: str, label: str, content: str, reference: str | No
         "work_title": work_title,
         "label": label,
         "content": content,
-        "reference": reference,
+        "reference": _readable_reference(reference),
         "score": round(_score(query, work_title, content, label), 3),
     }
+
+
+def _readable_reference(reference: str | None) -> str | None:
+    text = reference or ""
+    page = re.search(r"\b(?:page|página)\s+(\d+)", text, re.IGNORECASE)
+    location = re.search(
+        r"\b(?:location|ubicación|posición)\s+(\d+)(?:\s*[-–]\s*(\d+))?",
+        text,
+        re.IGNORECASE,
+    )
+    parts = []
+    if page:
+        parts.append(f"Página {page.group(1)}")
+    if location:
+        start, end = location.groups()
+        parts.append(f"Ubicación {start}{f'–{end}' if end else ''}")
+    return " · ".join(parts) or None

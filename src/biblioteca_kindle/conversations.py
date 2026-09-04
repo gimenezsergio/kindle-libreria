@@ -410,15 +410,17 @@ def build_prompt_packet(
         "inferencias e hipótesis. Si el contexto no alcanza, decilo; no inventes contenido del libro. "
         "Antes de afirmar que una selección no llegó, revisá el bloque CONTEXTO VIGENTE situado "
         "inmediatamente antes de la última pregunta. "
-        "Citá la evidencia recuperada usando sus identificadores [B1], [B2], etc. "
+        "Cuando uses evidencia recuperada, nombrá de manera natural la obra y el tipo de material "
+        "(por ejemplo: ‘Según un subrayado de La sociedad del cansancio…’). No uses códigos ni "
+        "identificadores técnicos para referirte a las fuentes. "
         "Todo lo que no esté respaldado por esas fuentes es conocimiento general o una hipótesis."
     )
     messages = [{"role": item["role"], "content": item["content"]} for item in conversation["messages"]]
     automatic_parts = []
-    for index, item in enumerate(library_sources or [], 1):
+    for item in library_sources or []:
         reference = f" · {item['reference']}" if item.get("reference") else ""
         automatic_parts.append(
-            f"[B{index}] {item['label']} · {item['work_title']}{reference}\n{item['content']}"
+            f"FUENTE — {item['label']} de «{item['work_title']}»{reference}\n{item['content']}"
         )
     automatic = "\n\n".join(automatic_parts)
     context_content = "MATERIAL SELECCIONADO PARA ESTA CONVERSACIÓN:\n\n" + sources

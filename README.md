@@ -260,7 +260,8 @@ la obra por la que se preguntó y mantiene el alcance elegido por el lector.
 La primera versión usa coincidencia textual local y entrega como máximo ocho
 resultados al proveedor. Cada respuesta conserva una instantánea de las fuentes
 recibidas —obra, tipo, fragmento y referencia disponible— y las muestra con
-identificadores `[B1]`, `[B2]`, etc. Los resultados se calculan dentro de la
+descripciones legibles como `Subrayado de «1984» · Página 12`. Los identificadores
+técnicos permanecen internos y no aparecen en el diálogo. Los resultados se calculan dentro de la
 aplicación; cambiar `BIBLIOTECA_AI_PROVIDER=deepseek` por `openclaw` no cambia la
 búsqueda ni su trazabilidad.
 

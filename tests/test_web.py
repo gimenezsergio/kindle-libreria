@@ -127,6 +127,8 @@ class WebTests(unittest.TestCase):
             self.assertIn('button.textContent = "Pensando…"', book_script)
             self.assertIn('className = "thinking-dots"', book_script)
             self.assertIn("appendTransientExchange(content)", book_script)
+            self.assertIn("[${source.label}: ${source.work_title}]", book_script)
+            self.assertIn("function readableSourceReference(reference)", book_script)
             self.assertLess(
                 page_text.index('id="conversation-messages"'),
                 page_text.index('id="conversation-form"'),
@@ -290,7 +292,7 @@ class WebTests(unittest.TestCase):
 
             def respond(self, packet):
                 self.packet = packet
-                return "Veo una conexión respaldada por [B1]."
+                return "Veo una conexión respaldada por un subrayado de Otra obra."
 
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "library.sqlite3"
@@ -319,7 +321,8 @@ class WebTests(unittest.TestCase):
             )
             detail = client.get(f"/api/conversations/{conversation_id}").get_json()
             self.assertEqual(response.status_code, 200)
-            self.assertIn("[B1]", provider.packet.input[0]["content"])
+            self.assertIn("FUENTE — Subrayado de «Otra obra»", provider.packet.input[0]["content"])
+            self.assertNotIn("[B1]", provider.packet.input[0]["content"])
             self.assertEqual(detail["messages"][-1]["library_sources"][0]["source_id"], "annotation")
             self.assertIn("Buscar conexiones en mi biblioteca", client.get("/library/source").get_data(as_text=True))
 

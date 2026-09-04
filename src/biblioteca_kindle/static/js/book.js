@@ -170,7 +170,10 @@ function messageCard(message) {
   const label = document.createElement("strong");
   label.textContent = message.role === "assistant" ? "Acompañante" : "Vos";
   const content = document.createElement("p");
-  content.textContent = message.content;
+  content.textContent = String(message.content || "").replace(/\[B(\d+)\]/g, (match, number) => {
+    const source = message.library_sources?.[Number(number) - 1];
+    return source ? `[${source.label}: ${source.work_title}]` : "[Fuente de la biblioteca]";
+  });
   article.append(label, content);
   if (message.role === "assistant" && message.library_sources?.length) {
     const details = document.createElement("details");
@@ -178,17 +181,28 @@ function messageCard(message) {
     const summary = document.createElement("summary");
     summary.textContent = `${message.library_sources.length} fuentes de la biblioteca usadas`;
     const list = document.createElement("ol");
-    message.library_sources.forEach((source, index) => {
+    message.library_sources.forEach((source) => {
       const item = document.createElement("li");
       const heading = document.createElement("strong");
-      heading.textContent = `[B${index + 1}] ${source.label} · ${source.work_title}`;
+      const reference = readableSourceReference(source.reference);
+      heading.textContent = `${source.label} de «${source.work_title}»${reference ? ` · ${reference}` : ""}`;
       const excerpt = document.createElement("p");
-      excerpt.textContent = `${source.content}${source.reference ? ` · ${source.reference}` : ""}`;
+      excerpt.textContent = source.content;
       item.append(heading, excerpt); list.append(item);
     });
     details.append(summary, list); article.append(details);
   }
   return article;
+}
+
+function readableSourceReference(reference) {
+  const text = String(reference || "");
+  const page = text.match(/\b(?:page|página)\s+(\d+)/i);
+  const location = text.match(/\b(?:location|ubicación|posición)\s+(\d+)(?:\s*[-–]\s*(\d+))?/i);
+  const parts = [];
+  if (page) parts.push(`Página ${page[1]}`);
+  if (location) parts.push(`Ubicación ${location[1]}${location[2] ? `–${location[2]}` : ""}`);
+  return parts.join(" · ");
 }
 
 function pendingMessageCard(profileName) {

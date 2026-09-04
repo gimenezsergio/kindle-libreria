@@ -167,7 +167,8 @@ class ConversationTests(unittest.TestCase):
         packet = build_prompt_packet(
             self.database, identifier, library_sources=[source]
         )
-        self.assertIn("[B1] Ficha del libro", packet.input[0]["content"])
+        self.assertIn("FUENTE — Ficha del libro de «Una lectura»", packet.input[0]["content"])
+        self.assertNotIn("[B1]", packet.input[0]["content"])
         message_id = add_message(
             self.database, conversation_id=identifier, role="assistant", content="Respuesta"
         )

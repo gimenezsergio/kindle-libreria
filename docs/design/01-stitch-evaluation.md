@@ -7,7 +7,7 @@
 - paleta marfil, terracota, verde profundo y bordó;
 - catálogo centrado en portadas y títulos;
 - ficha de libro organizada por áreas en vez de una única columna extensa;
-- fuentes del acompañante visibles mediante referencias `[B1]`, `[B2]`;
+- fuentes del acompañante identificadas por tipo de material, obra y posición;
 - navegación móvil persistente y controles táctiles amplios;
 - bordes finos y jerarquía tipográfica en lugar de sombras excesivas.
 

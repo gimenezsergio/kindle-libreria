@@ -100,3 +100,20 @@ experimentos sin contexto.
   el texto escrito permanece en el compositor para poder revisarlo o reenviarlo.
 - Accesibilidad: el estado se anuncia mediante `role=status` y la animación se
   desactiva cuando el sistema solicita movimiento reducido.
+
+## 2026-09-04 — Referencias bibliográficas legibles
+
+- Problema anterior: los códigos temporales `[B1]`, `[B2]` y similares no
+  explicaban por sí mismos a qué material se refería el acompañante.
+- Decisión: conservar la trazabilidad interna sin trasladar sus identificadores
+  técnicos al lenguaje de la conversación.
+- El prompt presenta cada evidencia por tipo, obra y posición disponible, y le
+  pide a la IA que la mencione naturalmente: por ejemplo, `Según un subrayado de
+  La sociedad del cansancio…`.
+- El detalle desplegable de cada respuesta usa el mismo formato humano y sigue
+  conservando la instantánea exacta del fragmento consultado.
+- Las posiciones técnicas provenientes de Kindle también se presentan como
+  `Página 12` o `Ubicación 122–123`.
+- Las respuestas históricas no se reescriben en SQLite: al mostrarlas, la
+  interfaz traduce sus códigos antiguos usando las fuentes preservadas en cada
+  mensaje. Si la fuente ya no está disponible, muestra `Fuente de la biblioteca`.
