@@ -53,3 +53,23 @@ experimentos sin contexto.
 - Preservado: contratos de API, identificadores del DOM y reglas que determinan
   qué contexto se envía a la IA.
 - Pendiente: validar la densidad de la columna lateral con conversaciones reales.
+
+## 2026-09-03 — Simplificación del acompañante
+
+- Observación de uso: la lista permanente de conversaciones restaba ancho y el
+  panel lateral reunía demasiados controles dentro de varios scrolls anidados.
+- Navegación: la lista lateral se reemplazó por un selector compacto que informa
+  el nombre de la conversación y su cantidad de mensajes.
+- Proveedor: el aviso descriptivo se convirtió en una insignia desplegable; la
+  explicación sobre el envío de datos sigue disponible sin ocupar una franja.
+- Contexto visible: el lateral muestra solamente los fragmentos adjuntos, permite
+  retirarlos y resume el estado de la búsqueda bibliotecaria.
+- Selección: `Agregar material` abre un diálogo amplio —pantalla completa en
+  móvil— con búsqueda textual, pestañas, referencias de posición y selección
+  múltiple para todas las anotaciones y notas propias.
+- Complejidad progresiva: alcance bibliotecario, resultados sugeridos y paquete
+  exacto enviado a la IA permanecen plegados hasta que el lector los necesita.
+- Scroll: el panel lateral dejó de desplazarse internamente; solo el historial y
+  el selector temporal administran colecciones largas.
+- Preservado: almacenamiento del contexto, recuperación bibliotecaria, perfiles,
+  proveedor y contratos de respuesta de la API.

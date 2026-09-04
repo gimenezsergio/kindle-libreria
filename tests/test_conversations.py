@@ -103,11 +103,12 @@ class ConversationTests(unittest.TestCase):
         with connection:
             connection.execute("INSERT INTO personal_notes(id, target_type, target_id, body) VALUES ('note', 'work', 'work-1', 'Mi hipótesis')")
             connection.execute("INSERT INTO editions(id, work_id, title) VALUES ('edition', 'work-1', 'Una lectura')")
-            connection.execute("INSERT INTO annotations(id, edition_id, kind, text) VALUES ('annotation', 'edition', 'highlight', 'Pasaje importante')")
+            connection.execute("INSERT INTO annotations(id, edition_id, kind, text, position_type, start_position_native, end_position_native) VALUES ('annotation', 'edition', 'highlight', 'Pasaje importante', 'page', '12', '13')")
         connection.close()
         identifier = create_conversation(self.database, work_id="work-1", profile_id="companion")
         options = context_options(self.database, identifier)
         self.assertEqual(options["notes"][0]["id"], "note")
+        self.assertEqual(options["annotations"][0]["start_position_native"], "12")
         update_context(self.database, identifier, personal_note_ids=["note"], annotation_ids=["annotation"])
         connection = connect_database(self.database)
         with connection:

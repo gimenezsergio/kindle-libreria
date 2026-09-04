@@ -114,6 +114,11 @@ class WebTests(unittest.TestCase):
             self.assertIn("Seguimiento de lectura", page_text)
             self.assertIn('class="chat-column"', page_text)
             self.assertIn('class="material-column"', page_text)
+            self.assertIn('class="conversation-toolbar"', page_text)
+            self.assertIn('id="context-dialog"', page_text)
+            self.assertIn('id="context-search"', page_text)
+            self.assertIn("Detalles y privacidad", page_text)
+            self.assertNotIn('class="conversation-list"', page_text)
             self.assertLess(
                 page_text.index('id="conversation-messages"'),
                 page_text.index('id="conversation-form"'),
