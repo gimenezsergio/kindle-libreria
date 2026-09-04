@@ -352,6 +352,12 @@ Antes de permitir acceso remoto deberán incorporarse:
 La opción elegida es, por lo tanto: **Biblioteca Kindle administra los datos y
 OpenClaw ayuda a conversar y razonar sobre ellos.**
 
+El canal conversacional previsto es Telegram: OpenClaw recibirá los mensajes y
+consultará Biblioteca Kindle mediante una API privada, sin acceder directamente
+a SQLite. El flujo, la separación de responsabilidades, la confirmación humana
+y la hoja de ruta están documentados en
+[`docs/telegram-openclaw.md`](docs/telegram-openclaw.md).
+
 ## Estructura del repositorio
 
 - `src/biblioteca_kindle/`: aplicación, importadores, API e interfaz web.
