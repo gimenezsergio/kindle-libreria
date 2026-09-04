@@ -1,0 +1,40 @@
+{
+  "id": "biblioteca-kindle",
+  "name": "Biblioteca Kindle",
+  "description": "Search a private Kindle library and hold persistent, evidence-backed reading conversations.",
+  "version": "0.1.0",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "baseUrl": {
+        "type": "string",
+        "description": "Private Biblioteca Kindle API base URL."
+      },
+      "token": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Bearer token dedicated to OpenClaw. Prefer the BIBLIOTECA_OPENCLAW_TOKEN environment variable."
+      }
+    },
+    "additionalProperties": false
+  },
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "biblioteca_status",
+      "biblioteca_buscar_libros",
+      "biblioteca_obtener_libro",
+      "biblioteca_listar_perfiles",
+      "biblioteca_listar_conversaciones",
+      "biblioteca_crear_conversacion",
+      "biblioteca_obtener_conversacion",
+      "biblioteca_obtener_contexto",
+      "biblioteca_actualizar_contexto",
+      "biblioteca_buscar_contexto",
+      "biblioteca_preparar_turno",
+      "biblioteca_completar_turno"
+    ]
+  }
+}
