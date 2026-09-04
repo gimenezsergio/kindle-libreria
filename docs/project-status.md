@@ -22,7 +22,8 @@ Actualmente se puede:
 - reenviar paquetes pendientes mediante el comando `push`;
 - crear respaldos SQLite consistentes, verificables y privados.
 
-La suite actual contiene 83 pruebas automatizadas.
+La suite Python contiene 86 pruebas automatizadas. El plugin de OpenClaw agrega
+su propia prueba de contrato y la validación oficial del manifiesto.
 
 ## Sincronización remota
 
@@ -43,9 +44,11 @@ La implementación remota está completa hasta la preparación del despliegue:
 7. Respaldo y guía de migración: terminado.
 8. Despliegue real e integración con OpenClaw: pendiente.
 
-El uso conversacional por Telegram ya tiene una arquitectura y límites
-documentados en [`telegram-openclaw.md`](telegram-openclaw.md). El contrato de la
-API privada y su implementación siguen pendientes.
+El uso conversacional por Telegram tiene arquitectura y límites documentados en
+[`telegram-openclaw.md`](telegram-openclaw.md). La API privada, su autenticación,
+el flujo idempotente de turnos y el plugin de herramientas están implementados y
+validados localmente. Quedan pendientes la instalación en el servidor, el token
+del bot, la allowlist del Telegram user ID y la prueba completa.
 
 El paso 8 requiere dirección y acceso SSH al servidor, sistema operativo,
 dominio o red privada, proxy existente y método de instalación de OpenClaw. No

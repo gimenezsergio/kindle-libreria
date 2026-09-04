@@ -140,21 +140,24 @@ las fuentes legibles y el adaptador configurable de IA. La interfaz web seguirá
 sirviendo para tareas visuales y administrativas, pero no será obligatoria para
 conversar.
 
-Todavía faltan estas etapas:
+Estado de las etapas:
 
-1. Definir el contrato concreto de la API privada.
-2. Autenticar las llamadas de OpenClaw con un token independiente.
-3. Exponer búsqueda de obras y resolución de ambigüedades.
-4. Exponer perfiles y apertura de conversaciones.
-5. Exponer contexto, notas y subrayados de manera limitada.
-6. Exponer el flujo conversacional reutilizando la recuperación actual.
-7. Preparar las herramientas que OpenClaw podrá invocar.
-8. Configurar el bot, autorizar el Telegram user ID y conservar su sesión.
-9. Probar el recorrido completo en el servidor y documentar operación y
-   recuperación ante fallos.
+1. Definir el contrato concreto de la API privada: terminado.
+2. Autenticar las llamadas con un token independiente: terminado.
+3. Exponer búsqueda de obras y resolución de ambigüedades: terminado.
+4. Exponer perfiles y apertura de conversaciones: terminado.
+5. Exponer contexto, notas y subrayados de manera limitada: terminado.
+6. Exponer el flujo conversacional reutilizando la recuperación actual:
+   terminado, con preparación y finalización idempotente.
+7. Preparar las herramientas que OpenClaw podrá invocar: plugin construido y
+   validado localmente; instalación en el servidor pendiente.
+8. Configurar el bot y autorizar el Telegram user ID: pendiente de credenciales
+   y acceso al servidor.
+9. Probar el recorrido completo en el servidor: pendiente del punto anterior;
+   procedimiento y recuperación ante fallos documentados.
 
-Los primeros seis puntos pueden desarrollarse y probarse localmente. Los tres
-últimos necesitan acceso a la instalación real de OpenClaw y Telegram.
+Los puntos 1 a 7 quedaron preparados en este repositorio. Los puntos 8 y 9
+requieren la instalación real de OpenClaw, Telegram y sus credenciales.
 
 ## Fuera de alcance inicial
 

@@ -358,6 +358,12 @@ a SQLite. El flujo, la separación de responsabilidades, la confirmación humana
 y la hoja de ruta están documentados en
 [`docs/telegram-openclaw.md`](docs/telegram-openclaw.md).
 
+El contrato implementado está en
+[`docs/openclaw-api-v1.md`](docs/openclaw-api-v1.md), el tool plugin versionado
+vive en [`integrations/openclaw-biblioteca`](integrations/openclaw-biblioteca) y
+la ejecución futura en el servidor se describe en
+[`docs/openclaw-telegram-deployment.md`](docs/openclaw-telegram-deployment.md).
+
 ## Estructura del repositorio
 
 - `src/biblioteca_kindle/`: aplicación, importadores, API e interfaz web.

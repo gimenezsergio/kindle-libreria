@@ -117,3 +117,21 @@ experimentos sin contexto.
 - Las respuestas históricas no se reescriben en SQLite: al mostrarlas, la
   interfaz traduce sus códigos antiguos usando las fuentes preservadas en cada
   mensaje. Si la fuente ya no está disponible, muestra `Fuente de la biblioteca`.
+
+## 2026-09-04 — Canal Telegram preparado para OpenClaw
+
+- Se separó la recuperación bibliotecaria de la capa web para reutilizar el
+  mismo algoritmo desde otros canales.
+- Se creó una API privada versionada con token exclusivo para catálogo,
+  perfiles, conversaciones, contexto y evidencia.
+- Los turnos externos se preparan y completan en dos fases. SQLite conserva la
+  pregunta, las fuentes exactas y la respuesta; repetir la finalización no
+  duplica mensajes.
+- Se generó un tool plugin con el comando oficial de OpenClaw. Declara doce
+  herramientas, compila con TypeScript y pasa la validación del manifiesto.
+- Se agregó un skill que enseña a resolver ambigüedades y a completar cada turno
+  antes de responder por Telegram.
+- La configuración del canal para un único Telegram user ID y la lista de
+  comprobaciones del servidor quedaron documentadas sin secretos reales.
+- Pendiente externo: instalar en el OpenClaw del servidor, configurar BotFather
+  y ejecutar la prueba con la cuenta autorizada.
