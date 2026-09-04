@@ -319,6 +319,7 @@ select { padding: .6rem 2rem .6rem .7rem; }
 .library-search-results { display: grid; gap: .55rem; margin-top: .75rem; }
 .library-result { display: grid; grid-template-columns: auto 1fr; gap: .65rem; padding: .75rem; border: 1px solid var(--line); background: var(--surface); font-size: .74rem; line-height: 1.45; }
 .library-result > span, .library-result > span > span { display: grid; gap: .25rem; }
+.library-result-reason { width: fit-content; padding: .15rem .35rem; border-radius: 999px; background: #eaf2ec; color: var(--green); font-size: .58rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
 .library-result > span > span { display: -webkit-box; overflow: hidden; color: var(--muted); -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
 .answer-sources { margin-top: .8rem; padding-top: .65rem; border-top: 1px solid var(--line); font-size: .72rem; }
 .answer-sources summary { color: var(--terracotta); cursor: pointer; }

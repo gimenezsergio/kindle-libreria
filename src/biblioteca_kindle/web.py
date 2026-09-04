@@ -32,7 +32,7 @@ from .conversations import (
     pin_library_sources,
 )
 from .ai import AIError, DraftProvider, load_environment_file, provider_from_environment
-from .library_search import LibrarySearchError, search_library
+from .library_search import LibrarySearchError, mentioned_works, search_library
 from .remote_sync import SyncPackageError
 from .sync_receiver import apply_sync_package
 
@@ -441,8 +441,7 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
         question = payload.get("search_query", payload.get("content"))
         if not isinstance(question, str):
             raise LibrarySearchError("Escribí una consulta para buscar en la biblioteca")
-        seed = " ".join(item["content_snapshot"] for item in selected_context)
-        search_query = f"{question} {seed[:2000]}".strip()
+        seed = " ".join(item["content_snapshot"] for item in selected_context)[:2000]
         work_ids = None
         if scope == "current":
             work_ids = [conversation["work_id"]]
@@ -451,20 +450,42 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
             if not isinstance(supplied, list):
                 raise ConversationError("La selección de libros no es válida")
             work_ids = supplied
-        results = search_library(
-            database_path, search_query,
-            work_ids=work_ids, limit=12,
+        direct = mentioned_works(database_path, question, work_ids=work_ids, limit=3)
+        direct_ids = [item["work_id"] for item in direct]
+        targeted = []
+        if direct_ids:
+            targeted_query = f"{question} {seed}".strip()
+            targeted = [
+                item for item in search_library(
+                    database_path, targeted_query, work_ids=direct_ids, limit=12,
+                )
+                if item["source_type"] != "work"
+            ][:3]
+            for item in targeted:
+                item["reason"] = "Evidencia de obra mencionada"
+        thematic_query = f"{question} {seed}".strip()
+        thematic = search_library(
+            database_path, thematic_query, work_ids=work_ids, limit=20,
         )
+        for item in thematic:
+            item["reason"] = "Coincidencia temática"
         selected_context_keys = {
             f"{item['source_type']}:{item['source_id']}" for item in selected_context
         }
-        results = [item for item in results if item["key"] not in selected_context_keys]
+        results = []
+        seen = set(selected_context_keys)
+        for item in [*direct, *targeted, *thematic]:
+            if item["key"] in seen:
+                continue
+            seen.add(item["key"])
+            results.append(item)
+        results = results[:8]
         selected_keys = payload.get("library_source_keys")
         if selected_keys is None:
-            return results[:8]
+            return results
         if not isinstance(selected_keys, list) or not all(isinstance(key, str) for key in selected_keys):
             raise ConversationError("La selección de resultados no es válida")
-        allowed = set(selected_keys)
+        allowed = set(selected_keys) | {item["key"] for item in direct}
         return [item for item in results if item["key"] in allowed][:8]
 
     @app.errorhandler(413)

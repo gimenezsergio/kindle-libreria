@@ -54,6 +54,72 @@ def _work_title_sql(alias: str = "w") -> str:
     )
 
 
+def mentioned_works(
+    database: Path | str,
+    query: object,
+    *,
+    work_ids: list[str] | None = None,
+    limit: int = 3,
+) -> list[dict]:
+    """Return catalog cards explicitly named in the user's question."""
+    if not isinstance(query, str):
+        raise LibrarySearchError("La consulta debe ser texto")
+    normalized_query = f" {_normalize(query)} "
+    if not normalized_query.strip():
+        return []
+    selected = list(dict.fromkeys(work_ids or []))
+    if work_ids is not None and not all(isinstance(item, str) for item in work_ids):
+        raise LibrarySearchError("El alcance de libros no es válido")
+    if work_ids is not None and not selected:
+        return []
+    scope = ""
+    parameters: list[object] = []
+    if work_ids is not None:
+        scope = f" WHERE w.id IN ({','.join('?' for _ in selected)})"
+        parameters.extend(selected)
+    connection = connect_database(Path(database).expanduser().resolve())
+    try:
+        rows = connection.execute(
+            f"""
+            SELECT w.id AS source_id, w.id AS work_id, {_work_title_sql()} AS work_title,
+                   COALESCE(GROUP_CONCAT(DISTINCT c.display_name), '') AS authors
+            FROM works w
+            LEFT JOIN editions e ON e.work_id=w.id
+            LEFT JOIN edition_contributors ec ON ec.edition_id=e.id AND ec.role='author'
+            LEFT JOIN contributors c ON c.id=ec.contributor_id
+            {scope} GROUP BY w.id
+            """,
+            parameters,
+        ).fetchall()
+        matches = []
+        for row in rows:
+            title = _normalize(row["work_title"])
+            authors = [_normalize(value) for value in str(row["authors"] or "").split(",")]
+            reason = None
+            strength = 0
+            if len(title) >= 4 and f" {title} " in normalized_query:
+                reason = "Título mencionado"
+                strength = len(title) + 1000
+            named_authors = [author for author in authors if len(author) >= 4 and f" {author} " in normalized_query]
+            if named_authors and (reason is None or len(max(named_authors, key=len)) > len(title)):
+                reason = "Autor mencionado"
+                strength = len(max(named_authors, key=len)) + 2000
+            if reason:
+                content = f"Título: {row['work_title']}"
+                if row["authors"]:
+                    content += f". Autoría: {row['authors']}"
+                item = _result(row, "work", "Ficha del libro", content, None, query)
+                item["reason"] = reason
+                item["mention_strength"] = strength
+                matches.append(item)
+        matches.sort(key=lambda item: (-item["mention_strength"], item["work_title"].casefold()))
+        for item in matches:
+            item.pop("mention_strength", None)
+        return matches[:min(3, max(1, int(limit)))]
+    finally:
+        connection.close()
+
+
 def search_library(
     database: Path | str,
     query: object,

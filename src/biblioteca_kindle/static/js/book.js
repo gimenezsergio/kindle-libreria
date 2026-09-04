@@ -231,6 +231,7 @@ function renderLibraryResults(items) {
     const input = document.createElement("input"); input.type = "checkbox"; input.value = item.key; input.checked = true;
     const body = document.createElement("span");
     const heading = document.createElement("strong"); heading.textContent = `${item.label} · ${item.work_title}`;
+    if (item.reason) { const reason = document.createElement("small"); reason.className = "library-result-reason"; reason.textContent = item.reason; body.append(reason); }
     const content = document.createElement("span"); content.textContent = `${item.content}${item.reference ? ` · ${item.reference}` : ""}`;
     body.append(heading, content); label.append(input, body); return label;
   });
