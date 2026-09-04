@@ -32,7 +32,9 @@ from .conversations import (
     pin_library_sources,
 )
 from .ai import AIError, DraftProvider, load_environment_file, provider_from_environment
-from .library_search import LibrarySearchError, mentioned_works, search_library
+from .library_search import LibrarySearchError
+from .retrieval import requested_library_sources as retrieve_library_sources
+from .openclaw_api import create_openclaw_blueprint
 from .remote_sync import SyncPackageError
 from .sync_receiver import apply_sync_package
 
@@ -425,68 +427,12 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
         os.environ.get("BIBLIOTECA_SYNC_MAX_BYTES", str(32 * 1024 * 1024))
     )
     sync_token = os.environ.get("BIBLIOTECA_SYNC_TOKEN", "")
+    openclaw_token = os.environ.get("BIBLIOTECA_OPENCLAW_TOKEN", "")
     provider = ai_provider or provider_from_environment()
+    app.register_blueprint(create_openclaw_blueprint(database_path, openclaw_token))
 
     def requested_library_sources(conversation_id: str, payload: dict) -> list[dict]:
-        if not bool(payload.get("search_library", False)):
-            return []
-        scope = payload.get("search_scope", "library")
-        if scope not in {"library", "current", "selected"}:
-            raise ConversationError("El alcance de búsqueda no es válido")
-        conversation = get_conversation(database_path, conversation_id)
-        selected_context = [
-            item for item in conversation["context_sources"]
-            if item["source_type"] in {"personal_note", "annotation"}
-        ]
-        question = payload.get("search_query", payload.get("content"))
-        if not isinstance(question, str):
-            raise LibrarySearchError("Escribí una consulta para buscar en la biblioteca")
-        seed = " ".join(item["content_snapshot"] for item in selected_context)[:2000]
-        work_ids = None
-        if scope == "current":
-            work_ids = [conversation["work_id"]]
-        elif scope == "selected":
-            supplied = payload.get("search_work_ids", [])
-            if not isinstance(supplied, list):
-                raise ConversationError("La selección de libros no es válida")
-            work_ids = supplied
-        direct = mentioned_works(database_path, question, work_ids=work_ids, limit=3)
-        direct_ids = [item["work_id"] for item in direct]
-        targeted = []
-        if direct_ids:
-            targeted_query = f"{question} {seed}".strip()
-            targeted = [
-                item for item in search_library(
-                    database_path, targeted_query, work_ids=direct_ids, limit=12,
-                )
-                if item["source_type"] != "work"
-            ][:3]
-            for item in targeted:
-                item["reason"] = "Evidencia de obra mencionada"
-        thematic_query = f"{question} {seed}".strip()
-        thematic = search_library(
-            database_path, thematic_query, work_ids=work_ids, limit=20,
-        )
-        for item in thematic:
-            item["reason"] = "Coincidencia temática"
-        selected_context_keys = {
-            f"{item['source_type']}:{item['source_id']}" for item in selected_context
-        }
-        results = []
-        seen = set(selected_context_keys)
-        for item in [*direct, *targeted, *thematic]:
-            if item["key"] in seen:
-                continue
-            seen.add(item["key"])
-            results.append(item)
-        results = results[:8]
-        selected_keys = payload.get("library_source_keys")
-        if selected_keys is None:
-            return results
-        if not isinstance(selected_keys, list) or not all(isinstance(key, str) for key in selected_keys):
-            raise ConversationError("La selección de resultados no es válida")
-        allowed = set(selected_keys) | {item["key"] for item in direct}
-        return [item for item in results if item["key"] in allowed][:8]
+        return retrieve_library_sources(database_path, conversation_id, payload)
 
     @app.errorhandler(413)
     def sync_payload_too_large(_error):

@@ -3,6 +3,7 @@ from __future__ import annotations
 import sqlite3
 import re
 import uuid
+import json
 from pathlib import Path
 
 from .db import connect_database
@@ -159,6 +160,112 @@ def add_message(
         )
         connection.commit()
         return identifier
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
+def prepare_external_turn(
+    database: Path | str,
+    *,
+    conversation_id: str,
+    content: object,
+    library_sources: list[dict],
+) -> tuple[str, str]:
+    message_content = _clean_text(content, "El mensaje", required=True)
+    turn_id = str(uuid.uuid4())
+    message_id = str(uuid.uuid4())
+    connection = _open_database(database)
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        conversation = connection.execute(
+            "SELECT status FROM reading_conversations WHERE id = ?", (conversation_id,)
+        ).fetchone()
+        if conversation is None:
+            raise ConversationError("La conversación no existe")
+        if conversation["status"] != "active":
+            raise ConversationError("La conversación está archivada")
+        sequence = connection.execute(
+            "SELECT COALESCE(MAX(sequence), 0) + 1 FROM conversation_messages WHERE conversation_id = ?",
+            (conversation_id,),
+        ).fetchone()[0]
+        connection.execute(
+            "INSERT INTO conversation_messages(id,conversation_id,sequence,role,content) VALUES (?, ?, ?, 'user', ?)",
+            (message_id, conversation_id, sequence, message_content),
+        )
+        connection.execute(
+            "INSERT INTO external_conversation_turns(id,conversation_id,user_message_id,source_snapshot_json) VALUES (?, ?, ?, ?)",
+            (turn_id, conversation_id, message_id, json.dumps(library_sources, ensure_ascii=False)),
+        )
+        connection.execute(
+            "UPDATE reading_conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (conversation_id,),
+        )
+        connection.commit()
+        return turn_id, message_id
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
+def complete_external_turn(
+    database: Path | str, *, turn_id: str, content: object
+) -> tuple[str, bool]:
+    message_content = _clean_text(content, "La respuesta", required=True)
+    connection = _open_database(database)
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        turn = connection.execute(
+            "SELECT * FROM external_conversation_turns WHERE id = ?", (turn_id,)
+        ).fetchone()
+        if turn is None:
+            raise ConversationError("El turno externo no existe")
+        if turn["status"] == "completed":
+            connection.rollback()
+            return str(turn["assistant_message_id"]), False
+        conversation = connection.execute(
+            "SELECT status FROM reading_conversations WHERE id = ?", (turn["conversation_id"],)
+        ).fetchone()
+        if conversation is None or conversation["status"] != "active":
+            raise ConversationError("La conversación no está activa")
+        message_id = str(uuid.uuid4())
+        sequence = connection.execute(
+            "SELECT COALESCE(MAX(sequence), 0) + 1 FROM conversation_messages WHERE conversation_id = ?",
+            (turn["conversation_id"],),
+        ).fetchone()[0]
+        connection.execute(
+            "INSERT INTO conversation_messages(id,conversation_id,sequence,role,content) VALUES (?, ?, ?, 'assistant', ?)",
+            (message_id, turn["conversation_id"], sequence, message_content),
+        )
+        sources = json.loads(turn["source_snapshot_json"])
+        connection.executemany(
+            """
+            INSERT INTO conversation_message_sources(
+                id,message_id,source_type,source_id,work_id,work_title_snapshot,
+                label_snapshot,content_snapshot,reference_snapshot,relevance_score
+            ) VALUES (?,?,?,?,?,?,?,?,?,?)
+            """,
+            [
+                (str(uuid.uuid4()), message_id, item["source_type"], item["source_id"],
+                 item["work_id"], item["work_title"], item["label"], item["content"],
+                 item.get("reference"), item["score"])
+                for item in sources
+            ],
+        )
+        connection.execute(
+            "UPDATE external_conversation_turns SET status='completed', assistant_message_id=?, completed_at=CURRENT_TIMESTAMP WHERE id=?",
+            (message_id, turn_id),
+        )
+        connection.execute(
+            "UPDATE reading_conversations SET updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            (turn["conversation_id"],),
+        )
+        connection.commit()
+        return message_id, True
     except Exception:
         connection.rollback()
         raise
