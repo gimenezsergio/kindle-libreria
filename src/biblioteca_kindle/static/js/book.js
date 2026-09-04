@@ -236,9 +236,10 @@ function contextChoice(item, type, selected) {
   const label = document.createElement("label");
   const readableStart = /^\d+$/.test(item.start_position_native || "");
   const readableEnd = /^\d+$/.test(item.end_position_native || "");
-  const position = readableStart
+  const nativePosition = readableStart
     ? `${item.position_type === "page" ? "Página" : "Ubicación"} ${item.start_position_native}${readableEnd && item.end_position_native !== item.start_position_native ? `–${item.end_position_native}` : ""}`
     : "";
+  const position = item.reference || nativePosition;
   label.dataset.searchText = `${item.content} ${position}`.toLocaleLowerCase("es");
   const input = document.createElement("input");
   input.type = "checkbox"; input.name = type; input.value = item.id; input.checked = selected.includes(item.id);

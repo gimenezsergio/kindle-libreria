@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+import re
 import uuid
 from pathlib import Path
 
@@ -10,6 +11,26 @@ from .ai import PromptPacket
 
 class ConversationError(RuntimeError):
     pass
+
+
+PAGE_REFERENCE = re.compile(r"\b(?:page|página)\s+(\d+)", re.IGNORECASE)
+LOCATION_REFERENCE = re.compile(
+    r"\b(?:location|ubicación|posición)\s+(\d+)(?:\s*[-–]\s*(\d+))?",
+    re.IGNORECASE,
+)
+
+
+def _context_reference(source: str | None) -> str | None:
+    text = source or ""
+    page = PAGE_REFERENCE.search(text)
+    location = LOCATION_REFERENCE.search(text)
+    parts = []
+    if page:
+        parts.append(f"Página {page.group(1)}")
+    if location:
+        start, end = location.groups()
+        parts.append(f"Ubicación {start}{f'–{end}' if end else ''}")
+    return " · ".join(parts) or None
 
 
 def _open_database(path: Path | str) -> sqlite3.Connection:
@@ -213,17 +234,25 @@ def context_options(database: Path | str, conversation_id: str) -> dict:
             """,
             (work_id,),
         )]
-        annotations = [dict(row) for row in connection.execute(
+        annotation_rows = connection.execute(
             """
             SELECT an.id, an.kind, an.position_type,
                    an.start_position_native, an.end_position_native,
+                   (SELECT COALESCE(ao.original_position, '') || ' ' || COALESCE(ao.original_date, '')
+                    FROM annotation_occurrences ao WHERE ao.annotation_id = an.id
+                    ORDER BY ao.observed_at DESC LIMIT 1) AS source_reference,
                    COALESCE(NULLIF(TRIM(an.text), ''), NULLIF(TRIM(an.note_text), ''),
                             'Anotación sin texto recuperable') AS content
             FROM annotations an JOIN editions e ON e.id = an.edition_id
             WHERE e.work_id = ? ORDER BY COALESCE(an.native_created_at, an.created_at) DESC
             """,
             (work_id,),
-        )]
+        )
+        annotations = []
+        for row in annotation_rows:
+            item = dict(row)
+            item["reference"] = _context_reference(item.pop("source_reference", None))
+            annotations.append(item)
         selected = connection.execute(
             """
             SELECT source_type, source_id FROM conversation_context_sources
