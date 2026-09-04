@@ -242,11 +242,20 @@ configuración del adaptador.
 
 En cada conversación se puede activar **Consultar la biblioteca al enviar** y
 elegir entre toda la biblioteca, el libro actual o un grupo concreto de obras.
-Antes de enviar, **Ver contexto sugerido** permite revisar hasta doce candidatos,
+Antes de enviar, **Ver contexto sugerido** permite revisar hasta ocho candidatos,
 descartar los que no sirvan y fijar notas, subrayados o fichas para mensajes
 posteriores. Si la pregunta es genérica (por ejemplo, «¿con qué otros libros se
 relaciona?»), el buscador también usa el material seleccionado de la conversación
 como semilla temática.
+
+La pregunta escrita tiene prioridad sobre esa semilla. Si menciona de forma
+explícita un autor o un título existente —normalizando guiones, espacios,
+mayúsculas y acentos— su ficha queda reservada entre las fuentes. Después se
+busca evidencia de las obras reconocidas y recién entonces se completan los
+lugares restantes con coincidencias temáticas. La vista previa distingue
+`Autor mencionado`, `Título mencionado`, `Evidencia de obra mencionada` y
+`Coincidencia temática`. Esto evita que un contexto extenso desplace justamente
+la obra por la que se preguntó y mantiene el alcance elegido por el lector.
 
 La primera versión usa coincidencia textual local y entrega como máximo ocho
 resultados al proveedor. Cada respuesta conserva una instantánea de las fuentes

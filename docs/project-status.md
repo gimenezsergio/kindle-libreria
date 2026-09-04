@@ -15,6 +15,8 @@ Actualmente se puede:
 - elegir portadas propias;
 - crear categorías, notas propias y relaciones entre obras;
 - conversar sobre una lectura usando perfiles configurables de IA;
+- priorizar fichas de autores y títulos mencionados explícitamente antes de
+  completar el contexto de IA con coincidencias temáticas;
 - exportar paquetes remotos validados sin incluir los archivos de los libros;
 - recibir paquetes de forma autenticada, transaccional e idempotente;
 - reenviar paquetes pendientes mediante el comando `push`;

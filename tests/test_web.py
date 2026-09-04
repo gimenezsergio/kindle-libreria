@@ -341,6 +341,37 @@ class WebTests(unittest.TestCase):
             self.assertEqual(preview[0]["source_id"], "match")
             self.assertNotIn("personal_note:note", [item["key"] for item in preview])
 
+    def test_explicit_author_survives_selected_context_and_result_limit(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            with connection:
+                connection.execute("INSERT INTO works(id,preferred_title) VALUES ('source','Origen')")
+                connection.execute("INSERT INTO works(id,preferred_title) VALUES ('han','La_sociedad_del_cansancio')")
+                connection.execute("INSERT INTO editions(id,work_id,title) VALUES ('han-edition','han','La sociedad del cansancio')")
+                connection.execute("INSERT INTO contributors(id,display_name,normalized_name) VALUES ('han-author','Byung Chul Han','byung chul han')")
+                connection.execute("INSERT INTO edition_contributors(edition_id,contributor_id,role) VALUES ('han-edition','han-author','author')")
+                connection.execute("INSERT INTO personal_notes(id,target_type,target_id,body) VALUES ('seed','work','source',?)", ("poder vigilancia lenguaje " * 150,))
+                for index in range(12):
+                    work_id = f"other-{index}"
+                    edition_id = f"edition-{index}"
+                    connection.execute("INSERT INTO works(id,preferred_title) VALUES (?,?)", (work_id, f"Poder {index}"))
+                    connection.execute("INSERT INTO editions(id,work_id,title) VALUES (?,?,?)", (edition_id, work_id, f"Poder {index}"))
+                    connection.execute("INSERT INTO annotations(id,edition_id,kind,text) VALUES (?,?,'highlight',?)", (f"annotation-{index}", edition_id, "poder vigilancia lenguaje"))
+            connection.close()
+            client = create_app(database).test_client()
+            conversation_id = client.post("/api/works/source/conversations", json={"profile_id": "companion"}).get_json()["id"]
+            client.put(f"/api/conversations/{conversation_id}/context", json={"personal_note_ids": ["seed"], "annotation_ids": []})
+            response = client.post(
+                f"/api/conversations/{conversation_id}/library-search",
+                json={"search_query": "¿Qué obras tengo de Byung-Chul Han?", "search_scope": "library"},
+            )
+            items = response.get_json()["items"]
+            self.assertLessEqual(len(items), 8)
+            self.assertEqual(items[0]["work_id"], "han")
+            self.assertEqual(items[0]["reason"], "Autor mencionado")
+
     def test_automatic_and_manual_display_titles(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "library.sqlite3"
