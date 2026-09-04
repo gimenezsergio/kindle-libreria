@@ -26,6 +26,19 @@ async function loadBook() {
   const book = await response.json();
   document.title = `${book.title} · Biblioteca personal`;
   setText("book-title", book.title);
+  const coverImage = document.querySelector("#book-cover-image");
+  const coverPlaceholder = document.querySelector("#book-cover-placeholder");
+  if (book.cover) {
+    coverImage.src = `/static/covers/${encodeURIComponent(book.cover.path)}`;
+    coverImage.alt = `Portada de ${book.title}`;
+    coverImage.title = `Fuente: ${book.cover.source}`;
+    coverImage.hidden = false;
+    coverPlaceholder.hidden = true;
+  } else {
+    coverImage.hidden = true;
+    coverPlaceholder.hidden = false;
+    coverPlaceholder.textContent = book.title.trim().charAt(0).toUpperCase() || "B";
+  }
   setText("original-title", book.original_title);
   document.querySelector("#display-title-input").value = book.display_title || book.title;
   setText("book-author", book.authors || "Autor no disponible");
@@ -33,18 +46,22 @@ async function loadBook() {
   setText("book-annotation-total", formatNumber.format(book.annotations.total));
   const present = book.editions.some((edition) => edition.presence === "present");
   setText("book-presence", present ? "Presente" : "Ausente");
+  document.querySelector("#book-presence").classList.toggle("is-present", present);
   const languages = [...new Set(book.editions.map((edition) => edition.language).filter(Boolean).map(languageName))];
+  setText("book-language", languages.join(" · ") || "Idioma no disponible");
   const editionTotal = book.editions.length;
   setText("edition-count", languages.join(" · ") || (editionTotal ? `${formatNumber.format(editionTotal)} documento${editionTotal === 1 ? "" : "s"}` : "Sin datos"));
   setText("edition-detail", editionTotal ? `${formatNumber.format(editionTotal)} ${editionTotal === 1 ? "edición registrada" : "ediciones registradas"}` : "El Kindle no expuso datos del documento");
   if (book.progress) {
     setText("progress-position", "Actividad registrada");
+    setText("book-activity", "Actividad registrada");
     const bits = [];
     if (book.progress.progress_fraction !== null) bits.push(`${Math.round(book.progress.progress_fraction * 100)} % estimado`);
     if (book.progress.words_read !== null) bits.push(`${formatNumber.format(book.progress.words_read)} palabras registradas`);
     setText("progress-detail", bits.join(" · ") || "El Kindle conserva una posición de lectura");
   } else {
     setText("progress-position", "Sin datos");
+    setText("book-activity", "Sin seguimiento");
     setText("progress-detail", "El Kindle no expuso seguimiento para este libro");
   }
   const personalTotal = book.personal.collections + book.personal.notes + book.personal.relations;

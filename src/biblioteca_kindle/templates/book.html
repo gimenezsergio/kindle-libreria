@@ -15,20 +15,23 @@
     </header>
     <main><article class="book-page">
       <a class="back-link" href="/library">← Volver a la biblioteca</a>
-      <header class="book-header">
-        <div><p class="eyebrow" id="identity-state">Ficha de lectura</p><h1 id="book-title">Consultando…</h1><p class="book-author" id="book-author"></p>
+      <header class="book-header book-header-compact">
+        <div class="book-header-cover" id="book-header-cover"><img id="book-cover-image" alt="" hidden><span id="book-cover-placeholder" aria-hidden="true">—</span></div>
+        <div class="book-header-identity"><p class="sr-only" id="identity-state">Ficha de lectura</p><h1 id="book-title">Consultando…</h1><p class="book-author" id="book-author"></p>
+          <p class="book-summary"><span id="book-presence">—</span><span><strong id="book-annotation-total">—</strong> anotaciones</span><span id="book-language">Idioma no disponible</span><span id="book-activity">Seguimiento no disponible</span></p>
+        </div>
+        <details class="book-details"><summary>Detalles del documento</summary>
+          <div class="book-details-grid">
+            <div><span>Datos del documento</span><strong id="edition-count">—</strong><p id="edition-detail"></p></div>
+            <div><span>Seguimiento de lectura</span><strong id="progress-position">—</strong><p id="progress-detail"></p></div>
+            <div><span>Organización propia</span><strong id="personal-count">—</strong><p id="personal-detail"></p></div>
+          </div>
           <details class="title-editor"><summary>Editar título mostrado</summary>
             <form id="title-form"><label>Título para la aplicación<input id="display-title-input" type="text" required></label><div><button type="submit">Guardar título</button><button class="secondary-button" id="reset-title" type="button">Usar corrección automática</button></div></form>
             <p>Original del Kindle: <span id="original-title"></span></p>
           </details>
-        </div>
-        <div class="book-stats"><div><strong id="book-annotation-total">—</strong><span>anotaciones</span></div><div><strong id="book-presence">—</strong><span>presencia</span></div></div>
+        </details>
       </header>
-      <section class="book-overview" aria-label="Información de la obra">
-        <div class="overview-card"><span>Datos del documento</span><strong id="edition-count">—</strong><p id="edition-detail"></p></div>
-        <div class="overview-card"><span>Seguimiento de lectura</span><strong id="progress-position">—</strong><p id="progress-detail"></p></div>
-        <div class="overview-card"><span>Organización propia</span><strong id="personal-count">—</strong><p id="personal-detail"></p></div>
-      </section>
       <nav class="book-tabs" role="tablist" aria-label="Secciones del libro"><button type="button" role="tab" aria-selected="true" aria-controls="panel-memory" data-book-tab="memory">Memoria de lectura</button><button type="button" role="tab" aria-selected="false" aria-controls="panel-notebook" data-book-tab="notebook">Cuaderno propio</button><button type="button" role="tab" aria-selected="false" aria-controls="panel-companion" data-book-tab="companion">Acompañante</button></nav>
       <section class="personal-workspace book-panel" id="panel-notebook" data-book-panel="notebook" aria-labelledby="personal-title" hidden>
         <div class="section-heading"><div><p class="eyebrow">Cuaderno propio</p><h2 id="personal-title">Pensar esta lectura</h2></div><span>Guardado solo en esta computadora</span></div>

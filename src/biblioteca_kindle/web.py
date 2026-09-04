@@ -280,8 +280,19 @@ def _work_detail(connection, work_id: str) -> dict | None:
         """,
         (work_id,),
     ).fetchone()
+    cover = PILOT_COVERS.get(work_id)
+    cover_preference = connection.execute(
+        "SELECT selected_path, review_status FROM work_cover_preferences WHERE work_id = ?",
+        (work_id,),
+    ).fetchone()
+    if cover_preference is not None:
+        if cover_preference["review_status"] == "none":
+            cover = None
+        elif cover_preference["selected_path"]:
+            cover = {"path": cover_preference["selected_path"], "source": "Elegida por vos"}
     return {
         **dict(work),
+        "cover": cover,
         "editions": editions,
         "annotations": {
             "total": sum(counts.values()),
