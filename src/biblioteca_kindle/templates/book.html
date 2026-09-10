@@ -54,8 +54,9 @@
       </section>
       <section class="reading-companion book-panel" id="panel-companion" data-book-panel="companion" aria-labelledby="conversation-title" hidden>
         <header class="companion-heading">
-          <div><p class="eyebrow">Acompañante de lectura</p><h2 id="conversation-title">Conversar sobre esta lectura</h2><p>Conversá con el perfil que elijas y, si querés, buscá evidencia en toda tu biblioteca.</p></div>
-          <div class="companion-start"><label>Perfil<select id="conversation-profile"><option>Cargando perfiles…</option></select></label><label class="conversation-title-field">Título opcional<input id="conversation-title-input" type="text" maxlength="120" placeholder="Ej.: Poder, intimidad y control"></label><button id="new-conversation" type="button">Nueva conversación</button><a href="/settings/ai-profiles">Administrar perfiles</a></div>
+          <div class="companion-intro"><p class="eyebrow">Acompañante de lectura</p><h2 id="conversation-title">Conversar sobre esta lectura</h2><p>Conversá con el perfil que elijas y, si querés, buscá evidencia en toda tu biblioteca.</p></div>
+          <div class="companion-focus-context" aria-label="Libro y conversación actual"><a href="/library" class="focus-library-link">← Biblioteca</a><span id="focus-book-context">Cargando libro…</span><span id="focus-conversation-context" hidden></span></div>
+          <div class="companion-actions"><button id="open-new-conversation" type="button" disabled>Nueva conversación</button><a href="/settings/ai-profiles">Administrar perfiles</a></div>
         </header>
         <div class="conversation-toolbar">
           <label>Conversación<select id="conversation-list" aria-label="Conversaciones de este libro"><option>Cargando…</option></select></label>
@@ -74,7 +75,8 @@
                 </div>
               </section>
               <aside class="material-column" aria-label="Material para la conversación">
-                <div class="material-column-content">
+                <button class="mobile-material-toggle" id="mobile-material-toggle" type="button" aria-controls="material-column-content" aria-expanded="false">Material para conversar <span id="mobile-material-count">0 adjuntos</span></button>
+                <div class="material-column-content" id="material-column-content">
                   <header><div><p class="eyebrow">Contexto adjunto</p><h3>Material para conversar</h3></div><span id="material-summary-count">0 adjuntos</span></header>
                   <div class="attached-material" id="attached-material"><p>La ficha del libro se incluye siempre.</p></div>
                   <button class="add-material-button" id="open-context-picker" type="button">+ Agregar material</button>
@@ -104,6 +106,15 @@
           <fieldset class="context-options" data-context-panel="annotation"><legend>Subrayados y notas del Kindle</legend><div id="context-annotations"></div></fieldset>
           <fieldset class="context-options" data-context-panel="personal_note" hidden><legend>Notas propias</legend><div id="context-notes"></div></fieldset>
           <footer class="dialog-actions"><span id="context-count">0 seleccionadas</span><button class="secondary-button" id="cancel-context-picker" type="button">Cancelar</button><button type="submit">Guardar selección</button></footer>
+        </form>
+      </dialog>
+      <dialog class="context-dialog new-conversation-dialog" id="new-conversation-dialog" aria-labelledby="new-conversation-dialog-title">
+        <form method="dialog" class="dialog-heading"><div><p class="eyebrow">Acompañante de lectura</p><h2 id="new-conversation-dialog-title">Nueva conversación</h2><p>Elegí con quién querés conversar. El título es opcional.</p></div><button class="dialog-close" value="cancel" aria-label="Cerrar nueva conversación">×</button></form>
+        <form id="new-conversation-form" class="new-conversation-form">
+          <label>Perfil<select id="conversation-profile" required><option>Cargando perfiles…</option></select></label>
+          <label>Título opcional<input id="conversation-title-input" type="text" maxlength="120" placeholder="Ej.: Poder, intimidad y control"></label>
+          <p>Si lo dejás vacío, el primer mensaje propone un título breve de forma local.</p>
+          <footer class="dialog-actions"><button class="secondary-button" id="cancel-new-conversation" type="button">Cancelar</button><button id="new-conversation" type="submit" disabled>Crear conversación</button></footer>
         </form>
       </dialog>
       <section class="book-annotations book-panel" id="panel-memory" data-book-panel="memory" aria-labelledby="annotations-title">

@@ -10,6 +10,27 @@ let responseAnimation = null;
 const CHAT_BOTTOM_TOLERANCE = 48;
 let conversationScrollState = null;
 
+function setCompanionFocus(active) {
+  document.body.classList.toggle("is-companion-focused", active);
+  if (!active) {
+    const dialog = document.querySelector("#new-conversation-dialog");
+    if (dialog?.open) dialog.close();
+    const material = document.querySelector(".material-column");
+    material?.classList.remove("is-mobile-open");
+    document.querySelector("#mobile-material-toggle")?.setAttribute("aria-expanded", "false");
+    return;
+  }
+  window.requestAnimationFrame(() => scrollConversationToBottom({force: true}));
+}
+
+function openNewConversationDialog() {
+  const dialog = document.querySelector("#new-conversation-dialog");
+  const profile = document.querySelector("#conversation-profile");
+  if (!dialog || !profile?.options.length || profile.disabled) return;
+  dialog.showModal();
+  window.requestAnimationFrame(() => profile.focus());
+}
+
 function disposeConversationScroll() {
   if (!conversationScrollState) return;
   const {container, onScroll, frame} = conversationScrollState;
@@ -71,6 +92,7 @@ async function loadBook() {
   const book = await response.json();
   document.title = `${book.title} · Biblioteca personal`;
   setText("book-title", book.title);
+  setText("focus-book-context", `${book.title} · ${book.authors || "Autor no disponible"}`);
   const coverImage = document.querySelector("#book-cover-image");
   const coverPlaceholder = document.querySelector("#book-cover-placeholder");
   if (book.cover) {
@@ -205,6 +227,7 @@ async function loadOptions() {
   const profileSelect = document.querySelector("#conversation-profile");
   profileSelect.replaceChildren(...profiles.items.map((item) => new Option(item.name, item.id, item.is_default, item.is_default)));
   document.querySelector("#new-conversation").disabled = profiles.items.length === 0;
+  document.querySelector("#open-new-conversation").disabled = profiles.items.length === 0;
   const searchWorks = document.querySelector("#library-search-works");
   searchWorks.replaceChildren(...works.items.map((item) => new Option(item.title, item.id)));
 }
@@ -465,6 +488,7 @@ async function loadContext(identifier) {
   setText("annotation-option-count", `(${data.annotations.length})`);
   setText("note-option-count", `(${data.notes.length})`);
   setText("material-summary-count", `${selectedCount} ${selectedCount === 1 ? "adjunto" : "adjuntos"}`);
+  setText("mobile-material-count", `${selectedCount} ${selectedCount === 1 ? "adjunto" : "adjuntos"}`);
   setText("attached-count", selectedCount ? `${selectedCount} ${selectedCount === 1 ? "fragmento adjunto" : "fragmentos adjuntos"}` : "Sin material adjunto");
   renderAttachedMaterial(data, selectedNotes, selectedAnnotations);
 }
@@ -505,6 +529,9 @@ async function openConversation(identifier) {
   document.querySelector("#conversation-active").hidden = false;
   setText("active-conversation-profile", conversation.profile_name_snapshot);
   setText("active-conversation-title", conversationDisplayTitle(conversation));
+  const focusConversation = document.querySelector("#focus-conversation-context");
+  focusConversation.textContent = `${conversation.profile_name_snapshot || "Perfil no disponible"} · ${conversationDisplayTitle(conversation)}`;
+  focusConversation.hidden = false;
   document.querySelector("#active-conversation-title-input").value = conversation.title || "";
   document.querySelector("#conversation-title-form").closest("details").removeAttribute("open");
   const messages = conversation.messages.map(messageCard);
@@ -600,7 +627,12 @@ document.querySelector("#reset-title").addEventListener("click", async () => {
   try { await saveDisplayTitle(null); }
   catch (error) { feedback(error.message, true); }
 });
-document.querySelector("#new-conversation").addEventListener("click", async () => {
+document.querySelector("#open-new-conversation").addEventListener("click", openNewConversationDialog);
+document.querySelector("#cancel-new-conversation").addEventListener("click", () => {
+  document.querySelector("#new-conversation-dialog").close();
+});
+document.querySelector("#new-conversation-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
   const button = document.querySelector("#new-conversation");
   button.disabled = true;
   try {
@@ -610,10 +642,17 @@ document.querySelector("#new-conversation").addEventListener("click", async () =
     });
     document.querySelector("#conversation-title-input").value = "";
     await loadConversations(created.id);
+    document.querySelector("#new-conversation-dialog").close();
     document.querySelector("#conversation-message").focus();
   } catch (error) {
     document.querySelector("#conversation-feedback").textContent = error.message;
   } finally { button.disabled = false; }
+});
+document.querySelector("#mobile-material-toggle").addEventListener("click", (event) => {
+  const column = document.querySelector(".material-column");
+  const expanded = !column.classList.contains("is-mobile-open");
+  column.classList.toggle("is-mobile-open", expanded);
+  event.currentTarget.setAttribute("aria-expanded", String(expanded));
 });
 document.querySelector("#conversation-list").addEventListener("change", (event) => {
   if (event.target.value) openConversation(event.target.value);
@@ -745,6 +784,7 @@ document.querySelectorAll("[data-book-tab]").forEach((tab) => {
     document.querySelectorAll("[data-book-panel]").forEach((panel) => {
       panel.hidden = panel.dataset.bookPanel !== selected;
     });
+    setCompanionFocus(selected === "companion");
     history.replaceState(null, "", `#panel-${selected}`);
   });
   tab.addEventListener("keydown", (event) => {
