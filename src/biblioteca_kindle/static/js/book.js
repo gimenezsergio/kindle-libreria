@@ -417,7 +417,7 @@ async function loadConversations(preferredId = activeConversationId) {
   const data = await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/conversations`);
   const list = document.querySelector("#conversation-list");
   const options = data.items.map((conversation) => new Option(
-    `${conversation.title || "Conversación sobre la lectura"} · ${conversation.message_count} mensajes`, conversation.id,
+    `${conversation.profile_name_snapshot || "Perfil no disponible"} · ${conversation.title || "Conversación sobre la lectura"} · ${conversation.message_count} mensajes`, conversation.id,
   ));
   list.replaceChildren(...options);
   list.disabled = !options.length;

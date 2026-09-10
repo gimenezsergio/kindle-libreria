@@ -128,6 +128,7 @@ class WebTests(unittest.TestCase):
             self.assertIn('className = "thinking-dots"', book_script)
             self.assertIn("appendTransientExchange(content)", book_script)
             self.assertIn("[${source.label}: ${source.work_title}]", book_script)
+            self.assertIn("${conversation.profile_name_snapshot || \"Perfil no disponible\"}", book_script)
             self.assertIn("function readableSourceReference(reference)", book_script)
             self.assertLess(
                 page_text.index('id="conversation-messages"'),
@@ -253,6 +254,7 @@ class WebTests(unittest.TestCase):
             self.assertEqual(created.status_code, 201)
             self.assertEqual(message.status_code, 201)
             self.assertEqual(conversations[0]["message_count"], 1)
+            self.assertEqual(conversations[0]["profile_name_snapshot"], "Compañero de lectura")
             self.assertEqual(detail["profile_name_snapshot"], "Compañero de lectura")
             self.assertEqual(detail["messages"][0]["role"], "user")
             self.assertEqual(detail["messages"][0]["content"], "¿Qué tensión organiza el libro?")
