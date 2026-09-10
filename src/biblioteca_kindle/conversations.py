@@ -30,6 +30,14 @@ _GREETING_PREFIX = re.compile(
 )
 _TITLE_PREFIXES = (
     re.compile(
+        r"^(?:dame|decime|dime|explicame|explícame|contame|cuéntame|"
+        r"analizá|analiza|mostrame|muéstrame)\s+",
+        re.IGNORECASE,
+    ),
+    re.compile(r"^ayudame\s+a\s+entender\s+", re.IGNORECASE),
+    re.compile(r"^ayúdame\s+a\s+entender\s+", re.IGNORECASE),
+    re.compile(r"^quiero\s+saber\s+", re.IGNORECASE),
+    re.compile(
         r"^(?:quiero|me gustaría|quisiera)\s+(?:que\s+)?"
         r"(?:hablemos|hablar|conversemos|conversar|charlemos|charlar|"
         r"pensemos|pensar|exploremos|explorar|analicemos|analizar)\s+"

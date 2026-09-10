@@ -164,6 +164,37 @@ class ConversationTests(unittest.TestCase):
         self.assertEqual(conversation["title"], "El cansancio y la libertad")
         self.assertEqual(conversation["title_origin"], "automatic")
 
+    def test_automatic_title_removes_common_request_prefixes_conservatively(self) -> None:
+        cases = {
+            "dame las caracteristicas de los principales personajes":
+                "Las caracteristicas de los principales personajes",
+            "dame las características de los principales personajes":
+                "Las características de los principales personajes",
+            "Decime qué simboliza el cuadro": "Qué simboliza el cuadro",
+            "dime qué simboliza el cuadro": "Qué simboliza el cuadro",
+            "Explícame el conflicto central": "El conflicto central",
+            "contame sobre la vigilancia": "Sobre la vigilancia",
+            "Cuéntame sobre la vigilancia": "Sobre la vigilancia",
+            "Analizá la relación entre los personajes":
+                "La relación entre los personajes",
+            "analiza la relación entre los personajes":
+                "La relación entre los personajes",
+            "Mostrame los vínculos": "Los vínculos",
+            "muéstrame los vínculos": "Los vínculos",
+            "Ayúdame a entender el final": "El final",
+            "ayudame a entender el final": "El final",
+            "Quiero saber por qué Winston obedece":
+                "Por qué Winston obedece",
+        }
+        for message, expected in cases.items():
+            with self.subTest(message=message):
+                self.assertEqual(generate_conversation_title(message), expected)
+
+        self.assertEqual(
+            generate_conversation_title("La novela dice dame una respuesta"),
+            "La novela dice dame una respuesta",
+        )
+
     def test_selected_context_is_snapshotted_for_the_conversation(self) -> None:
         connection = connect_database(self.database)
         with connection:
