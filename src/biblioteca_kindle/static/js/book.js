@@ -6,6 +6,7 @@ let annotationPages = 1;
 let activeConversationId = null;
 let librarySearchResults = [];
 let previewSearchQuery = "";
+let responseAnimation = null;
 
 function conversationDisplayTitle(conversation) {
   if (String(conversation.title || "").trim()) return conversation.title;
@@ -228,7 +229,64 @@ function pendingMessageCard(profileName) {
   return article;
 }
 
+function cancelResponseAnimation({finish = false} = {}) {
+  if (!responseAnimation) return;
+  if (finish && responseAnimation.finish) {
+    responseAnimation.finish();
+    return;
+  }
+  clearTimeout(responseAnimation.timer);
+  responseAnimation.cancelled = true;
+  responseAnimation = null;
+}
+
+function revealAssistantResponse(pendingCard, answer, librarySources = []) {
+  cancelResponseAnimation({finish: true});
+  const card = messageCard({role: "assistant", content: answer, library_sources: librarySources});
+  const content = card.querySelector("p");
+  const text = content.textContent;
+  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  pendingCard.replaceWith(card);
+  if (reducedMotion || !text) return Promise.resolve();
+
+  content.textContent = "";
+  content.setAttribute("aria-live", "off");
+  card.setAttribute("aria-busy", "true");
+  let resolveAnimation;
+  const state = {timer: null, cancelled: false, finish: null};
+  responseAnimation = state;
+  let position = 0;
+  state.finish = () => {
+    clearTimeout(state.timer);
+    state.cancelled = true;
+    content.textContent = text;
+    card.removeAttribute("aria-busy");
+    content.removeAttribute("aria-live");
+    if (responseAnimation === state) responseAnimation = null;
+    if (resolveAnimation) resolveAnimation();
+  };
+  return new Promise((resolve) => {
+    resolveAnimation = resolve;
+    const step = () => {
+      if (state.cancelled) return resolve();
+      const remaining = text.length - position;
+      const chunk = remaining > 240 ? 5 : remaining > 100 ? 3 : 2;
+      position = Math.min(text.length, position + chunk);
+      content.textContent = text.slice(0, position);
+      if (position >= text.length) {
+        card.removeAttribute("aria-busy");
+        content.removeAttribute("aria-live");
+        if (responseAnimation === state) responseAnimation = null;
+        return resolve();
+      }
+      state.timer = window.setTimeout(step, 20);
+    };
+    step();
+  });
+}
+
 function appendTransientExchange(content) {
+  cancelResponseAnimation({finish: true});
   const container = document.querySelector("#conversation-messages");
   container.querySelectorAll(".conversation-message-empty, .conversation-message-transient").forEach((item) => item.remove());
   const user = messageCard({role: "user", content});
@@ -396,6 +454,7 @@ async function loadProviderStatus() {
 }
 
 async function openConversation(identifier) {
+  cancelResponseAnimation();
   const conversation = await jsonRequest(`/api/conversations/${encodeURIComponent(identifier)}`);
   activeConversationId = identifier;
   librarySearchResults = []; previewSearchQuery = "";
@@ -422,18 +481,28 @@ async function openConversation(identifier) {
 
 async function loadConversations(preferredId = activeConversationId) {
   const data = await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/conversations`);
+  renderConversationOptions(data.items, preferredId);
+  if (!data.items.length) return;
+  const next = data.items.some((item) => item.id === preferredId) ? preferredId : data.items[0].id;
+  await openConversation(next);
+}
+
+function renderConversationOptions(items, preferredId) {
   const list = document.querySelector("#conversation-list");
-  const options = data.items.map((conversation) => new Option(
+  const options = items.map((conversation) => new Option(
     `${conversation.profile_name_snapshot || "Perfil no disponible"} · ${conversationDisplayTitle(conversation)} · ${conversation.message_count} mensajes`, conversation.id,
   ));
   list.replaceChildren(...options);
   list.disabled = !options.length;
   if (!options.length) {
     list.append(new Option("Sin conversaciones", ""));
-    return;
   }
-  const next = data.items.some((item) => item.id === preferredId) ? preferredId : data.items[0].id;
-  await openConversation(next);
+  if (preferredId && items.some((item) => item.id === preferredId)) list.value = preferredId;
+}
+
+async function refreshConversationOptions(preferredId = activeConversationId) {
+  const data = await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/conversations`);
+  renderConversationOptions(data.items, preferredId);
 }
 
 function feedback(message, error = false) {
@@ -528,19 +597,26 @@ document.querySelector("#conversation-form").addEventListener("submit", async (e
   const content = textarea.value.trim();
   if (!content) return;
   const payload = {content, ...currentContextSelection(), ...librarySearchPayload()};
+  const requestConversationId = activeConversationId;
   const pendingCard = appendTransientExchange(content);
   button.disabled = true;
   button.textContent = "Pensando…";
   form.setAttribute("aria-busy", "true");
   document.querySelector("#conversation-feedback").textContent = "";
   try {
-    const result = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/respond`, {
+    const result = await jsonRequest(`/api/conversations/${encodeURIComponent(requestConversationId)}/respond`, {
       method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify(payload),
     });
+    if (activeConversationId !== requestConversationId) return;
     form.reset();
     document.querySelector("#conversation-feedback").textContent = result.mode === "draft" ? "Mensaje guardado. No se envió a una IA porque está activo el modo borrador." : "El acompañante respondió.";
-    await loadConversations(activeConversationId);
+    if (result.answer) {
+      revealAssistantResponse(pendingCard, result.answer, result.library_sources);
+      await refreshConversationOptions(activeConversationId);
+    } else {
+      await loadConversations(activeConversationId);
+    }
   } catch (error) {
     showResponseError(pendingCard, error.message);
     document.querySelector("#conversation-feedback").textContent = error.message;
