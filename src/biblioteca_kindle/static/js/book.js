@@ -6,6 +6,11 @@ let annotationPages = 1;
 let activeConversationId = null;
 let librarySearchResults = [];
 let previewSearchQuery = "";
+
+function conversationDisplayTitle(conversation) {
+  if (String(conversation.title || "").trim()) return conversation.title;
+  return conversation.title_origin === "pending" ? "Nueva conversación" : "Conversación sobre la lectura";
+}
 let contextOptionsData = {notes: [], annotations: []};
 
 function languageName(code) {
@@ -397,7 +402,9 @@ async function openConversation(identifier) {
   document.querySelector("#conversation-empty").hidden = true;
   document.querySelector("#conversation-active").hidden = false;
   setText("active-conversation-profile", conversation.profile_name_snapshot);
-  setText("active-conversation-title", conversation.title || "Conversación sobre la lectura");
+  setText("active-conversation-title", conversationDisplayTitle(conversation));
+  document.querySelector("#active-conversation-title-input").value = conversation.title || "";
+  document.querySelector("#conversation-title-form").closest("details").removeAttribute("open");
   const messages = conversation.messages.map(messageCard);
   const container = document.querySelector("#conversation-messages");
   container.replaceChildren(...messages);
@@ -417,7 +424,7 @@ async function loadConversations(preferredId = activeConversationId) {
   const data = await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/conversations`);
   const list = document.querySelector("#conversation-list");
   const options = data.items.map((conversation) => new Option(
-    `${conversation.profile_name_snapshot || "Perfil no disponible"} · ${conversation.title || "Conversación sobre la lectura"} · ${conversation.message_count} mensajes`, conversation.id,
+    `${conversation.profile_name_snapshot || "Perfil no disponible"} · ${conversationDisplayTitle(conversation)} · ${conversation.message_count} mensajes`, conversation.id,
   ));
   list.replaceChildren(...options);
   list.disabled = !options.length;
@@ -486,8 +493,9 @@ document.querySelector("#new-conversation").addEventListener("click", async () =
   try {
     const created = await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/conversations`, {
       method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({profile_id: document.querySelector("#conversation-profile").value}),
+      body: JSON.stringify({profile_id: document.querySelector("#conversation-profile").value, title: document.querySelector("#conversation-title-input").value}),
     });
+    document.querySelector("#conversation-title-input").value = "";
     await loadConversations(created.id);
     document.querySelector("#conversation-message").focus();
   } catch (error) {
@@ -496,6 +504,20 @@ document.querySelector("#new-conversation").addEventListener("click", async () =
 });
 document.querySelector("#conversation-list").addEventListener("change", (event) => {
   if (event.target.value) openConversation(event.target.value);
+});
+document.querySelector("#conversation-title-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!activeConversationId) return;
+  try {
+    await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/title`, {
+      method: "PATCH", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({title: document.querySelector("#active-conversation-title-input").value}),
+    });
+    document.querySelector("#conversation-feedback").textContent = "Título de la conversación actualizado.";
+    await loadConversations(activeConversationId);
+  } catch (error) {
+    document.querySelector("#conversation-feedback").textContent = error.message;
+  }
 });
 document.querySelector("#conversation-form").addEventListener("submit", async (event) => {
   event.preventDefault();

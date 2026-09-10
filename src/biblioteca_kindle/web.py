@@ -26,6 +26,7 @@ from .conversations import (
     context_options,
     get_conversation,
     list_work_conversations,
+    update_conversation_title,
     update_context,
     build_prompt_packet,
     attach_library_sources,
@@ -582,6 +583,17 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
             return jsonify(get_conversation(database_path, conversation_id))
         except ConversationError as error:
             return jsonify(error=str(error)), 404
+
+    @app.patch("/api/conversations/<conversation_id>/title")
+    def conversation_title_update(conversation_id: str):
+        try:
+            payload = _json_body()
+            update_conversation_title(
+                database_path, conversation_id=conversation_id, title=payload.get("title")
+            )
+            return jsonify(get_conversation(database_path, conversation_id))
+        except ConversationError as error:
+            return jsonify(error=str(error)), 400
 
     @app.post("/api/conversations/<conversation_id>/messages")
     def conversation_message_create(conversation_id: str):

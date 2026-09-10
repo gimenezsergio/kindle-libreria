@@ -9,12 +9,15 @@ from biblioteca_kindle.conversations import (
     ConversationError,
     add_message,
     create_conversation,
+    generate_conversation_title,
     get_conversation,
     context_options,
     update_context,
     build_prompt_packet,
     attach_library_sources,
     pin_library_sources,
+    prepare_external_turn,
+    update_conversation_title,
 )
 from biblioteca_kindle.db import connect_database, migrate_database
 from biblioteca_kindle.ai import DraftProvider, ResponsesProvider, load_environment_file, provider_from_environment
@@ -97,6 +100,69 @@ class ConversationTests(unittest.TestCase):
                 role="user",
                 content="   ",
             )
+
+    def test_automatic_title_is_local_and_generated_only_for_pending_conversations(self) -> None:
+        identifier = create_conversation(
+            self.database, work_id="work-1", profile_id="companion"
+        )
+        self.assertEqual(get_conversation(self.database, identifier)["title_origin"], "pending")
+
+        add_message(
+            self.database,
+            conversation_id=identifier,
+            role="user",
+            content="Quiero que hablemos sobre la soledad y la vida privada en 1984",
+        )
+        conversation = get_conversation(self.database, identifier)
+        self.assertEqual(conversation["title"], "La soledad y la vida privada en 1984")
+        self.assertEqual(conversation["title_origin"], "automatic")
+
+        add_message(
+            self.database, conversation_id=identifier, role="user", content="Y también sobre Winston"
+        )
+        self.assertEqual(
+            get_conversation(self.database, identifier)["title"],
+            "La soledad y la vida privada en 1984",
+        )
+
+    def test_manual_title_is_preserved_and_can_be_edited(self) -> None:
+        identifier = create_conversation(
+            self.database,
+            work_id="work-1",
+            profile_id="companion",
+            title="Poder e intimidad",
+        )
+        add_message(
+            self.database, conversation_id=identifier, role="user", content="¿Qué te parece?"
+        )
+        self.assertEqual(get_conversation(self.database, identifier)["title_origin"], "manual")
+        self.assertEqual(get_conversation(self.database, identifier)["title"], "Poder e intimidad")
+
+        update_conversation_title(
+            self.database, conversation_id=identifier, title="Vida propia y control"
+        )
+        conversation = get_conversation(self.database, identifier)
+        self.assertEqual(conversation["title"], "Vida propia y control")
+        self.assertEqual(conversation["title_origin"], "manual")
+
+    def test_automatic_title_falls_back_and_external_turns_use_the_same_rule(self) -> None:
+        self.assertEqual(generate_conversation_title("Hola"), "Nueva conversación")
+        self.assertEqual(
+            generate_conversation_title("¿Qué pensás sobre la vigilancia?"),
+            "La vigilancia",
+        )
+        identifier = create_conversation(
+            self.database, work_id="work-1", profile_id="companion"
+        )
+        prepare_external_turn(
+            self.database,
+            conversation_id=identifier,
+            content="Una pregunta sobre el cansancio y la libertad",
+            library_sources=[],
+        )
+        conversation = get_conversation(self.database, identifier)
+        self.assertEqual(conversation["title"], "El cansancio y la libertad")
+        self.assertEqual(conversation["title_origin"], "automatic")
 
     def test_selected_context_is_snapshotted_for_the_conversation(self) -> None:
         connection = connect_database(self.database)

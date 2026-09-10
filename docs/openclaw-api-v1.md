@@ -64,6 +64,14 @@ La conversación conserva una instantánea del nombre y las instrucciones del
 perfil. `GET /profiles` no entrega el prompt: solo el servidor lo incorpora al
 paquete de un turno preparado.
 
+`title` es opcional. Si se omite, la conversación queda en estado
+`pending` con la etiqueta visible **Nueva conversación**. Al registrar su primer
+turno de usuario, Biblioteca Kindle crea una vez un título breve mediante reglas
+locales; no llama a un proveedor de IA ni transmite el mensaje para titularlo.
+La respuesta de detalle expone `title_origin` (`legacy`, `pending`,
+`automatic` o `manual`) para que el canal externo pueda mostrarlo sin
+interpretarlo.
+
 ## Contexto explícito
 
 `GET /conversations/{id}/context` devuelve las notas propias y anotaciones del

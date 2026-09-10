@@ -169,7 +169,7 @@ def create_openclaw_blueprint(database: Path | str, token: str) -> Blueprint:
         try:
             conversation = get_conversation(database_path, conversation_id)
             allowed = {
-                "id", "work_id", "profile_id", "profile_name_snapshot", "title",
+                "id", "work_id", "profile_id", "profile_name_snapshot", "title", "title_origin",
                 "status", "created_at", "updated_at", "messages", "context_sources",
             }
             return jsonify({key: value for key, value in conversation.items() if key in allowed})

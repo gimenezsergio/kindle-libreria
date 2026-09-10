@@ -20,6 +20,40 @@ LOCATION_REFERENCE = re.compile(
     re.IGNORECASE,
 )
 
+DEFAULT_CONVERSATION_TITLE = "Nueva conversación"
+MAX_CONVERSATION_TITLE_LENGTH = 120
+MAX_AUTOMATIC_TITLE_LENGTH = 55
+
+_GREETING_PREFIX = re.compile(
+    r"^(?:hola|buenas(?: tardes| noches| días)?|buen día)\b[\s,!.¡¿-]*",
+    re.IGNORECASE,
+)
+_TITLE_PREFIXES = (
+    re.compile(
+        r"^(?:quiero|me gustaría|quisiera)\s+(?:que\s+)?"
+        r"(?:hablemos|hablar|conversemos|conversar|charlemos|charlar|"
+        r"pensemos|pensar|exploremos|explorar|analicemos|analizar)\s+"
+        r"(?:sobre|acerca de|de)\s+",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"^(?:podemos|podríamos)\s+(?:hablar|conversar|charlar|pensar|"
+        r"explorar|analizar)\s+(?:sobre|acerca de|de)\s+",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"^(?:te\s+)?(?:quiero|quería)\s+(?:preguntar|consultar)\s+"
+        r"(?:sobre|acerca de|por)\s+",
+        re.IGNORECASE,
+    ),
+    re.compile(r"^una\s+pregunta\s+(?:sobre|acerca de)\s+", re.IGNORECASE),
+    re.compile(
+        r"^¿?\s*(?:qué|que)\s+(?:pensás|piensas|podés\s+decirme|"
+        r"puedes\s+decirme)\s+(?:sobre|de)\s+",
+        re.IGNORECASE,
+    ),
+)
+
 
 def _context_reference(source: str | None) -> str | None:
     text = source or ""
@@ -50,6 +84,66 @@ def _clean_text(value: object, label: str, *, required: bool = False) -> str:
     return text
 
 
+def _clean_conversation_title(value: object, *, required: bool = False) -> str:
+    title = _clean_text(value, "El título", required=required)
+    if len(title) > MAX_CONVERSATION_TITLE_LENGTH:
+        raise ConversationError(
+            f"El título no puede superar {MAX_CONVERSATION_TITLE_LENGTH} caracteres"
+        )
+    return title
+
+
+def _truncate_title(text: str, limit: int = MAX_AUTOMATIC_TITLE_LENGTH) -> str:
+    if len(text) <= limit:
+        return text
+    candidate = text[: limit + 1].rsplit(" ", 1)[0].strip()
+    return candidate or text[:limit].strip()
+
+
+def generate_conversation_title(message: object) -> str:
+    """Deriva una etiqueta local, estable y breve para el primer mensaje útil."""
+    if not isinstance(message, str):
+        return DEFAULT_CONVERSATION_TITLE
+    title = " ".join(message.split()).strip(" \t\n\r:;,.!?¿¡—–-\"“”")
+    title = _GREETING_PREFIX.sub("", title)
+    for prefix in _TITLE_PREFIXES:
+        updated = prefix.sub("", title).strip()
+        if updated != title:
+            title = updated
+            break
+    title = title.strip(" \t\n\r:;,.!?¿¡—–-\"“”")
+    if len(title) < 4:
+        return DEFAULT_CONVERSATION_TITLE
+    title = _truncate_title(title)
+    return title[:1].upper() + title[1:]
+
+
+def _update_conversation_after_message(
+    connection: sqlite3.Connection,
+    conversation_id: str,
+    *,
+    role: str,
+    content: str,
+) -> None:
+    if role == "user":
+        automatic_title = generate_conversation_title(content)
+        connection.execute(
+            """
+            UPDATE reading_conversations
+            SET title = CASE WHEN title_origin = 'pending' THEN ? ELSE title END,
+                title_origin = CASE WHEN title_origin = 'pending' THEN 'automatic' ELSE title_origin END,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (automatic_title, conversation_id),
+        )
+        return
+    connection.execute(
+        "UPDATE reading_conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (conversation_id,),
+    )
+
+
 def create_conversation(
     database: Path | str,
     *,
@@ -57,7 +151,8 @@ def create_conversation(
     profile_id: str,
     title: object = "",
 ) -> str:
-    conversation_title = _clean_text(title, "El título") or None
+    conversation_title = _clean_conversation_title(title) or None
+    title_origin = "manual" if conversation_title else "pending"
     connection = _open_database(database)
     try:
         work = connection.execute(
@@ -80,8 +175,8 @@ def create_conversation(
                 """
                 INSERT INTO reading_conversations(
                     id, work_id, profile_id, profile_name_snapshot,
-                    profile_prompt_snapshot, title
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                    profile_prompt_snapshot, title, title_origin
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     identifier,
@@ -90,6 +185,7 @@ def create_conversation(
                     profile["name"],
                     profile["prompt"],
                     conversation_title,
+                    title_origin,
                 ),
             )
             display_title = connection.execute(
@@ -110,6 +206,27 @@ def create_conversation(
                 (str(uuid.uuid4()), identifier, work_id, f"Título: {display_title}"),
             )
         return identifier
+    finally:
+        connection.close()
+
+
+def update_conversation_title(
+    database: Path | str, *, conversation_id: str, title: object
+) -> None:
+    conversation_title = _clean_conversation_title(title, required=True)
+    connection = _open_database(database)
+    try:
+        with connection:
+            updated = connection.execute(
+                """
+                UPDATE reading_conversations
+                SET title = ?, title_origin = 'manual', updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (conversation_title, conversation_id),
+            ).rowcount
+        if updated == 0:
+            raise ConversationError("La conversación no existe")
     finally:
         connection.close()
 
@@ -151,12 +268,8 @@ def add_message(
             """,
             (identifier, conversation_id, sequence, role, message_content),
         )
-        connection.execute(
-            """
-            UPDATE reading_conversations
-            SET updated_at = CURRENT_TIMESTAMP WHERE id = ?
-            """,
-            (conversation_id,),
+        _update_conversation_after_message(
+            connection, conversation_id, role=role, content=message_content
         )
         connection.commit()
         return identifier
@@ -199,9 +312,8 @@ def prepare_external_turn(
             "INSERT INTO external_conversation_turns(id,conversation_id,user_message_id,source_snapshot_json) VALUES (?, ?, ?, ?)",
             (turn_id, conversation_id, message_id, json.dumps(library_sources, ensure_ascii=False)),
         )
-        connection.execute(
-            "UPDATE reading_conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-            (conversation_id,),
+        _update_conversation_after_message(
+            connection, conversation_id, role="user", content=message_content
         )
         connection.commit()
         return turn_id, message_id
@@ -556,7 +668,7 @@ def list_work_conversations(database: Path | str, work_id: str) -> list[dict]:
             raise ConversationError("La obra no existe")
         rows = connection.execute(
             """
-            SELECT rc.id, rc.title, rc.profile_id, rc.profile_name_snapshot,
+            SELECT rc.id, rc.title, rc.title_origin, rc.profile_id, rc.profile_name_snapshot,
                    rc.status, rc.created_at, rc.updated_at,
                    COUNT(cm.id) AS message_count
             FROM reading_conversations rc

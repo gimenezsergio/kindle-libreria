@@ -106,6 +106,7 @@ class OpenClawAPITests(unittest.TestCase):
         ).get_json()
         self.assertEqual([message["role"] for message in detail["messages"]], ["user", "assistant"])
         self.assertTrue(detail["messages"][-1]["library_sources"])
+        self.assertEqual(detail["title_origin"], "manual")
         self.assertNotIn("profile_prompt_snapshot", detail)
 
 

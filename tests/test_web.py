@@ -259,6 +259,52 @@ class WebTests(unittest.TestCase):
             self.assertEqual(detail["messages"][0]["role"], "user")
             self.assertEqual(detail["messages"][0]["content"], "¿Qué tensión organiza el libro?")
 
+    def test_conversation_title_can_be_manual_or_generated_once_locally(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            with connection:
+                connection.execute("INSERT INTO works(id, preferred_title) VALUES ('work', 'Libro')")
+            connection.close()
+            client = create_app(database).test_client()
+
+            pending = client.post(
+                "/api/works/work/conversations", json={"profile_id": "companion"}
+            ).get_json()["id"]
+            before_message = client.get(f"/api/conversations/{pending}").get_json()
+            self.assertIsNone(before_message["title"])
+            self.assertEqual(before_message["title_origin"], "pending")
+
+            saved = client.post(
+                f"/api/conversations/{pending}/messages",
+                json={"content": "Quiero hablar sobre la soledad y el poder"},
+            )
+            generated = client.get(f"/api/conversations/{pending}").get_json()
+            self.assertEqual(saved.status_code, 201)
+            self.assertEqual(generated["title"], "La soledad y el poder")
+            self.assertEqual(generated["title_origin"], "automatic")
+
+            renamed = client.patch(
+                f"/api/conversations/{pending}/title", json={"title": "Vida propia"}
+            )
+            self.assertEqual(renamed.status_code, 200)
+            self.assertEqual(renamed.get_json()["title_origin"], "manual")
+            client.post(
+                f"/api/conversations/{pending}/messages", json={"content": "Otra pregunta"}
+            )
+            self.assertEqual(
+                client.get(f"/api/conversations/{pending}").get_json()["title"], "Vida propia"
+            )
+
+            manual = client.post(
+                "/api/works/work/conversations",
+                json={"profile_id": "companion", "title": "Mi conversación"},
+            ).get_json()["id"]
+            manual_detail = client.get(f"/api/conversations/{manual}").get_json()
+            self.assertEqual(manual_detail["title"], "Mi conversación")
+            self.assertEqual(manual_detail["title_origin"], "manual")
+
     def test_configured_ai_provider_saves_its_answer(self) -> None:
         class FakeProvider:
             name = "test"

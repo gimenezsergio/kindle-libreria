@@ -226,6 +226,18 @@ seleccionar el contexto y revisar el paquete exacto antes de enviarlo. Por
 defecto trabaja en modo borrador: guarda los mensajes localmente y no envía
 información fuera de la computadora.
 
+### Títulos de conversaciones
+
+Al iniciar una conversación se puede escribir un título opcional. Ese título se
+marca como manual y siempre se respeta. Si se deja vacío, la conversación se
+muestra primero como **Nueva conversación**; al guardar el primer mensaje del
+lector, la aplicación deriva una etiqueta breve mediante reglas locales en
+Python (limpieza de prefacios frecuentes, límite de longitud y corte por
+palabra). Se hace una sola vez y no llama a DeepSeek, OpenClaw ni a ningún otro
+servicio de red. El título automático puede editarse después; al hacerlo pasa a
+ser manual y no se vuelve a generar. Las conversaciones anteriores se conservan
+tal como estaban, sin reescrituras silenciosas.
+
 La biblioteca no contiene el texto completo de los libros. La recuperación
 automática consulta únicamente el catálogo, la autoría, los subrayados, las
 notas propias y las categorías almacenadas en SQLite. El conocimiento general
