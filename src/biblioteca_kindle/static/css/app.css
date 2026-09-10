@@ -507,7 +507,7 @@ input[type="search"], select, textarea, input[type="text"] { min-height: 2.75rem
 .book-header h1 { font-size: clamp(2.25rem, 4.5vw, 4rem); }
 .book-overview { margin-top: .75rem; border-top: 1px solid var(--line); }
 .overview-card { min-height: 8rem; }
-.book-tabs { position: sticky; top: 4.2rem; z-index: 10; display: flex; gap: 0; margin: 1rem 0 0; border: 1px solid var(--line); background: var(--paper); }
+.book-tabs { position: sticky; top: 4.2rem; z-index: 10; display: flex; gap: 0; margin: 1rem 0 0; scroll-margin-top: 5rem; border: 1px solid var(--line); background: var(--paper); }
 .book-tabs button { flex: 1; min-height: 3.25rem; padding: .75rem 1rem; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--muted); cursor: pointer; }
 .book-tabs button[aria-selected="true"] { border-bottom-color: var(--terracotta); background: var(--surface); color: var(--terracotta); font-weight: 700; }
 .book-panel { margin: 1rem 0 0; }
@@ -535,7 +535,6 @@ input[type="search"], select, textarea, input[type="text"] { min-height: 2.75rem
 footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 
 /* Mesa de trabajo del acompañante: conversación y fuentes permanecen juntas. */
-.book-page:has(#panel-companion:not([hidden])) { width: min(100% - 2rem, 96rem); padding-inline: 1rem; }
 .companion-heading { align-items: center; padding: 1.4rem 1.5rem; }
 .companion-heading h2 { font-size: 1.75rem; }
 .companion-workbench { grid-template-columns: minmax(11rem, 13.5rem) minmax(0, 1fr); min-height: 42rem; }
@@ -776,13 +775,14 @@ body.is-companion-focused .back-link,
 body.is-companion-focused .book-header,
 body.is-companion-focused > footer { display: none; }
 body.is-companion-focused main { min-height: 100dvh; }
-body.is-companion-focused .book-page { display: grid; width: 100%; max-width: none; height: 100dvh; min-height: 0; padding: 0; grid-template-rows: auto minmax(0, 1fr); }
-body.is-companion-focused .book-tabs { position: static; z-index: auto; margin: 0; border-inline: 0; }
+body.is-companion-focused .book-page { display: grid; width: 100%; max-width: none; height: 100dvh; min-height: 0; padding: 0; grid-template-rows: minmax(0, 1fr); }
+body.is-companion-focused .book-tabs { display: none; }
 body.is-companion-focused .reading-companion { display: grid; height: 100%; min-height: 0; margin: 0; border: 0; grid-template-rows: auto auto minmax(0, 1fr); box-shadow: none; }
 body.is-companion-focused .companion-heading { display: grid; min-height: 3.7rem; padding: .65rem 1rem; grid-template-columns: minmax(0, 1fr) auto; }
 body.is-companion-focused .companion-intro { display: none; }
 body.is-companion-focused .companion-focus-context { display: flex; min-width: 0; gap: .75rem; align-items: center; }
-body.is-companion-focused .focus-library-link { flex: 0 0 auto; color: var(--terracotta); font-size: .76rem; text-decoration: none; }
+body.is-companion-focused .focus-exit-button { flex: 0 0 auto; padding: 0; border: 0; background: transparent; color: var(--terracotta); cursor: pointer; font: inherit; font-size: .76rem; font-weight: 700; }
+body.is-companion-focused .focus-library-link { flex: 0 0 auto; color: var(--muted); font-size: .72rem; text-decoration: none; }
 body.is-companion-focused #focus-book-context { overflow: hidden; color: var(--ink); font-family: var(--serif); font-size: 1rem; text-overflow: ellipsis; white-space: nowrap; }
 body.is-companion-focused #focus-conversation-context { overflow: hidden; padding-left: .75rem; border-left: 1px solid var(--line); color: var(--muted); font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
 body.is-companion-focused .companion-actions a { display: none; }
@@ -829,8 +829,6 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
   .book-details-grid > div:last-child { border-bottom: 0; }
   .book-details > .title-editor { position: static; width: 100%; margin-top: .5rem; box-shadow: none; }
   .book-header-compact + .book-tabs { margin-top: .65rem; }
-  body.is-companion-focused .book-tabs { overflow-x: auto; }
-  body.is-companion-focused .book-tabs button { min-width: 0; padding-inline: .65rem; }
   body.is-companion-focused .companion-heading { gap: .6rem; padding: .55rem .75rem; }
   body.is-companion-focused .focus-library-link { display: none; }
   body.is-companion-focused #focus-conversation-context { display: none; }

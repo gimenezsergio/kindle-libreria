@@ -20,7 +20,17 @@ function setCompanionFocus(active) {
     document.querySelector("#mobile-material-toggle")?.setAttribute("aria-expanded", "false");
     return;
   }
-  window.requestAnimationFrame(() => scrollConversationToBottom({force: true}));
+  window.requestAnimationFrame(() => scrollConversationToBottom());
+}
+
+function exitCompanionFocus() {
+  const memoryTab = document.querySelector('[data-book-tab="memory"]');
+  if (memoryTab) memoryTab.click();
+  else setCompanionFocus(false);
+  window.requestAnimationFrame(() => {
+    memoryTab?.scrollIntoView({block: "start"});
+    memoryTab?.focus({preventScroll: true});
+  });
 }
 
 function openNewConversationDialog() {
@@ -628,6 +638,7 @@ document.querySelector("#reset-title").addEventListener("click", async () => {
   catch (error) { feedback(error.message, true); }
 });
 document.querySelector("#open-new-conversation").addEventListener("click", openNewConversationDialog);
+document.querySelector("#exit-companion-focus").addEventListener("click", exitCompanionFocus);
 document.querySelector("#cancel-new-conversation").addEventListener("click", () => {
   document.querySelector("#new-conversation-dialog").close();
 });
