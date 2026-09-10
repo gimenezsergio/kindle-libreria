@@ -7,6 +7,45 @@ let activeConversationId = null;
 let librarySearchResults = [];
 let previewSearchQuery = "";
 let responseAnimation = null;
+const CHAT_BOTTOM_TOLERANCE = 48;
+let conversationScrollState = null;
+
+function disposeConversationScroll() {
+  if (!conversationScrollState) return;
+  const {container, onScroll, frame} = conversationScrollState;
+  container.removeEventListener("scroll", onScroll);
+  if (frame) window.cancelAnimationFrame(frame);
+  conversationScrollState = null;
+}
+
+function isConversationNearBottom(container) {
+  return container.scrollHeight - container.scrollTop - container.clientHeight <= CHAT_BOTTOM_TOLERANCE;
+}
+
+function setupConversationScroll(container) {
+  disposeConversationScroll();
+  const state = {container, autoFollow: true, frame: null};
+  state.onScroll = () => {
+    state.autoFollow = isConversationNearBottom(container);
+  };
+  container.addEventListener("scroll", state.onScroll, {passive: true});
+  conversationScrollState = state;
+  return state;
+}
+
+function scrollConversationToBottom({force = false} = {}) {
+  const state = conversationScrollState;
+  if (!state || (!force && !state.autoFollow)) return;
+  if (state.frame) return;
+  state.frame = window.requestAnimationFrame(() => {
+    state.frame = null;
+    if (force || state.autoFollow) state.container.scrollTop = state.container.scrollHeight;
+  });
+}
+
+function resumeConversationAutoFollow() {
+  if (conversationScrollState) conversationScrollState.autoFollow = true;
+}
 
 function conversationDisplayTitle(conversation) {
   if (String(conversation.title || "").trim()) return conversation.title;
@@ -247,6 +286,7 @@ function revealAssistantResponse(pendingCard, answer, librarySources = []) {
   const text = content.textContent;
   const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   pendingCard.replaceWith(card);
+  scrollConversationToBottom();
   if (reducedMotion || !text) return Promise.resolve();
 
   content.textContent = "";
@@ -273,6 +313,7 @@ function revealAssistantResponse(pendingCard, answer, librarySources = []) {
       const chunk = remaining > 240 ? 5 : remaining > 100 ? 3 : 2;
       position = Math.min(text.length, position + chunk);
       content.textContent = text.slice(0, position);
+      scrollConversationToBottom();
       if (position >= text.length) {
         card.removeAttribute("aria-busy");
         content.removeAttribute("aria-live");
@@ -288,13 +329,14 @@ function revealAssistantResponse(pendingCard, answer, librarySources = []) {
 function appendTransientExchange(content) {
   cancelResponseAnimation({finish: true});
   const container = document.querySelector("#conversation-messages");
+  resumeConversationAutoFollow();
   container.querySelectorAll(".conversation-message-empty, .conversation-message-transient").forEach((item) => item.remove());
   const user = messageCard({role: "user", content});
   const pending = pendingMessageCard(document.querySelector("#active-conversation-profile").textContent);
   user.classList.add("conversation-message-transient");
   pending.classList.add("conversation-message-transient");
   container.append(user, pending);
-  container.scrollTop = container.scrollHeight;
+  scrollConversationToBottom({force: true});
   return pending;
 }
 
@@ -455,6 +497,7 @@ async function loadProviderStatus() {
 
 async function openConversation(identifier) {
   cancelResponseAnimation();
+  disposeConversationScroll();
   const conversation = await jsonRequest(`/api/conversations/${encodeURIComponent(identifier)}`);
   activeConversationId = identifier;
   librarySearchResults = []; previewSearchQuery = "";
@@ -473,7 +516,8 @@ async function openConversation(identifier) {
     empty.textContent = "La conversación está lista. Escribí el primer mensaje.";
     container.append(empty);
   }
-  container.scrollTop = container.scrollHeight;
+  setupConversationScroll(container);
+  scrollConversationToBottom({force: true});
   document.querySelector("#conversation-list").value = identifier;
   await loadContext(identifier);
   await loadPromptPreview();
