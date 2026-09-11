@@ -68,6 +68,11 @@ rollback.
 
 ## Mejoras posteriores no bloqueantes
 
+- Implementar los accesos directos del acompañante documentados en
+  [`accesos-directos-ia.md`](accesos-directos-ia.md): explicar una selección,
+  detectar temas, explorar símbolos, proponer preguntas y relacionar con la
+  biblioteca. Son recetas de conversación que deben respetar el perfil elegido,
+  el alcance visible y la trazabilidad de fuentes; todavía no están implementadas.
 - Incorporar búsqueda semántica para el acompañante de lectura. La versión
   actual ordena coincidencias textuales de forma determinista; una etapa futura
   debería generar representaciones vectoriales de títulos, subrayados, notas,

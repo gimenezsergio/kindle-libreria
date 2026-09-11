@@ -281,6 +281,15 @@ La búsqueda semántica y la indexación opcional de textos completos quedan com
 mejoras futuras. La búsqueda actual nunca presupone que un modelo conoce o puede
 consultar el contenido íntegro de una obra.
 
+También está propuesta una capa de **accesos directos de estudio** para iniciar
+acciones como explicar una selección, detectar temas, explorar símbolos,
+proponer preguntas o relacionar una lectura con la biblioteca sin redactar el
+prompt desde cero. Cada acción usaría el perfil asignado a la conversación y
+seguiría registrándose como un turno normal, con el mismo contexto y las mismas
+salvaguardas. La especificación y el plan futuro están en
+[`docs/accesos-directos-ia.md`](docs/accesos-directos-ia.md). Esta función aún no
+está implementada.
+
 La dirección elegida para el despliegue definitivo es utilizar OpenClaw como
 capa de conversación y razonamiento. El adaptador también admite conexiones
 directas opcionales con OpenAI o DeepSeek para probar el flujo antes de la mudanza.
@@ -383,6 +392,7 @@ la ejecución futura en el servidor se describe en
 - `tests/`: pruebas unitarias y de integración.
 - `docs/`: inspecciones, formatos y decisiones de diseño.
 - `docs/design/`: evaluación de Stitch, sistema visual, mapa de páginas y bitácora del rediseño.
+- `docs/accesos-directos-ia.md`: propuesta de acciones de estudio guiadas por el perfil de IA.
 - `work/`: base y resultados privados locales, excluidos de Git.
 
 ## Estado y hoja de ruta
