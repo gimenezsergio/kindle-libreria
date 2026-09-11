@@ -726,8 +726,14 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 }
 
 /* Cabecera compacta de la ficha: identidad primero, datos bajo demanda. */
-.book-page { padding-top: 1.25rem; }
+.book-page {
+  width: min(94vw, 112rem);
+  max-width: 112rem;
+  padding-top: 1.25rem;
+}
 .back-link { margin-bottom: .7rem; }
+.book-load-feedback { margin: .65rem 0 0; padding: .75rem 1rem; border: 1px solid color-mix(in srgb, var(--terracotta) 45%, var(--line)); background: color-mix(in srgb, var(--terracotta) 8%, var(--surface)); color: var(--terracotta); font-size: .82rem; }
+.book-page .book-annotations { max-width: none; }
 .book-header-compact { position: relative; display: grid; grid-template-columns: 5.5rem minmax(0, 1fr) auto; gap: 1rem; align-items: center; min-height: 8rem; padding: 1rem; border: 1px solid var(--line); background: var(--surface); }
 .book-header-cover { display: grid; width: 5.5rem; overflow: hidden; aspect-ratio: 2 / 3; place-items: center; border-radius: .2rem; background: linear-gradient(145deg, var(--green), #273a30); color: var(--surface); box-shadow: 0 .35rem 1rem rgb(38 31 26 / 12%); }
 .book-header-cover img { width: 100%; height: 100%; object-fit: cover; }
@@ -815,6 +821,7 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
 }
 
 @media (max-width: 760px) {
+  .book-page { width: 100%; max-width: none; }
   .book-header-compact { grid-template-columns: 4.25rem minmax(0, 1fr); min-height: 0; padding: .75rem; }
   .book-header-cover { width: 4.25rem; }
   .book-header-compact h1 { font-size: 1.75rem; }

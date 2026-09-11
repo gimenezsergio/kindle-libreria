@@ -1,5 +1,8 @@
 const formatNumber = new Intl.NumberFormat("es-AR");
-const setText = (id, value) => { document.querySelector(`#${id}`).textContent = value; };
+const setText = (id, value) => {
+  const element = document.querySelector(`#${id}`);
+  if (element) element.textContent = value;
+};
 const languageNames = {de: "Alemán", en: "Inglés", es: "Español", fr: "Francés", it: "Italiano", pt: "Portugués"};
 let annotationPage = 1;
 let annotationPages = 1;
@@ -98,7 +101,11 @@ async function jsonRequest(url, options = {}) {
 
 async function loadBook() {
   const response = await fetch(`/api/works/${encodeURIComponent(window.WORK_ID)}`);
-  if (!response.ok) { setText("book-title", "No encontramos esta obra"); return; }
+  if (response.status === 404) {
+    setText("book-title", "No encontramos esta obra");
+    return;
+  }
+  if (!response.ok) throw new Error(`La aplicación respondió con el estado ${response.status}`);
   const book = await response.json();
   document.title = `${book.title} · Biblioteca personal`;
   setText("book-title", book.title);
@@ -144,6 +151,18 @@ async function loadBook() {
   const personalTotal = book.personal.collections + book.personal.notes + book.personal.relations;
   setText("personal-count", personalTotal ? `${formatNumber.format(personalTotal)} ${personalTotal === 1 ? "elemento" : "elementos"}` : "Sin organizar");
   setText("personal-detail", personalTotal ? `${book.personal.collections} colecciones · ${book.personal.notes} notas · ${book.personal.relations} relaciones` : "Podés agregar categorías, notas o relaciones");
+}
+
+function showBookLoadError(error) {
+  console.error("No se pudo cargar la ficha del libro", error);
+  setText("book-title", "No pudimos cargar esta ficha");
+  setText("book-author", "La información del libro no llegó desde la aplicación.");
+  const feedback = document.querySelector("#book-load-feedback");
+  const detail = error instanceof Error && error.message ? error.message : "Error de red desconocido";
+  if (feedback) {
+    feedback.textContent = `Error de carga: ${detail}. Verificá que el servidor siga activo y recargá la página.`;
+    feedback.hidden = false;
+  }
 }
 
 function annotationCard(annotation) {
@@ -638,7 +657,7 @@ document.querySelector("#reset-title").addEventListener("click", async () => {
   catch (error) { feedback(error.message, true); }
 });
 document.querySelector("#open-new-conversation").addEventListener("click", openNewConversationDialog);
-document.querySelector("#exit-companion-focus").addEventListener("click", exitCompanionFocus);
+document.querySelector("#exit-companion-focus")?.addEventListener("click", exitCompanionFocus);
 document.querySelector("#cancel-new-conversation").addEventListener("click", () => {
   document.querySelector("#new-conversation-dialog").close();
 });
@@ -809,7 +828,7 @@ document.querySelectorAll("[data-book-tab]").forEach((tab) => {
 const requestedPanel = location.hash.replace("#panel-", "");
 const requestedTab = document.querySelector(`[data-book-tab="${requestedPanel}"]`);
 if (requestedTab) requestedTab.click();
-loadBook();
+loadBook().catch(showBookLoadError);
 loadAnnotations();
 loadPersonal();
 loadOptions();
