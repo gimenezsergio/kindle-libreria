@@ -33,6 +33,7 @@ from .conversations import (
     pin_library_sources,
 )
 from .ai import AIError, DraftProvider, load_environment_file, provider_from_environment
+from .companion_actions import list_companion_actions
 from .library_search import LibrarySearchError
 from .retrieval import requested_library_sources as retrieve_library_sources
 from .openclaw_api import create_openclaw_blueprint
@@ -612,6 +613,11 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
     @app.get("/api/ai/status")
     def ai_status():
         return jsonify(provider=provider.name, ready=provider.ready)
+
+    @app.get("/api/companion-actions")
+    def companion_actions():
+        """Recetas de interfaz; no dependen del proveedor de IA activo."""
+        return jsonify(items=list_companion_actions())
 
     @app.get("/api/conversations/<conversation_id>/prompt-preview")
     def conversation_prompt_preview(conversation_id: str):

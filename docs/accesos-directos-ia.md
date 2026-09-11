@@ -1,6 +1,7 @@
 # Accesos directos del acompañante de lectura
 
-> Estado: propuesta validada conceptualmente; todavía no implementada.
+> Estado: Etapa 1 implementada localmente. Las cinco acciones preparan un
+> borrador editable en el acompañante; todavía no envían nada por sí mismas.
 
 ## Por qué existe esta propuesta
 
@@ -63,11 +64,24 @@ La sección se podría llamar **Explorar esta lectura**. Las cinco acciones
 principales permanecerían visibles y una opción **Más formas de explorar**
 agruparía acciones menos frecuentes.
 
-El alcance debe ser explícito antes de ejecutar:
+La Etapa 1 muestra un bloque compacto en el chat con las cinco acciones. La
+definición centralizada vive en `biblioteca_kindle.companion_actions` y se
+expone a la interfaz mediante `GET /api/companion-actions`; no depende de
+DeepSeek, OpenClaw ni de otro proveedor. Cada definición tiene identificador,
+etiqueta, descripción, receta y requisitos de material y búsqueda.
 
-- sin material elegido, la acción trabaja con el contexto que la aplicación
-  pueda recuperar de acuerdo con la configuración de la conversación;
-- con material elegido, la acción prioriza esa selección;
+Al pulsar una acción, se completa la caja de mensaje actual para que el lector
+pueda editarla o descartarla antes de enviar. No se crea un turno ni se llama
+al proveedor hasta usar **Enviar**. El perfil de la conversación vigente se
+conserva sin cambios.
+
+El alcance se muestra junto a las acciones antes de preparar el borrador:
+
+- la ficha del libro siempre se incluye, y se informa si hay o no fragmentos
+  adjuntos;
+- la búsqueda de conexiones indica si está desactivada o qué alcance tiene;
+- **Relacionar con mi biblioteca** activa la búsqueda solo si estaba apagada,
+  pero respeta el alcance que ya hubiera elegido el lector;
 - si la biblioteca no contiene el texto completo, la interfaz y la respuesta
   no deben sugerir que se analizó la obra íntegra.
 
@@ -115,6 +129,13 @@ Riesgos:
 
 Por eso el primer alcance debe ser pequeño, editable y transparente.
 
+## Estado de las etapas
+
+- Etapa 1: catálogo, panel compacto, alcance visible y borradores editables:
+  implementada.
+- Etapas posteriores: vista previa ampliada, resultados persistentes, acciones
+  personalizables, búsqueda semántica y Telegram: pendientes.
+
 ## Condiciones para considerar terminado el MVP
 
 - Las cinco acciones aparecen sin desplazar ni reducir de forma importante el
@@ -130,13 +151,18 @@ Por eso el primer alcance debe ser pequeño, editable y transparente.
 
 ## Plan futuro por baby steps
 
-1. Definir las cinco recetas y sus variables de contexto.
+1. Definir las cinco recetas y sus variables de contexto. **Hecho.**
 2. Implementar el catálogo local de acciones, independiente del proveedor.
-3. Incorporar el bloque compacto **Explorar esta lectura**.
-4. Preparar el mensaje editable para las acciones interpretativas.
-5. Integrar material seleccionado y recuperación de biblioteca.
+   **Hecho.**
+3. Incorporar el bloque compacto **Explorar esta lectura**. **Hecho.**
+4. Preparar el mensaje editable para las acciones interpretativas. **Hecho.**
+5. Integrar material seleccionado y recuperación de biblioteca. **Hecho para
+   el flujo existente; no hay recuperación semántica.**
 6. Hacer visible el perfil que responderá y conservarlo por conversación.
-7. Mostrar alcance, procedencia y advertencias antes del envío.
+   **Ya lo hacía la conversación; la etapa lo reutiliza.**
+7. Mostrar alcance, procedencia y advertencias antes del envío. **Alcance y
+   advertencia de texto completo hechos; la vista previa detallada ya existente
+   sigue siendo opcional.**
 8. Registrar el turno y sus fuentes con el flujo normal del chat.
 9. Probar accesibilidad, pantallas pequeñas, errores y estados de carga.
 10. Documentar cómo agregar nuevas recetas sin modificar el proveedor.

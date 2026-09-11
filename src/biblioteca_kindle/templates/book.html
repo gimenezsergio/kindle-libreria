@@ -69,6 +69,12 @@
             <div class="conversation-active" id="conversation-active" hidden>
               <section class="chat-column" aria-label="Conversación">
                 <header class="active-conversation-header"><div><p class="eyebrow" id="active-conversation-profile"></p><h3 id="active-conversation-title"></h3><details class="conversation-title-editor"><summary>Editar título</summary><form id="conversation-title-form"><label for="active-conversation-title-input">Título de la conversación</label><div><input id="active-conversation-title-input" type="text" maxlength="120" required><button type="submit">Guardar</button></div></form></details></div><span class="attached-count" id="attached-count">Sin material adjunto</span></header>
+                <section class="companion-quick-actions" aria-labelledby="companion-quick-actions-title">
+                  <div class="companion-quick-actions-heading"><div><p class="eyebrow">Atajos de lectura</p><h4 id="companion-quick-actions-title">Explorar esta lectura</h4></div><button class="text-button" id="clear-action-draft" type="button" hidden>Descartar propuesta</button></div>
+                  <p class="companion-action-scope" id="companion-action-scope">La ficha del libro se incluye siempre. Cargando alcance…</p>
+                  <div class="companion-action-list" id="companion-action-list" aria-live="polite"><span class="companion-actions-loading">Preparando acciones…</span></div>
+                  <p class="companion-action-help">Elegí una acción para preparar un mensaje editable; no se envía todavía.</p>
+                </section>
                 <div class="conversation-messages" id="conversation-messages" aria-live="polite"></div>
                 <div class="chat-composer">
                   <form class="conversation-form" id="conversation-form"><label for="conversation-message">Tu mensaje</label><div class="composer-row"><textarea id="conversation-message" rows="3" required placeholder="Una pregunta, una interpretación, algo que te dejó pensando…"></textarea><button type="submit">Enviar</button></div></form>

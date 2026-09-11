@@ -273,6 +273,7 @@ class WebTests(unittest.TestCase):
             client = create_app(database).test_client()
 
             page = client.get("/library/work")
+            actions = client.get("/api/companion-actions")
             created = client.post(
                 "/api/works/work/conversations",
                 json={"profile_id": "companion"},
@@ -290,6 +291,12 @@ class WebTests(unittest.TestCase):
             ).get_json()
 
             self.assertIn("Acompañante de lectura", page.get_data(as_text=True))
+            self.assertIn("Explorar esta lectura", page.get_data(as_text=True))
+            self.assertIn('id="companion-action-list"', page.get_data(as_text=True))
+            self.assertIn('id="companion-action-scope"', page.get_data(as_text=True))
+            self.assertEqual(actions.status_code, 200)
+            self.assertEqual(len(actions.get_json()["items"]), 5)
+            self.assertEqual(actions.get_json()["items"][-1]["id"], "relate-library")
             self.assertIn('role="tablist"', page.get_data(as_text=True))
             self.assertIn("Memoria de lectura", page.get_data(as_text=True))
             self.assertEqual(created.status_code, 201)

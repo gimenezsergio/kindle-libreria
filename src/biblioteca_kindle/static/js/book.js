@@ -12,6 +12,9 @@ let previewSearchQuery = "";
 let responseAnimation = null;
 const CHAT_BOTTOM_TOLERANCE = 48;
 let conversationScrollState = null;
+let currentBookTitle = "este libro";
+let companionActions = [];
+let actionDraft = null;
 
 function setCompanionFocus(active) {
   document.body.classList.toggle("is-companion-focused", active);
@@ -107,6 +110,7 @@ async function loadBook() {
   }
   if (!response.ok) throw new Error(`La aplicación respondió con el estado ${response.status}`);
   const book = await response.json();
+  currentBookTitle = book.title || "este libro";
   document.title = `${book.title} · Biblioteca personal`;
   setText("book-title", book.title);
   setText("focus-book-context", `${book.title} · ${book.authors || "Autor no disponible"}`);
@@ -151,6 +155,7 @@ async function loadBook() {
   const personalTotal = book.personal.collections + book.personal.notes + book.personal.relations;
   setText("personal-count", personalTotal ? `${formatNumber.format(personalTotal)} ${personalTotal === 1 ? "elemento" : "elementos"}` : "Sin organizar");
   setText("personal-detail", personalTotal ? `${book.personal.collections} colecciones · ${book.personal.notes} notas · ${book.personal.relations} relaciones` : "Podés agregar categorías, notas o relaciones");
+  renderCompanionActionScope();
 }
 
 function showBookLoadError(error) {
@@ -398,6 +403,104 @@ function showResponseError(card, message) {
   card.querySelector("p").textContent = `No pude responder: ${message}`;
 }
 
+function selectedContextCount() {
+  const selected = contextOptionsData.selected || {};
+  return (selected.personal_note || []).length + (selected.annotation || []).length;
+}
+
+function libraryScopeLabel() {
+  const scope = document.querySelector("#library-search-scope")?.value;
+  if (scope === "current") return "solo este libro";
+  if (scope === "selected") {
+    const count = document.querySelector("#library-search-works")?.selectedOptions.length || 0;
+    return count ? `${count} ${count === 1 ? "libro elegido" : "libros elegidos"}` : "los libros elegidos";
+  }
+  return "toda tu biblioteca";
+}
+
+function renderCompanionActionScope() {
+  const target = document.querySelector("#companion-action-scope");
+  if (!target) return;
+  const selectedCount = selectedContextCount();
+  const material = selectedCount
+    ? `${selectedCount} ${selectedCount === 1 ? "fragmento adjunto" : "fragmentos adjuntos"}`
+    : "ningún fragmento adjunto";
+  const libraryEnabled = document.querySelector("#library-search-enabled")?.checked;
+  const library = libraryEnabled
+    ? `La búsqueda de conexiones consultará ${libraryScopeLabel()}.`
+    : "La búsqueda de conexiones está desactivada.";
+  target.textContent = `Incluye la ficha de «${currentBookTitle}» y ${material}. ${library} La aplicación no contiene el texto completo.`;
+}
+
+function renderCompanionActions() {
+  const container = document.querySelector("#companion-action-list");
+  if (!container) return;
+  if (!companionActions.length) {
+    container.replaceChildren(Object.assign(document.createElement("span"), {
+      className: "companion-actions-loading", textContent: "No pudimos preparar los accesos directos.",
+    }));
+    return;
+  }
+  const buttons = companionActions.map((action) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.companionAction = action.id;
+    button.textContent = action.label;
+    button.title = action.description;
+    button.setAttribute("aria-label", `${action.label}. ${action.description}`);
+    button.addEventListener("click", () => prepareCompanionAction(action));
+    return button;
+  });
+  container.replaceChildren(...buttons);
+}
+
+async function loadCompanionActions() {
+  try {
+    const data = await jsonRequest("/api/companion-actions");
+    companionActions = data.items || [];
+  } catch (error) {
+    console.error("No se pudieron cargar los accesos directos", error);
+    companionActions = [];
+  }
+  renderCompanionActions();
+}
+
+function prepareCompanionAction(action) {
+  if (!activeConversationId) return;
+  const textarea = document.querySelector("#conversation-message");
+  const searchEnabled = document.querySelector("#library-search-enabled");
+  const previous = textarea.value;
+  let didEnableLibrarySearch = false;
+  if (action.id === "relate-library" && searchEnabled && !searchEnabled.checked) {
+    searchEnabled.checked = true;
+    didEnableLibrarySearch = true;
+    renderCompanionActionScope();
+  }
+  const proposal = action.message_template;
+  textarea.value = previous.trim() ? `${previous.trim()}\n\n${proposal}` : proposal;
+  actionDraft = {previous, proposal, didEnableLibrarySearch};
+  document.querySelector("#clear-action-draft").hidden = false;
+  document.querySelector("#conversation-feedback").textContent = didEnableLibrarySearch
+    ? `Propuesta lista para editar. Se activó la búsqueda en ${libraryScopeLabel()}; no se envió nada todavía.`
+    : "Propuesta lista para editar o descartar; no se envió nada todavía.";
+  textarea.focus();
+  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+}
+
+function discardCompanionActionDraft() {
+  if (!actionDraft) return;
+  const textarea = document.querySelector("#conversation-message");
+  textarea.value = actionDraft.previous;
+  if (actionDraft.didEnableLibrarySearch) {
+    document.querySelector("#library-search-enabled").checked = false;
+    renderCompanionActionScope();
+  }
+  actionDraft = null;
+  document.querySelector("#clear-action-draft").hidden = true;
+  document.querySelector("#conversation-feedback").textContent = "Propuesta descartada.";
+  textarea.focus();
+}
+
 function searchScopePayload() {
   const scope = document.querySelector("#library-search-scope").value;
   return {
@@ -520,6 +623,7 @@ async function loadContext(identifier) {
   setText("mobile-material-count", `${selectedCount} ${selectedCount === 1 ? "adjunto" : "adjuntos"}`);
   setText("attached-count", selectedCount ? `${selectedCount} ${selectedCount === 1 ? "fragmento adjunto" : "fragmentos adjuntos"}` : "Sin material adjunto");
   renderAttachedMaterial(data, selectedNotes, selectedAnnotations);
+  renderCompanionActionScope();
 }
 
 function currentContextSelection() {
@@ -553,6 +657,8 @@ async function openConversation(identifier) {
   disposeConversationScroll();
   const conversation = await jsonRequest(`/api/conversations/${encodeURIComponent(identifier)}`);
   activeConversationId = identifier;
+  actionDraft = null;
+  document.querySelector("#clear-action-draft").hidden = true;
   librarySearchResults = []; previewSearchQuery = "";
   document.querySelector("#conversation-empty").hidden = true;
   document.querySelector("#conversation-active").hidden = false;
@@ -723,6 +829,8 @@ document.querySelector("#conversation-form").addEventListener("submit", async (e
     });
     if (activeConversationId !== requestConversationId) return;
     form.reset();
+    actionDraft = null;
+    document.querySelector("#clear-action-draft").hidden = true;
     document.querySelector("#conversation-feedback").textContent = result.mode === "draft" ? "Mensaje guardado. No se envió a una IA porque está activo el modo borrador." : "El acompañante respondió.";
     if (result.answer) {
       revealAssistantResponse(pendingCard, result.answer, result.library_sources);
@@ -742,6 +850,7 @@ document.querySelector("#conversation-form").addEventListener("submit", async (e
 document.querySelector("#library-search-scope").addEventListener("change", (event) => {
   document.querySelector("#library-search-works-label").hidden = event.target.value !== "selected";
   librarySearchResults = []; previewSearchQuery = "";
+  renderCompanionActionScope();
 });
 document.querySelector("#preview-library-search").addEventListener("click", async (event) => {
   const button = event.currentTarget; button.disabled = true;
@@ -794,6 +903,9 @@ document.querySelector("#context-search").addEventListener("input", (event) => {
 });
 document.querySelector("#context-form").addEventListener("change", updateContextSelectionCount);
 document.querySelector("#library-search-enabled").addEventListener("click", (event) => event.stopPropagation());
+document.querySelector("#library-search-enabled").addEventListener("change", renderCompanionActionScope);
+document.querySelector("#library-search-works").addEventListener("change", renderCompanionActionScope);
+document.querySelector("#clear-action-draft").addEventListener("click", discardCompanionActionDraft);
 document.querySelectorAll("[data-context-tab]").forEach((tab) => {
   tab.addEventListener("click", () => {
     document.querySelectorAll("[data-context-tab]").forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
@@ -834,3 +946,4 @@ loadPersonal();
 loadOptions();
 loadConversations();
 loadProviderStatus();
+loadCompanionActions();

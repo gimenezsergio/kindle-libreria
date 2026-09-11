@@ -226,6 +226,15 @@ seleccionar el contexto y revisar el paquete exacto antes de enviarlo. Por
 defecto trabaja en modo borrador: guarda los mensajes localmente y no envía
 información fuera de la computadora.
 
+También incluye cinco accesos directos en **Explorar esta lectura**: explicar
+la selección, detectar temas, explorar símbolos, proponer preguntas y
+relacionar con la biblioteca. Cada uno prepara un mensaje que se puede editar o
+descartar antes de enviarlo; no reemplaza el perfil de la conversación ni llama
+por sí solo a un proveedor. El alcance visible aclara los fragmentos adjuntos,
+la configuración de búsqueda y que la aplicación no contiene el texto completo.
+La evolución prevista está documentada en
+[`docs/accesos-directos-ia.md`](docs/accesos-directos-ia.md).
+
 ### Títulos de conversaciones
 
 Al iniciar una conversación se puede escribir un título opcional. Ese título se
