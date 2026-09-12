@@ -334,9 +334,13 @@ select { padding: .6rem 2rem .6rem .7rem; }
 .answer-sources summary { color: var(--terracotta); cursor: pointer; }
 .answer-sources ol { display: grid; gap: .65rem; padding-left: 1.4rem; }
 .answer-sources li p { margin-top: .2rem; color: var(--muted); }
-.prompt-preview { margin-top: 1rem; }
+.prompt-preview { display: grid; gap: .65rem; margin-top: 1rem; }
+.prompt-preview > button { justify-self: start; }
+.prompt-preview > p { margin: 0; color: var(--muted); font-size: .74rem; line-height: 1.45; }
 .prompt-preview summary { color: var(--terracotta); cursor: pointer; font-size: .75rem; }
 .prompt-preview pre { max-height: 22rem; padding: 1rem; overflow: auto; border: 1px solid var(--line); background: #292521; color: #f6f0e7; font: .72rem/1.55 monospace; white-space: pre-wrap; }
+.companion-action-profile { margin: .3rem 0 0; color: var(--muted); font-size: .72rem; }
+.companion-action-profile strong { color: var(--ink); font-weight: 700; }
 .provider-notice { margin: 1.5rem 0; padding: .75rem; border-left: 2px solid var(--line); }
 .conversation-form { display: grid; gap: .65rem; }
 .conversation-form label { color: var(--muted); font-size: .68rem; font-weight: 700; text-transform: uppercase; }
@@ -520,6 +524,7 @@ input[type="search"], select, textarea, input[type="text"] { min-height: 2.75rem
 .conversation-panel { max-width: 54rem; width: 100%; }
 .conversation-message.assistant { max-width: 46rem; font-family: var(--serif); font-size: 1.03rem; }
 .conversation-message.user { max-width: 38rem; }
+.conversation-action-label { display: block; margin-top: .45rem; color: var(--muted); font-size: .64rem; }
 .library-search { background: var(--surface-warm); }
 
 .settings-heading, .cover-setup > header { padding: 1.5rem 0 2rem; }

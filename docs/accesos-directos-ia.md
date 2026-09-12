@@ -1,7 +1,8 @@
 # Accesos directos del acompañante de lectura
 
-> Estado: Etapa 1 implementada localmente. Las cinco acciones preparan un
-> borrador editable en el acompañante; todavía no envían nada por sí mismas.
+> Estado: Etapas 1 y 2 implementadas localmente. Las cinco acciones preparan
+> un borrador editable; antes de enviarlo se puede revisar, sin mutaciones, el
+> perfil, proveedor, alcance, material, fuentes recuperadas y paquete técnico.
 
 ## Por qué existe esta propuesta
 
@@ -133,8 +134,12 @@ Por eso el primer alcance debe ser pequeño, editable y transparente.
 
 - Etapa 1: catálogo, panel compacto, alcance visible y borradores editables:
   implementada.
-- Etapas posteriores: vista previa ampliada, resultados persistentes, acciones
-  personalizables, búsqueda semántica y Telegram: pendientes.
+- Etapa 2: perfil visible, revisión no mutante del próximo turno, fuentes y
+  alcance reales, y trazabilidad opcional del atajo en el mensaje del usuario:
+  implementada. El identificador y la etiqueta se guardan como snapshot
+  nullable, sin acoplar la base al catálogo de recetas.
+- Etapas posteriores: resultados persistentes, acciones personalizables,
+  búsqueda semántica y Telegram: pendientes.
 
 ## Condiciones para considerar terminado el MVP
 
@@ -160,10 +165,12 @@ Por eso el primer alcance debe ser pequeño, editable y transparente.
    el flujo existente; no hay recuperación semántica.**
 6. Hacer visible el perfil que responderá y conservarlo por conversación.
    **Ya lo hacía la conversación; la etapa lo reutiliza.**
-7. Mostrar alcance, procedencia y advertencias antes del envío. **Alcance y
-   advertencia de texto completo hechos; la vista previa detallada ya existente
-   sigue siendo opcional.**
-8. Registrar el turno y sus fuentes con el flujo normal del chat.
+7. Mostrar alcance, procedencia y advertencias antes del envío. **Hecho:**
+   `Revisar contexto` arma un turno hipotético con el borrador actual, sin
+   guardar mensajes ni cambiar la selección persistida.
+8. Registrar el turno y sus fuentes con el flujo normal del chat. **Hecho:**
+   el mensaje de usuario puede conservar el id y la etiqueta del atajo; las
+   fuentes continúan ligadas a la respuesta del asistente.
 9. Probar accesibilidad, pantallas pequeñas, errores y estados de carga.
 10. Documentar cómo agregar nuevas recetas sin modificar el proveedor.
 

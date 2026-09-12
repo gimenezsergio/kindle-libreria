@@ -30,6 +30,7 @@ class MigrationTests(unittest.TestCase):
                     "0013_pinned_context.sql",
                     "0014_external_conversation_turns.sql",
                     "0015_conversation_title_origin.sql",
+                    "0016_conversation_message_actions.sql",
                 ],
             )
 
@@ -82,7 +83,24 @@ class MigrationTests(unittest.TestCase):
                 ).fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(count, 15)
+            self.assertEqual(count, 16)
+
+    def test_action_columns_are_nullable_for_existing_messages(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            try:
+                columns = {
+                    row["name"]: row
+                    for row in connection.execute("PRAGMA table_info(conversation_messages)")
+                }
+                self.assertIn("companion_action_id", columns)
+                self.assertIn("companion_action_label_snapshot", columns)
+                self.assertEqual(columns["companion_action_id"]["notnull"], 0)
+                self.assertEqual(columns["companion_action_label_snapshot"]["notnull"], 0)
+            finally:
+                connection.close()
 
     def test_foreign_keys_are_enabled(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

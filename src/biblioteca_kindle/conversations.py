@@ -8,6 +8,7 @@ from pathlib import Path
 
 from .db import connect_database
 from .ai import PromptPacket
+from .companion_actions import get_companion_action
 
 
 class ConversationError(RuntimeError):
@@ -245,10 +246,17 @@ def add_message(
     conversation_id: str,
     role: str,
     content: object,
+    companion_action_id: object = None,
 ) -> str:
     if role not in {"user", "assistant"}:
         raise ConversationError("El rol debe ser user o assistant")
     message_content = _clean_text(content, "El mensaje", required=True)
+    try:
+        action = get_companion_action(companion_action_id)
+    except ValueError as error:
+        raise ConversationError(str(error)) from error
+    if role != "user" and action is not None:
+        raise ConversationError("Solo un mensaje del usuario puede registrar una acción")
     connection = _open_database(database)
     try:
         identifier = str(uuid.uuid4())
@@ -271,10 +279,19 @@ def add_message(
         connection.execute(
             """
             INSERT INTO conversation_messages(
-                id, conversation_id, sequence, role, content
-            ) VALUES (?, ?, ?, ?, ?)
+                id, conversation_id, sequence, role, content,
+                companion_action_id, companion_action_label_snapshot
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (identifier, conversation_id, sequence, role, message_content),
+            (
+                identifier,
+                conversation_id,
+                sequence,
+                role,
+                message_content,
+                action.id if action else None,
+                action.label if action else None,
+            ),
         )
         _update_conversation_after_message(
             connection, conversation_id, role=role, content=message_content
@@ -404,7 +421,8 @@ def get_conversation(database: Path | str, conversation_id: str) -> dict:
             raise ConversationError("La conversación no existe")
         messages = connection.execute(
             """
-            SELECT id, sequence, role, content, created_at
+            SELECT id, sequence, role, content, created_at,
+                   companion_action_id, companion_action_label_snapshot
             FROM conversation_messages
             WHERE conversation_id = ? ORDER BY sequence
             """,
@@ -499,6 +517,91 @@ def context_options(database: Path | str, conversation_id: str) -> dict:
         connection.close()
 
 
+def resolve_turn_context_sources(
+    database: Path | str,
+    conversation_id: str,
+    *,
+    personal_note_ids: object | None = None,
+    annotation_ids: object | None = None,
+) -> list[dict]:
+    """Resuelve el contexto de un próximo turno sin escribir en SQLite.
+
+    Cuando llegan ids desde el cliente representa el reemplazo que haría
+    ``update_context``: conserva la ficha del libro y los materiales fijados,
+    y usa la selección de borrador para notas y anotaciones.
+    """
+    connection = _open_database(database)
+    try:
+        conversation = connection.execute(
+            "SELECT work_id FROM reading_conversations WHERE id = ?", (conversation_id,)
+        ).fetchone()
+        if conversation is None:
+            raise ConversationError("La conversación no existe")
+        current = [
+            dict(row)
+            for row in connection.execute(
+                """
+                SELECT source_type, source_id, label_snapshot, content_snapshot, is_pinned
+                FROM conversation_context_sources
+                WHERE conversation_id = ? ORDER BY source_type, created_at, id
+                """,
+                (conversation_id,),
+            )
+        ]
+        if personal_note_ids is None and annotation_ids is None:
+            return current
+        note_input = [] if personal_note_ids is None else personal_note_ids
+        annotation_input = [] if annotation_ids is None else annotation_ids
+        if not isinstance(note_input, list) or not all(isinstance(item, str) for item in note_input):
+            raise ConversationError("La selección de notas no es válida")
+        if not isinstance(annotation_input, list) or not all(isinstance(item, str) for item in annotation_input):
+            raise ConversationError("La selección de anotaciones no es válida")
+        note_ids = list(dict.fromkeys(note_input))
+        annotation_ids_clean = list(dict.fromkeys(annotation_input))
+        work_id = conversation["work_id"]
+        notes = {row["id"]: row for row in connection.execute(
+            "SELECT id, body FROM personal_notes WHERE target_type = 'work' AND target_id = ?",
+            (work_id,),
+        )}
+        annotations = {row["id"]: row for row in connection.execute(
+            """
+            SELECT an.id, an.kind, COALESCE(NULLIF(TRIM(an.text), ''),
+                   NULLIF(TRIM(an.note_text), ''), 'Anotación sin texto recuperable') AS content
+            FROM annotations an JOIN editions e ON e.id = an.edition_id WHERE e.work_id = ?
+            """,
+            (work_id,),
+        )}
+        if any(identifier not in notes for identifier in note_ids):
+            raise ConversationError("Una nota seleccionada no pertenece a este libro")
+        if any(identifier not in annotations for identifier in annotation_ids_clean):
+            raise ConversationError("Una anotación seleccionada no pertenece a este libro")
+        retained = [
+            item for item in current
+            if item["source_type"] == "work" or item["is_pinned"]
+        ]
+        material = [
+            {
+                "source_type": "personal_note", "source_id": identifier,
+                "label_snapshot": "Nota propia", "content_snapshot": notes[identifier]["body"],
+                "is_pinned": 0,
+            }
+            for identifier in note_ids
+        ] + [
+            {
+                "source_type": "annotation", "source_id": identifier,
+                "label_snapshot": annotations[identifier]["kind"],
+                "content_snapshot": annotations[identifier]["content"], "is_pinned": 0,
+            }
+            for identifier in annotation_ids_clean
+        ]
+        merged = {(item["source_type"], item["source_id"]): item for item in retained}
+        for item in material:
+            merged[(item["source_type"], item["source_id"])] = item
+        return list(merged.values())
+    finally:
+        connection.close()
+
+
 def update_context(
     database: Path | str,
     conversation_id: str,
@@ -546,6 +649,9 @@ def update_context(
                 INSERT INTO conversation_context_sources(
                     id, conversation_id, source_type, source_id, label_snapshot, content_snapshot
                 ) VALUES (?, ?, 'personal_note', ?, 'Nota propia', ?)
+                ON CONFLICT(conversation_id, source_type, source_id) DO UPDATE SET
+                    label_snapshot=excluded.label_snapshot,
+                    content_snapshot=excluded.content_snapshot
                 """,
                 [(str(uuid.uuid4()), conversation_id, identifier, notes[identifier]["body"]) for identifier in note_ids],
             )
@@ -554,6 +660,9 @@ def update_context(
                 INSERT INTO conversation_context_sources(
                     id, conversation_id, source_type, source_id, label_snapshot, content_snapshot
                 ) VALUES (?, ?, 'annotation', ?, ?, ?)
+                ON CONFLICT(conversation_id, source_type, source_id) DO UPDATE SET
+                    label_snapshot=excluded.label_snapshot,
+                    content_snapshot=excluded.content_snapshot
                 """,
                 [(str(uuid.uuid4()), conversation_id, identifier, annotations[identifier]["kind"], annotations[identifier]["content"]) for identifier in selected_annotation_ids],
             )
@@ -625,8 +734,12 @@ def build_prompt_packet(
     conversation_id: str,
     *,
     library_sources: list[dict] | None = None,
+    context_sources: list[dict] | None = None,
+    draft_content: object | None = None,
 ) -> PromptPacket:
     conversation = get_conversation(database, conversation_id)
+    if context_sources is not None:
+        conversation["context_sources"] = context_sources
     sources = "\n\n".join(
         f"[{item['label_snapshot']}]\n{item['content_snapshot']}"
         for item in conversation["context_sources"]
@@ -643,6 +756,8 @@ def build_prompt_packet(
         "Todo lo que no esté respaldado por esas fuentes es conocimiento general o una hipótesis."
     )
     messages = [{"role": item["role"], "content": item["content"]} for item in conversation["messages"]]
+    if draft_content is not None:
+        messages.append({"role": "user", "content": _clean_text(draft_content, "El mensaje", required=True)})
     automatic_parts = []
     for item in library_sources or []:
         reference = f" · {item['reference']}" if item.get("reference") else ""

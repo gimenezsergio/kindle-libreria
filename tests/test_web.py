@@ -128,7 +128,8 @@ class WebTests(unittest.TestCase):
             self.assertIn('id="exit-companion-focus"', page_text)
             self.assertIn('← Volver a la ficha', page_text)
             self.assertIn('id="context-search"', page_text)
-            self.assertIn("Detalles y privacidad", page_text)
+            self.assertIn('id="review-context"', page_text)
+            self.assertIn("Responderá:", page_text)
             self.assertNotIn('class="conversation-list"', page_text)
             book_script = (Path(__file__).parents[1] / "src/biblioteca_kindle/static/js/book.js").read_text()
             self.assertIn('button.textContent = "Pensando…"', book_script)
@@ -156,6 +157,9 @@ class WebTests(unittest.TestCase):
             self.assertIn('prefers-reduced-motion: reduce', book_script)
             self.assertIn('content.setAttribute("aria-live", "off")', book_script)
             self.assertIn('revealAssistantResponse(pendingCard, result.answer, result.library_sources)', book_script)
+            self.assertIn("function reviewContext()", book_script)
+            self.assertIn("companion_action_id: currentCompanionActionId()", book_script)
+            self.assertIn("function invalidateContextReview()", book_script)
             stylesheet = (Path(__file__).parents[1] / "src/biblioteca_kindle/static/css/app.css").read_text()
             self.assertIn(".new-conversation-dialog[open] { display: grid;", stylesheet)
             self.assertIn("#context-dialog[open] { display: grid;", stylesheet)
@@ -380,6 +384,88 @@ class WebTests(unittest.TestCase):
             self.assertEqual([item["role"] for item in detail["messages"]], ["user", "assistant"])
             self.assertIn("MATERIAL SELECCIONADO", provider.packet.input[0]["content"])
             self.assertIn("Mi nota sobre el poder", provider.packet.input[0]["content"])
+
+    def test_turn_preview_is_non_mutating_and_matches_action_context_and_search(self) -> None:
+        class FakeProvider:
+            name = "test"
+            ready = True
+
+            def respond(self, packet):
+                self.packet = packet
+                return "Respuesta"
+
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            with connection:
+                connection.execute("INSERT INTO works(id,preferred_title) VALUES ('source','Origen')")
+                connection.execute("INSERT INTO works(id,preferred_title) VALUES ('other','Otra obra')")
+                connection.execute("INSERT INTO personal_notes(id,target_type,target_id,body) VALUES ('note','work','source','Mi nota sobre poder y vigilancia')")
+                connection.execute("INSERT INTO editions(id,work_id,title) VALUES ('edition','other','Otra obra')")
+                connection.execute("INSERT INTO annotations(id,edition_id,kind,text) VALUES ('annotation','edition','highlight','La vigilancia sostiene el poder')")
+            connection.close()
+            provider = FakeProvider()
+            client = create_app(database, ai_provider=provider).test_client()
+            conversation_id = client.post(
+                "/api/works/source/conversations", json={"profile_id": "companion"}
+            ).get_json()["id"]
+            payload = {
+                "content": "Explorá símbolos del poder",
+                "personal_note_ids": ["note"],
+                "annotation_ids": [],
+                "search_library": True,
+                "search_scope": "library",
+                "companion_action_id": "explore-symbols",
+            }
+            before = client.get(f"/api/conversations/{conversation_id}").get_json()
+            preview = client.post(
+                f"/api/conversations/{conversation_id}/prompt-preview", json=payload
+            )
+            after = client.get(f"/api/conversations/{conversation_id}").get_json()
+            data = preview.get_json()
+            self.assertEqual(preview.status_code, 200)
+            self.assertEqual(before["messages"], after["messages"])
+            self.assertEqual(before["context_sources"], after["context_sources"])
+            self.assertEqual(data["profile"]["name"], "Compañero de lectura")
+            self.assertEqual(data["provider"], {"name": "test", "ready": True})
+            self.assertEqual(data["action"], {"id": "explore-symbols", "label": "Explorar símbolos"})
+            self.assertEqual(data["draft"]["content"], payload["content"])
+            self.assertEqual(data["material"]["count"], 1)
+            self.assertEqual(data["library_sources"][0]["source_id"], "annotation")
+            self.assertEqual(data["packet"]["input"][-1]["content"], payload["content"])
+
+            response = client.post(f"/api/conversations/{conversation_id}/respond", json=payload)
+            detail = client.get(f"/api/conversations/{conversation_id}").get_json()
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(detail["messages"][0]["companion_action_id"], "explore-symbols")
+            self.assertEqual(detail["messages"][0]["companion_action_label_snapshot"], "Explorar símbolos")
+            self.assertEqual(detail["messages"][1]["library_sources"][0]["source_id"], "annotation")
+            self.assertEqual(provider.packet.as_dict(), data["packet"])
+
+    def test_unknown_companion_action_is_rejected_and_free_message_still_works(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            with connection:
+                connection.execute("INSERT INTO works(id,preferred_title) VALUES ('work','Libro')")
+            connection.close()
+            client = create_app(database).test_client()
+            conversation_id = client.post(
+                "/api/works/work/conversations", json={"profile_id": "companion"}
+            ).get_json()["id"]
+            bad = client.post(
+                f"/api/conversations/{conversation_id}/respond",
+                json={"content": "Hola", "companion_action_id": "no-existe"},
+            )
+            free = client.post(
+                f"/api/conversations/{conversation_id}/respond", json={"content": "Hola"}
+            )
+            detail = client.get(f"/api/conversations/{conversation_id}").get_json()
+            self.assertEqual(bad.status_code, 400)
+            self.assertEqual(free.status_code, 202)
+            self.assertIsNone(detail["messages"][0]["companion_action_id"])
 
     def test_chat_can_preview_and_use_library_search(self) -> None:
         class FakeProvider:

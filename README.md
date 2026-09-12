@@ -222,7 +222,10 @@ las verificaciones del servidor están en
 ## Acompañante de lectura y OpenClaw
 
 El acompañante ya permite crear conversaciones por libro, elegir perfiles,
-seleccionar el contexto y revisar el paquete exacto antes de enviarlo. Por
+seleccionar el contexto y revisar el próximo envío antes de enviarlo. La
+revisión no guarda mensajes ni modifica el material seleccionado: muestra el
+perfil, proveedor y estado, acción elegida o mensaje libre, alcance, fragmentos
+adjuntos, fuentes recuperadas y, de forma secundaria, el paquete técnico. Por
 defecto trabaja en modo borrador: guarda los mensajes localmente y no envía
 información fuera de la computadora.
 
@@ -232,6 +235,8 @@ relacionar con la biblioteca. Cada uno prepara un mensaje que se puede editar o
 descartar antes de enviarlo; no reemplaza el perfil de la conversación ni llama
 por sí solo a un proveedor. El alcance visible aclara los fragmentos adjuntos,
 la configuración de búsqueda y que la aplicación no contiene el texto completo.
+Al enviarse, la aplicación registra opcionalmente el id y la etiqueta del atajo
+en el mensaje del usuario, de modo que el historial conserva su procedencia.
 La evolución prevista está documentada en
 [`docs/accesos-directos-ia.md`](docs/accesos-directos-ia.md).
 
@@ -290,14 +295,12 @@ La búsqueda semántica y la indexación opcional de textos completos quedan com
 mejoras futuras. La búsqueda actual nunca presupone que un modelo conoce o puede
 consultar el contenido íntegro de una obra.
 
-También está propuesta una capa de **accesos directos de estudio** para iniciar
-acciones como explicar una selección, detectar temas, explorar símbolos,
-proponer preguntas o relacionar una lectura con la biblioteca sin redactar el
-prompt desde cero. Cada acción usaría el perfil asignado a la conversación y
-seguiría registrándose como un turno normal, con el mismo contexto y las mismas
-salvaguardas. La especificación y el plan futuro están en
-[`docs/accesos-directos-ia.md`](docs/accesos-directos-ia.md). Esta función aún no
-está implementada.
+Los **accesos directos de estudio** ya permiten iniciar acciones como explicar
+una selección, detectar temas, explorar símbolos, proponer preguntas o
+relacionar una lectura con la biblioteca sin redactar el prompt desde cero.
+Cada acción usa el perfil asignado a la conversación y se registra como un turno
+normal, con el mismo contexto y salvaguardas. La especificación y las etapas
+pendientes están en [`docs/accesos-directos-ia.md`](docs/accesos-directos-ia.md).
 
 La dirección elegida para el despliegue definitivo es utilizar OpenClaw como
 capa de conversación y razonamiento. El adaptador también admite conexiones

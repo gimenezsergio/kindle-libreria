@@ -98,3 +98,20 @@ COMPANION_ACTIONS: tuple[CompanionAction, ...] = (
 def list_companion_actions() -> list[dict[str, object]]:
     """Devuelve las recetas en el orden editorial de la interfaz."""
     return [action.as_dict() for action in COMPANION_ACTIONS]
+
+
+def get_companion_action(action_id: object) -> CompanionAction | None:
+    """Busca una receta por id sin aceptar valores ambiguos del cliente.
+
+    ``None`` representa el flujo de mensaje libre. Cualquier otro valor debe
+    ser exactamente uno de los ids publicados por el catálogo; así un cliente
+    no puede guardar ni declarar una acción que la aplicación no conoce.
+    """
+    if action_id is None:
+        return None
+    if not isinstance(action_id, str):
+        raise ValueError("La acción del acompañante no es válida")
+    for action in COMPANION_ACTIONS:
+        if action.id == action_id:
+            return action
+    raise ValueError("La acción del acompañante no es válida")

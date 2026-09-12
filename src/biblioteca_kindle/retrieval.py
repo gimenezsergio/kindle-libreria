@@ -7,7 +7,7 @@ from .library_search import LibrarySearchError, mentioned_works, search_library
 
 
 def requested_library_sources(
-    database: Path | str, conversation_id: str, payload: dict
+    database: Path | str, conversation_id: str, payload: dict, *, conversation: dict | None = None
 ) -> list[dict]:
     """Resolve a bounded, traceable set of library evidence for one question."""
     if not bool(payload.get("search_library", False)):
@@ -15,7 +15,7 @@ def requested_library_sources(
     scope = payload.get("search_scope", "library")
     if scope not in {"library", "current", "selected"}:
         raise ConversationError("El alcance de búsqueda no es válido")
-    conversation = get_conversation(database, conversation_id)
+    conversation = conversation or get_conversation(database, conversation_id)
     selected_context = [
         item for item in conversation["context_sources"]
         if item["source_type"] in {"personal_note", "annotation"}

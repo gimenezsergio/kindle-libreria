@@ -31,9 +31,10 @@ from .conversations import (
     build_prompt_packet,
     attach_library_sources,
     pin_library_sources,
+    resolve_turn_context_sources,
 )
 from .ai import AIError, DraftProvider, load_environment_file, provider_from_environment
-from .companion_actions import list_companion_actions
+from .companion_actions import get_companion_action, list_companion_actions
 from .library_search import LibrarySearchError
 from .retrieval import requested_library_sources as retrieve_library_sources
 from .openclaw_api import create_openclaw_blueprint
@@ -433,8 +434,83 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
     provider = ai_provider or provider_from_environment()
     app.register_blueprint(create_openclaw_blueprint(database_path, openclaw_token))
 
-    def requested_library_sources(conversation_id: str, payload: dict) -> list[dict]:
-        return retrieve_library_sources(database_path, conversation_id, payload)
+    def requested_library_sources(
+        conversation_id: str, payload: dict, *, conversation: dict | None = None
+    ) -> list[dict]:
+        return retrieve_library_sources(
+            database_path, conversation_id, payload, conversation=conversation
+        )
+
+    def prepare_companion_turn(conversation_id: str, payload: dict) -> dict:
+        """Normaliza un borrador una sola vez para preview y envío real.
+
+        La vista previa usa el mismo paquete que después recibe el proveedor.
+        No persiste ni el borrador ni la selección de material.
+        """
+        try:
+            action = get_companion_action(payload.get("companion_action_id"))
+        except ValueError as error:
+            raise ConversationError(str(error)) from error
+        has_context_update = "personal_note_ids" in payload or "annotation_ids" in payload
+        context_sources = resolve_turn_context_sources(
+            database_path,
+            conversation_id,
+            personal_note_ids=payload.get("personal_note_ids") if has_context_update else None,
+            annotation_ids=payload.get("annotation_ids") if has_context_update else None,
+        )
+        conversation = get_conversation(database_path, conversation_id)
+        if conversation["status"] != "active":
+            raise ConversationError("La conversación está archivada")
+        conversation["context_sources"] = context_sources
+        library_sources = requested_library_sources(
+            conversation_id, payload, conversation=conversation
+        )
+        packet = build_prompt_packet(
+            database_path,
+            conversation_id,
+            library_sources=library_sources,
+            context_sources=context_sources,
+            draft_content=payload.get("content"),
+        )
+        return {
+            "action": action,
+            "context_sources": context_sources,
+            "has_context_update": has_context_update,
+            "library_sources": library_sources,
+            "packet": packet,
+            "conversation": conversation,
+        }
+
+    def companion_turn_preview(turn: dict, payload: dict) -> dict:
+        action = turn["action"]
+        context_sources = turn["context_sources"]
+        material = [
+            item for item in context_sources
+            if item["source_type"] in {"personal_note", "annotation"}
+        ]
+        return {
+            "profile": {"name": turn["conversation"]["profile_name_snapshot"]},
+            "provider": {"name": provider.name, "ready": provider.ready},
+            "action": (
+                {"id": action.id, "label": action.label} if action is not None else None
+            ),
+            "draft": {"content": turn["packet"].input[-1]["content"]},
+            "scope": {
+                "search_library": bool(payload.get("search_library", False)),
+                "search_scope": payload.get("search_scope", "library"),
+                "search_work_ids": payload.get("search_work_ids", []),
+            },
+            "material": {
+                "count": len(material),
+                "items": [
+                    {"type": item["source_type"], "label": item["label_snapshot"]}
+                    for item in material
+                ],
+                "contains_full_text": False,
+            },
+            "library_sources": turn["library_sources"],
+            "packet": turn["packet"].as_dict(),
+        }
 
     @app.errorhandler(413)
     def sync_payload_too_large(_error):
@@ -605,6 +681,7 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
                 conversation_id=conversation_id,
                 role="user",
                 content=payload.get("content"),
+                companion_action_id=payload.get("companion_action_id"),
             )
             return jsonify(id=identifier), 201
         except (ConversationError, PersonalDataError) as error:
@@ -625,6 +702,15 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
             return jsonify(build_prompt_packet(database_path, conversation_id).as_dict())
         except ConversationError as error:
             return jsonify(error=str(error)), 404
+
+    @app.post("/api/conversations/<conversation_id>/prompt-preview")
+    def conversation_prompt_preview_draft(conversation_id: str):
+        try:
+            payload = _json_body()
+            turn = prepare_companion_turn(conversation_id, payload)
+            return jsonify(companion_turn_preview(turn, payload))
+        except (ConversationError, PersonalDataError, LibrarySearchError, ValueError) as error:
+            return jsonify(error=str(error)), 400
 
     @app.post("/api/conversations/<conversation_id>/library-search")
     def conversation_library_search(conversation_id: str):
@@ -650,18 +736,23 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
     def conversation_respond(conversation_id: str):
         try:
             payload = _json_body()
-            if "personal_note_ids" in payload or "annotation_ids" in payload:
+            turn = prepare_companion_turn(conversation_id, payload)
+            if turn["has_context_update"]:
                 update_context(
                     database_path,
                     conversation_id,
                     personal_note_ids=payload.get("personal_note_ids", []),
                     annotation_ids=payload.get("annotation_ids", []),
                 )
-            library_sources = requested_library_sources(conversation_id, payload)
-            add_message(database_path, conversation_id=conversation_id, role="user", content=payload.get("content"))
-            packet = build_prompt_packet(
-                database_path, conversation_id, library_sources=library_sources
+            add_message(
+                database_path,
+                conversation_id=conversation_id,
+                role="user",
+                content=payload.get("content"),
+                companion_action_id=payload.get("companion_action_id"),
             )
+            library_sources = turn["library_sources"]
+            packet = turn["packet"]
             if not provider.ready:
                 return jsonify(mode="draft", prompt=packet.as_dict(), library_sources=library_sources), 202
             answer = provider.respond(packet)

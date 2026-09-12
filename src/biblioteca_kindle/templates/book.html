@@ -70,7 +70,7 @@
               <section class="chat-column" aria-label="Conversación">
                 <header class="active-conversation-header"><div><p class="eyebrow" id="active-conversation-profile"></p><h3 id="active-conversation-title"></h3><details class="conversation-title-editor"><summary>Editar título</summary><form id="conversation-title-form"><label for="active-conversation-title-input">Título de la conversación</label><div><input id="active-conversation-title-input" type="text" maxlength="120" required><button type="submit">Guardar</button></div></form></details></div><span class="attached-count" id="attached-count">Sin material adjunto</span></header>
                 <section class="companion-quick-actions" aria-labelledby="companion-quick-actions-title">
-                  <div class="companion-quick-actions-heading"><div><p class="eyebrow">Atajos de lectura</p><h4 id="companion-quick-actions-title">Explorar esta lectura</h4></div><button class="text-button" id="clear-action-draft" type="button" hidden>Descartar propuesta</button></div>
+                  <div class="companion-quick-actions-heading"><div><p class="eyebrow">Atajos de lectura</p><h4 id="companion-quick-actions-title">Explorar esta lectura</h4><p class="companion-action-profile">Responderá: <strong id="companion-action-profile">Elegí una conversación</strong></p></div><button class="text-button" id="clear-action-draft" type="button" hidden>Descartar propuesta</button></div>
                   <p class="companion-action-scope" id="companion-action-scope">La ficha del libro se incluye siempre. Cargando alcance…</p>
                   <div class="companion-action-list" id="companion-action-list" aria-live="polite"><span class="companion-actions-loading">Preparando acciones…</span></div>
                   <p class="companion-action-help">Elegí una acción para preparar un mensaje editable; no se envía todavía.</p>
@@ -98,7 +98,7 @@
                       <div class="library-search-results" id="library-search-results"><p>Escribí tu mensaje y pedí una vista previa para revisar las fuentes.</p></div>
                       <button class="text-button" id="pin-library-context" type="button" hidden>Fijar seleccionados</button>
                   </details>
-                  <details class="prompt-preview"><summary>Detalles y privacidad</summary><p>Revisá el contexto exacto que recibirá el proveedor activo.</p><pre id="prompt-preview-content">Abrí esta sección para preparar la vista previa.</pre></details>
+                  <section class="prompt-preview" aria-live="polite"><button class="secondary-button" id="review-context" type="button">Revisar contexto</button><p id="prompt-preview-summary">Antes de enviar, podés revisar qué perfil, material y fuentes recibirá el proveedor.</p><details id="prompt-preview-details" hidden><summary>Detalle técnico</summary><pre id="prompt-preview-content"></pre></details></section>
                 </div>
               </aside>
             </div>

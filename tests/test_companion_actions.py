@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from biblioteca_kindle.companion_actions import list_companion_actions
+from biblioteca_kindle.companion_actions import get_companion_action, list_companion_actions
 
 
 class CompanionActionsTests(unittest.TestCase):
@@ -30,3 +30,11 @@ class CompanionActionsTests(unittest.TestCase):
         relation = actions[-1]
         self.assertIn("activar", relation["requirements"]["library_search"])
         self.assertNotIn("deepseek", " ".join(action["message_template"] for action in actions).lower())
+
+    def test_lookup_is_exact_and_rejects_unknown_actions(self) -> None:
+        self.assertIsNone(get_companion_action(None))
+        self.assertEqual(get_companion_action("explore-symbols").label, "Explorar símbolos")
+        with self.assertRaisesRegex(ValueError, "acción"):
+            get_companion_action("inventada")
+        with self.assertRaisesRegex(ValueError, "acción"):
+            get_companion_action(3)

@@ -101,6 +101,29 @@ class ConversationTests(unittest.TestCase):
                 content="   ",
             )
 
+    def test_user_message_can_snapshot_a_catalog_action(self) -> None:
+        identifier = create_conversation(
+            self.database, work_id="work-1", profile_id="companion"
+        )
+        add_message(
+            self.database,
+            conversation_id=identifier,
+            role="user",
+            content="Quiero explorar símbolos",
+            companion_action_id="explore-symbols",
+        )
+        message = get_conversation(self.database, identifier)["messages"][0]
+        self.assertEqual(message["companion_action_id"], "explore-symbols")
+        self.assertEqual(message["companion_action_label_snapshot"], "Explorar símbolos")
+        with self.assertRaisesRegex(ConversationError, "acción"):
+            add_message(
+                self.database,
+                conversation_id=identifier,
+                role="user",
+                content="Otra cosa",
+                companion_action_id="desconocida",
+            )
+
     def test_automatic_title_is_local_and_generated_only_for_pending_conversations(self) -> None:
         identifier = create_conversation(
             self.database, work_id="work-1", profile_id="companion"

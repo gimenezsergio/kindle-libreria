@@ -277,6 +277,12 @@ function messageCard(message) {
     return source ? `[${source.label}: ${source.work_title}]` : "[Fuente de la biblioteca]";
   });
   article.append(label, content);
+  if (message.role === "user" && message.companion_action_label_snapshot) {
+    const action = document.createElement("small");
+    action.className = "conversation-action-label";
+    action.textContent = `Atajo: ${message.companion_action_label_snapshot}`;
+    article.append(action);
+  }
   if (message.role === "assistant" && message.library_sources?.length) {
     const details = document.createElement("details");
     details.className = "answer-sources";
@@ -432,6 +438,16 @@ function renderCompanionActionScope() {
   target.textContent = `Incluye la ficha de «${currentBookTitle}» y ${material}. ${library} La aplicación no contiene el texto completo.`;
 }
 
+function invalidateContextReview() {
+  const summary = document.querySelector("#prompt-preview-summary");
+  const details = document.querySelector("#prompt-preview-details");
+  if (!summary || !details) return;
+  summary.textContent = "El borrador cambió. Revisá el contexto antes de enviarlo.";
+  details.hidden = true;
+  details.removeAttribute("open");
+  document.querySelector("#prompt-preview-content").textContent = "";
+}
+
 function renderCompanionActions() {
   const container = document.querySelector("#companion-action-list");
   if (!container) return;
@@ -478,13 +494,17 @@ function prepareCompanionAction(action) {
   }
   const proposal = action.message_template;
   textarea.value = previous.trim() ? `${previous.trim()}\n\n${proposal}` : proposal;
-  actionDraft = {previous, proposal, didEnableLibrarySearch};
+  actionDraft = {
+    previous, proposal, didEnableLibrarySearch,
+    actionId: action.id, actionLabel: action.label,
+  };
   document.querySelector("#clear-action-draft").hidden = false;
   document.querySelector("#conversation-feedback").textContent = didEnableLibrarySearch
     ? `Propuesta lista para editar. Se activó la búsqueda en ${libraryScopeLabel()}; no se envió nada todavía.`
     : "Propuesta lista para editar o descartar; no se envió nada todavía.";
   textarea.focus();
   textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  invalidateContextReview();
 }
 
 function discardCompanionActionDraft() {
@@ -498,6 +518,7 @@ function discardCompanionActionDraft() {
   actionDraft = null;
   document.querySelector("#clear-action-draft").hidden = true;
   document.querySelector("#conversation-feedback").textContent = "Propuesta descartada.";
+  invalidateContextReview();
   textarea.focus();
 }
 
@@ -636,10 +657,68 @@ function updateContextSelectionCount() {
   setText("context-count", `${count} ${count === 1 ? "seleccionada" : "seleccionadas"}`);
 }
 
-async function loadPromptPreview() {
+function currentCompanionActionId() {
+  return actionDraft?.actionId || null;
+}
+
+function contextReviewPayload() {
+  return {
+    content: document.querySelector("#conversation-message").value.trim(),
+    ...currentContextSelection(),
+    ...librarySearchPayload(),
+    companion_action_id: currentCompanionActionId(),
+  };
+}
+
+function contextReviewScope(preview) {
+  if (!preview.scope.search_library) return "No se buscarán conexiones adicionales en la biblioteca.";
+  const scope = preview.scope.search_scope;
+  if (scope === "current") return "Buscará conexiones solo en este libro.";
+  if (scope === "selected") return `Buscará conexiones en ${preview.scope.search_work_ids.length} libro(s) elegido(s).`;
+  return "Buscará conexiones en toda tu biblioteca.";
+}
+
+function contextMaterialLabel(item) {
+  if (item.type === "personal_note") return "nota propia";
+  const labels = {
+    highlight: "subrayado",
+    note: "nota del Kindle",
+    bookmark: "marcador",
+  };
+  return labels[item.label] || "anotación";
+}
+
+function renderContextReview(preview) {
+  const action = preview.action ? `Acción: ${preview.action.label}.` : "Mensaje libre.";
+  const provider = preview.provider.ready
+    ? `Proveedor: ${preview.provider.name}.`
+    : "Modo borrador: nada se enviará fuera de esta computadora.";
+  const materialKinds = preview.material.items.map(contextMaterialLabel).join(", ");
+  const material = preview.material.count
+    ? `${preview.material.count} ${preview.material.count === 1 ? "fragmento adjunto" : "fragmentos adjuntos"}: ${materialKinds}.`
+    : "Sin fragmentos adjuntos; se incluye la ficha del libro.";
+  const sourceNames = preview.library_sources.slice(0, 3)
+    .map((source) => `${source.label} de «${source.work_title}»`).join(", ");
+  const sources = preview.library_sources.length
+    ? `${preview.library_sources.length} ${preview.library_sources.length === 1 ? "fuente recuperada" : "fuentes recuperadas"}: ${sourceNames}${preview.library_sources.length > 3 ? "…" : ""}.`
+    : "Sin fuentes adicionales recuperadas.";
+  document.querySelector("#prompt-preview-summary").textContent =
+    `Responderá: ${preview.profile.name}. ${provider} ${action} ${contextReviewScope(preview)} ${material} ${sources} La aplicación no contiene el texto completo.`;
+  const details = document.querySelector("#prompt-preview-details");
+  details.hidden = false;
+  document.querySelector("#prompt-preview-content").textContent =
+    `INSTRUCCIONES DEL PERFIL\n${preview.packet.instructions}\n\nMENSAJES Y CONTEXTO\n${JSON.stringify(preview.packet.input, null, 2)}`;
+}
+
+async function reviewContext() {
   if (!activeConversationId) return;
-  const packet = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/prompt-preview`);
-  document.querySelector("#prompt-preview-content").textContent = `INSTRUCCIONES DEL PERFIL\n${packet.instructions}\n\nMENSAJES Y CONTEXTO\n${JSON.stringify(packet.input, null, 2)}`;
+  const content = document.querySelector("#conversation-message").value.trim();
+  if (!content) throw new Error("Escribí o prepará un mensaje antes de revisar el contexto.");
+  const preview = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/prompt-preview`, {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(contextReviewPayload()),
+  });
+  renderContextReview(preview);
 }
 
 async function loadProviderStatus() {
@@ -659,10 +738,12 @@ async function openConversation(identifier) {
   activeConversationId = identifier;
   actionDraft = null;
   document.querySelector("#clear-action-draft").hidden = true;
+  invalidateContextReview();
   librarySearchResults = []; previewSearchQuery = "";
   document.querySelector("#conversation-empty").hidden = true;
   document.querySelector("#conversation-active").hidden = false;
   setText("active-conversation-profile", conversation.profile_name_snapshot);
+  setText("companion-action-profile", conversation.profile_name_snapshot || "Perfil no disponible");
   setText("active-conversation-title", conversationDisplayTitle(conversation));
   const focusConversation = document.querySelector("#focus-conversation-context");
   focusConversation.textContent = `${conversation.profile_name_snapshot || "Perfil no disponible"} · ${conversationDisplayTitle(conversation)}`;
@@ -682,7 +763,6 @@ async function openConversation(identifier) {
   scrollConversationToBottom({force: true});
   document.querySelector("#conversation-list").value = identifier;
   await loadContext(identifier);
-  await loadPromptPreview();
 }
 
 async function loadConversations(preferredId = activeConversationId) {
@@ -815,7 +895,10 @@ document.querySelector("#conversation-form").addEventListener("submit", async (e
   const textarea = document.querySelector("#conversation-message");
   const content = textarea.value.trim();
   if (!content) return;
-  const payload = {content, ...currentContextSelection(), ...librarySearchPayload()};
+  const payload = {
+    content, ...currentContextSelection(), ...librarySearchPayload(),
+    companion_action_id: currentCompanionActionId(),
+  };
   const requestConversationId = activeConversationId;
   const pendingCard = appendTransientExchange(content);
   button.disabled = true;
@@ -831,6 +914,7 @@ document.querySelector("#conversation-form").addEventListener("submit", async (e
     form.reset();
     actionDraft = null;
     document.querySelector("#clear-action-draft").hidden = true;
+    invalidateContextReview();
     document.querySelector("#conversation-feedback").textContent = result.mode === "draft" ? "Mensaje guardado. No se envió a una IA porque está activo el modo borrador." : "El acompañante respondió.";
     if (result.answer) {
       revealAssistantResponse(pendingCard, result.answer, result.library_sources);
@@ -851,6 +935,7 @@ document.querySelector("#library-search-scope").addEventListener("change", (even
   document.querySelector("#library-search-works-label").hidden = event.target.value !== "selected";
   librarySearchResults = []; previewSearchQuery = "";
   renderCompanionActionScope();
+  invalidateContextReview();
 });
 document.querySelector("#preview-library-search").addEventListener("click", async (event) => {
   const button = event.currentTarget; button.disabled = true;
@@ -865,7 +950,7 @@ document.querySelector("#pin-library-context").addEventListener("click", async (
       method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload),
     });
     document.querySelector("#conversation-feedback").textContent = `${result.pinned} fuentes quedaron fijadas.`;
-    await loadContext(activeConversationId); await loadPromptPreview();
+    await loadContext(activeConversationId); invalidateContextReview();
   } catch (error) { document.querySelector("#conversation-feedback").textContent = error.message; }
 });
 async function saveContextSelection() {
@@ -876,7 +961,7 @@ async function saveContextSelection() {
   });
   document.querySelector("#conversation-feedback").textContent = "Contexto guardado para esta conversación.";
   await loadContext(activeConversationId);
-  await loadPromptPreview();
+  invalidateContextReview();
 }
 document.querySelector("#context-form").addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -901,10 +986,28 @@ document.querySelector("#context-search").addEventListener("input", (event) => {
     label.hidden = Boolean(query) && !label.dataset.searchText.includes(query);
   });
 });
-document.querySelector("#context-form").addEventListener("change", updateContextSelectionCount);
+document.querySelector("#context-form").addEventListener("change", () => {
+  updateContextSelectionCount();
+  invalidateContextReview();
+});
 document.querySelector("#library-search-enabled").addEventListener("click", (event) => event.stopPropagation());
-document.querySelector("#library-search-enabled").addEventListener("change", renderCompanionActionScope);
-document.querySelector("#library-search-works").addEventListener("change", renderCompanionActionScope);
+document.querySelector("#library-search-enabled").addEventListener("change", () => {
+  renderCompanionActionScope();
+  invalidateContextReview();
+});
+document.querySelector("#library-search-works").addEventListener("change", () => {
+  renderCompanionActionScope();
+  invalidateContextReview();
+});
+document.querySelector("#library-search-results").addEventListener("change", invalidateContextReview);
+document.querySelector("#conversation-message").addEventListener("input", invalidateContextReview);
+document.querySelector("#review-context").addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  try { await reviewContext(); }
+  catch (error) { document.querySelector("#conversation-feedback").textContent = error.message; }
+  finally { button.disabled = false; }
+});
 document.querySelector("#clear-action-draft").addEventListener("click", discardCompanionActionDraft);
 document.querySelectorAll("[data-context-tab]").forEach((tab) => {
   tab.addEventListener("click", () => {
