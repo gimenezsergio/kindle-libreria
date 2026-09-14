@@ -69,18 +69,12 @@
             <div class="conversation-active" id="conversation-active" hidden>
               <section class="chat-column" aria-label="Conversación">
                 <header class="active-conversation-header"><div><p class="eyebrow" id="active-conversation-profile"></p><h3 id="active-conversation-title"></h3><details class="conversation-title-editor"><summary>Editar título</summary><form id="conversation-title-form"><label for="active-conversation-title-input">Título de la conversación</label><div><input id="active-conversation-title-input" type="text" maxlength="120" required><button type="submit">Guardar</button></div></form></details></div><span class="attached-count" id="attached-count">Sin material adjunto</span></header>
-                <section class="companion-quick-actions" aria-labelledby="companion-quick-actions-title">
-                  <div class="companion-quick-actions-heading"><div><p class="eyebrow">Atajos de lectura</p><h4 id="companion-quick-actions-title">Explorar esta lectura</h4><p class="companion-action-profile">Responderá: <strong id="companion-action-profile">Elegí una conversación</strong></p></div><button class="text-button" id="clear-action-draft" type="button" hidden>Descartar propuesta</button></div>
-                  <p class="companion-action-scope" id="companion-action-scope">La ficha del libro se incluye siempre. Cargando alcance…</p>
-                  <div class="companion-action-list" id="companion-action-list" aria-live="polite"><span class="companion-actions-loading">Preparando acciones…</span></div>
-                  <details class="companion-more-actions" id="companion-more-actions">
-                    <summary>Más formas de explorar</summary>
-                    <div class="companion-action-groups" id="companion-action-groups" aria-live="polite"></div>
-                  </details>
-                  <p class="companion-action-help">Elegí una acción para preparar un mensaje editable; no se envía todavía.</p>
-                </section>
                 <div class="conversation-messages" id="conversation-messages" aria-live="polite"></div>
                 <div class="chat-composer">
+                  <div class="composer-tools">
+                    <button class="companion-action-trigger" id="open-companion-actions" type="button" aria-haspopup="dialog" aria-controls="companion-actions-dialog">✦ Explorar</button>
+                    <div class="companion-action-draft" id="companion-action-draft" hidden><span id="companion-action-draft-label"></span><button class="text-button" id="clear-action-draft" type="button">Descartar</button></div>
+                  </div>
                   <form class="conversation-form" id="conversation-form"><label for="conversation-message">Tu mensaje</label><div class="composer-row"><textarea id="conversation-message" rows="3" required placeholder="Una pregunta, una interpretación, algo que te dejó pensando…"></textarea><button type="submit">Enviar</button></div></form>
                   <p class="form-feedback" id="conversation-feedback" role="status" aria-live="polite"></p>
                 </div>
@@ -127,6 +121,17 @@
           <p>Si lo dejás vacío, el primer mensaje propone un título breve de forma local.</p>
           <footer class="dialog-actions"><button class="secondary-button" id="cancel-new-conversation" type="button">Cancelar</button><button id="new-conversation" type="submit" disabled>Crear conversación</button></footer>
         </form>
+      </dialog>
+      <dialog class="companion-actions-dialog" id="companion-actions-dialog" aria-labelledby="companion-actions-dialog-title" aria-describedby="companion-action-scope">
+        <form method="dialog" class="dialog-heading"><div><p class="eyebrow">Acompañante de lectura</p><h2 id="companion-actions-dialog-title">Explorar esta lectura</h2><p class="companion-action-profile">Responderá: <strong id="companion-action-profile">Elegí una conversación</strong></p></div><button class="dialog-close" value="cancel" aria-label="Cerrar acciones de lectura">×</button></form>
+        <div class="companion-actions-dialog-body">
+          <p class="companion-action-scope" id="companion-action-scope">La ficha del libro se incluye siempre. Cargando alcance…</p>
+          <label class="companion-action-search" for="companion-action-search">Buscar una forma de explorar<input id="companion-action-search" type="search" placeholder="Ej.: símbolos, personajes, repaso…" autocomplete="off"></label>
+          <section aria-labelledby="companion-primary-actions-title"><h3 id="companion-primary-actions-title">Para empezar</h3><div class="companion-action-list" id="companion-action-list" aria-live="polite"><span class="companion-actions-loading">Preparando acciones…</span></div></section>
+          <div class="companion-action-groups" id="companion-action-groups" aria-live="polite"></div>
+          <p class="companion-actions-empty" id="companion-actions-empty" hidden>No encontramos una acción con ese nombre.</p>
+          <p class="companion-action-help">Elegí una acción para preparar un mensaje editable; no se envía todavía.</p>
+        </div>
       </dialog>
       <section class="book-annotations book-panel" id="panel-memory" data-book-panel="memory" aria-labelledby="annotations-title">
         <div class="section-heading"><div><p class="eyebrow">Memoria de lectura</p><h2 id="annotations-title">Subrayados y notas</h2></div><span id="annotation-result-count">Consultando…</span></div>

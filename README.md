@@ -229,7 +229,7 @@ adjuntos, fuentes recuperadas y, de forma secundaria, el paquete técnico. Por
 defecto trabaja en modo borrador: guarda los mensajes localmente y no envía
 información fuera de la computadora.
 
-También incluye cinco accesos directos en **Explorar esta lectura**: explicar
+También incluye accesos directos bajo el botón compacto **✦ Explorar**: explicar
 la selección, detectar temas, explorar símbolos, proponer preguntas y
 relacionar con la biblioteca. Cada uno prepara un mensaje que se puede editar o
 descartar antes de enviarlo; no reemplaza el perfil de la conversación ni llama
@@ -237,7 +237,7 @@ por sí solo a un proveedor. El alcance visible aclara los fragmentos adjuntos,
 la configuración de búsqueda y que la aplicación no contiene el texto completo.
 Al enviarse, la aplicación registra opcionalmente el id y la etiqueta del atajo
 en el mensaje del usuario, de modo que el historial conserva su procedencia.
-El control plegable **Más formas de explorar** agrega recetas agrupadas para
+La paleta con buscador agrega recetas agrupadas para
 comprender, interpretar, cuestionar, relacionar y recordar. Las recetas de
 relación activan la búsqueda solo cuando hace falta y respetan el alcance
 elegido; las que aprovechan especialmente un pasaje avisan si todavía no hay

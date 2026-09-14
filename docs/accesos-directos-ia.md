@@ -62,18 +62,21 @@ para recordar y rutas de lectura.
 
 ## Comportamiento de la interfaz
 
-La sección se podría llamar **Explorar esta lectura**. Las cinco acciones
-principales permanecerían visibles y una opción **Más formas de explorar**
-agruparía acciones menos frecuentes.
+La sección se llama **Explorar esta lectura** y se abre desde el botón compacto
+**✦ Explorar**, junto a la caja de mensaje. Esto conserva el alto útil del chat:
+la paleta superpuesta muestra las cinco acciones principales y las restantes
+agrupadas, con buscador, perfil, alcance y material actual. Al elegir una
+acción, la paleta se cierra y deja un chip junto al compositor para revisar o
+descartar el borrador.
 
-La Etapa 1 muestra un bloque compacto en el chat con las cinco acciones. La
-definición centralizada vive en `biblioteca_kindle.companion_actions` y se
-expone a la interfaz mediante `GET /api/companion-actions`; no depende de
-DeepSeek, OpenClaw ni de otro proveedor. Cada definición tiene identificador,
-etiqueta, descripción, receta y requisitos de material y búsqueda.
+La Etapa 1 incorporó las cinco acciones iniciales. La definición centralizada
+vive en `biblioteca_kindle.companion_actions` y se expone a la interfaz mediante
+`GET /api/companion-actions`; no depende de DeepSeek, OpenClaw ni de otro
+proveedor. Cada definición tiene identificador, etiqueta, descripción, receta y
+requisitos de material y búsqueda.
 
-La Etapa 3 conserva esas cinco acciones siempre visibles y agrega el control
-plegable **Más formas de explorar**. Allí las acciones quedan agrupadas en:
+La Etapa 3 conserva esas cinco acciones como opciones principales y agrega el
+resto en grupos dentro de la paleta. Allí las acciones quedan agrupadas en:
 
 - **Comprender:** resumir subrayados, explicar un pasaje, identificar
   conceptos, crear glosario y aportar contexto histórico o cultural.
@@ -160,7 +163,7 @@ Por eso el primer alcance debe ser pequeño, editable y transparente.
   alcance reales, y trazabilidad opcional del atajo en el mensaje del usuario:
   implementada. El identificador y la etiqueta se guardan como snapshot
   nullable, sin acoplar la base al catálogo de recetas.
-- Etapa 3: catálogo editorial agrupado y plegable, más acciones de estudio,
+- Etapa 3: catálogo editorial agrupado en una paleta superpuesta, más acciones de estudio,
   metadatos de grupo/prioridad/comportamiento de búsqueda y avisos de material
   recomendado: implementada. No incorpora búsqueda semántica, Telegram,
   recetas personalizables ni guardado automático.

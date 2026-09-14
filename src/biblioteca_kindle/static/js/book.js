@@ -15,6 +15,7 @@ let conversationScrollState = null;
 let currentBookTitle = "este libro";
 let companionActions = [];
 let actionDraft = null;
+let actionDialogReturnsFocus = true;
 
 function setCompanionFocus(active) {
   document.body.classList.toggle("is-companion-focused", active);
@@ -464,6 +465,7 @@ function renderCompanionActions() {
     const button = document.createElement("button");
     button.type = "button";
     button.dataset.companionAction = action.id;
+    button.dataset.searchText = `${action.label} ${action.description} ${action.group}`.toLocaleLowerCase("es");
     button.textContent = action.label;
     button.title = action.description;
     button.setAttribute("aria-label", `${action.label}. ${action.description}`);
@@ -492,6 +494,25 @@ function renderCompanionActions() {
     return section;
   });
   groupsContainer.replaceChildren(...groups);
+  filterCompanionActions();
+}
+
+function filterCompanionActions() {
+  const query = document.querySelector("#companion-action-search")?.value.trim().toLocaleLowerCase("es") || "";
+  const buttons = [...document.querySelectorAll("[data-companion-action]")];
+  let matches = 0;
+  buttons.forEach((button) => {
+    const visible = !query || button.dataset.searchText.includes(query);
+    button.hidden = !visible;
+    if (visible) matches += 1;
+  });
+  document.querySelectorAll(".companion-action-group").forEach((group) => {
+    group.hidden = ![...group.querySelectorAll("[data-companion-action]")].some((button) => !button.hidden);
+  });
+  const primary = document.querySelector("#companion-primary-actions-title")?.parentElement;
+  if (primary) primary.hidden = Boolean(query) && ![...primary.querySelectorAll("[data-companion-action]")].some((button) => !button.hidden);
+  const empty = document.querySelector("#companion-actions-empty");
+  if (empty) empty.hidden = matches > 0;
 }
 
 async function loadCompanionActions() {
@@ -507,6 +528,7 @@ async function loadCompanionActions() {
 
 function prepareCompanionAction(action) {
   if (!activeConversationId) return;
+  closeCompanionActionsForSelection();
   const textarea = document.querySelector("#conversation-message");
   const searchEnabled = document.querySelector("#library-search-enabled");
   const previous = textarea.value;
@@ -522,8 +544,10 @@ function prepareCompanionAction(action) {
     previous, proposal, didEnableLibrarySearch,
     actionId: action.id, actionLabel: action.label,
   };
-  document.querySelector("#clear-action-draft").hidden = false;
-  document.querySelector("#companion-more-actions").open = false;
+  const draft = document.querySelector("#companion-action-draft");
+  draft.hidden = false;
+  const profile = document.querySelector("#companion-action-profile")?.textContent || "Perfil no disponible";
+  setText("companion-action-draft-label", `${action.label} · ${profile}`);
   const materialHint = action.requirements?.material === "recomendado" && !selectedContextCount()
     ? " Esta acción suele aprovechar mejor un pasaje o una nota seleccionados."
     : "";
@@ -544,10 +568,31 @@ function discardCompanionActionDraft() {
     renderCompanionActionScope();
   }
   actionDraft = null;
-  document.querySelector("#clear-action-draft").hidden = true;
+  document.querySelector("#companion-action-draft").hidden = true;
   document.querySelector("#conversation-feedback").textContent = "Propuesta descartada.";
   invalidateContextReview();
   textarea.focus();
+}
+
+function openCompanionActionsDialog() {
+  if (!activeConversationId) return;
+  const dialog = document.querySelector("#companion-actions-dialog");
+  const search = document.querySelector("#companion-action-search");
+  if (!dialog || dialog.open) return;
+  actionDialogReturnsFocus = true;
+  dialog.showModal();
+  if (search) {
+    search.value = "";
+    filterCompanionActions();
+    window.requestAnimationFrame(() => search.focus());
+  }
+}
+
+function closeCompanionActionsForSelection() {
+  const dialog = document.querySelector("#companion-actions-dialog");
+  if (!dialog?.open) return;
+  actionDialogReturnsFocus = false;
+  dialog.close();
 }
 
 function searchScopePayload() {
@@ -765,7 +810,7 @@ async function openConversation(identifier) {
   const conversation = await jsonRequest(`/api/conversations/${encodeURIComponent(identifier)}`);
   activeConversationId = identifier;
   actionDraft = null;
-  document.querySelector("#clear-action-draft").hidden = true;
+  document.querySelector("#companion-action-draft").hidden = true;
   invalidateContextReview();
   librarySearchResults = []; previewSearchQuery = "";
   document.querySelector("#conversation-empty").hidden = true;
@@ -941,7 +986,7 @@ document.querySelector("#conversation-form").addEventListener("submit", async (e
     if (activeConversationId !== requestConversationId) return;
     form.reset();
     actionDraft = null;
-    document.querySelector("#clear-action-draft").hidden = true;
+    document.querySelector("#companion-action-draft").hidden = true;
     invalidateContextReview();
     document.querySelector("#conversation-feedback").textContent = result.mode === "draft" ? "Mensaje guardado. No se envió a una IA porque está activo el modo borrador." : "El acompañante respondió.";
     if (result.answer) {
@@ -1035,6 +1080,12 @@ document.querySelector("#review-context").addEventListener("click", async (event
   try { await reviewContext(); }
   catch (error) { document.querySelector("#conversation-feedback").textContent = error.message; }
   finally { button.disabled = false; }
+});
+document.querySelector("#open-companion-actions").addEventListener("click", openCompanionActionsDialog);
+document.querySelector("#companion-action-search").addEventListener("input", filterCompanionActions);
+document.querySelector("#companion-actions-dialog").addEventListener("close", () => {
+  if (actionDialogReturnsFocus) document.querySelector("#open-companion-actions")?.focus();
+  actionDialogReturnsFocus = true;
 });
 document.querySelector("#clear-action-draft").addEventListener("click", discardCompanionActionDraft);
 document.querySelectorAll("[data-context-tab]").forEach((tab) => {
