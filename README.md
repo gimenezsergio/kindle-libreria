@@ -237,6 +237,12 @@ por sí solo a un proveedor. El alcance visible aclara los fragmentos adjuntos,
 la configuración de búsqueda y que la aplicación no contiene el texto completo.
 Al enviarse, la aplicación registra opcionalmente el id y la etiqueta del atajo
 en el mensaje del usuario, de modo que el historial conserva su procedencia.
+El control plegable **Más formas de explorar** agrega recetas agrupadas para
+comprender, interpretar, cuestionar, relacionar y recordar. Las recetas de
+relación activan la búsqueda solo cuando hace falta y respetan el alcance
+elegido; las que aprovechan especialmente un pasaje avisan si todavía no hay
+material seleccionado. Ninguna receta se envía ni guarda resultados por sí
+sola.
 La evolución prevista está documentada en
 [`docs/accesos-directos-ia.md`](docs/accesos-directos-ia.md).
 
@@ -297,10 +303,12 @@ consultar el contenido íntegro de una obra.
 
 Los **accesos directos de estudio** ya permiten iniciar acciones como explicar
 una selección, detectar temas, explorar símbolos, proponer preguntas o
-relacionar una lectura con la biblioteca sin redactar el prompt desde cero.
-Cada acción usa el perfil asignado a la conversación y se registra como un turno
-normal, con el mismo contexto y salvaguardas. La especificación y las etapas
-pendientes están en [`docs/accesos-directos-ia.md`](docs/accesos-directos-ia.md).
+relacionar una lectura con la biblioteca sin redactar el prompt desde cero. Las
+cinco principales se complementan con un conjunto plegable de herramientas de
+comprensión, interpretación, cuestionamiento, relación y repaso. Cada acción
+usa el perfil asignado a la conversación y se registra como un turno normal,
+con el mismo contexto y salvaguardas. La especificación y las etapas pendientes
+están en [`docs/accesos-directos-ia.md`](docs/accesos-directos-ia.md).
 
 La dirección elegida para el despliegue definitivo es utilizar OpenClaw como
 capa de conversación y razonamiento. El adaptador también admite conexiones

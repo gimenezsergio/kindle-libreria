@@ -450,14 +450,17 @@ function invalidateContextReview() {
 
 function renderCompanionActions() {
   const container = document.querySelector("#companion-action-list");
-  if (!container) return;
+  const groupsContainer = document.querySelector("#companion-action-groups");
+  if (!container || !groupsContainer) return;
   if (!companionActions.length) {
     container.replaceChildren(Object.assign(document.createElement("span"), {
       className: "companion-actions-loading", textContent: "No pudimos preparar los accesos directos.",
     }));
+    groupsContainer.replaceChildren();
     return;
   }
-  const buttons = companionActions.map((action) => {
+
+  const makeButton = (action) => {
     const button = document.createElement("button");
     button.type = "button";
     button.dataset.companionAction = action.id;
@@ -466,8 +469,29 @@ function renderCompanionActions() {
     button.setAttribute("aria-label", `${action.label}. ${action.description}`);
     button.addEventListener("click", () => prepareCompanionAction(action));
     return button;
+  };
+  container.replaceChildren(...companionActions
+    .filter((action) => action.is_primary)
+    .map(makeButton));
+
+  const groupedActions = new Map();
+  companionActions.filter((action) => !action.is_primary).forEach((action) => {
+    const group = groupedActions.get(action.group) || [];
+    group.push(action);
+    groupedActions.set(action.group, group);
   });
-  container.replaceChildren(...buttons);
+  const groups = [...groupedActions].map(([group, actions]) => {
+    const section = document.createElement("section");
+    section.className = "companion-action-group";
+    const heading = document.createElement("h5");
+    heading.textContent = group;
+    const list = document.createElement("div");
+    list.className = "companion-action-group-list";
+    list.append(...actions.map(makeButton));
+    section.append(heading, list);
+    return section;
+  });
+  groupsContainer.replaceChildren(...groups);
 }
 
 async function loadCompanionActions() {
@@ -487,7 +511,7 @@ function prepareCompanionAction(action) {
   const searchEnabled = document.querySelector("#library-search-enabled");
   const previous = textarea.value;
   let didEnableLibrarySearch = false;
-  if (action.id === "relate-library" && searchEnabled && !searchEnabled.checked) {
+  if (action.search_behavior === "enable" && searchEnabled && !searchEnabled.checked) {
     searchEnabled.checked = true;
     didEnableLibrarySearch = true;
     renderCompanionActionScope();
@@ -499,9 +523,13 @@ function prepareCompanionAction(action) {
     actionId: action.id, actionLabel: action.label,
   };
   document.querySelector("#clear-action-draft").hidden = false;
+  document.querySelector("#companion-more-actions").open = false;
+  const materialHint = action.requirements?.material === "recomendado" && !selectedContextCount()
+    ? " Esta acción suele aprovechar mejor un pasaje o una nota seleccionados."
+    : "";
   document.querySelector("#conversation-feedback").textContent = didEnableLibrarySearch
-    ? `Propuesta lista para editar. Se activó la búsqueda en ${libraryScopeLabel()}; no se envió nada todavía.`
-    : "Propuesta lista para editar o descartar; no se envió nada todavía.";
+    ? `Propuesta lista para editar. Se activó la búsqueda en ${libraryScopeLabel()}; no se envió nada todavía.${materialHint}`
+    : `Propuesta lista para editar o descartar; no se envió nada todavía.${materialHint}`;
   textarea.focus();
   textarea.setSelectionRange(textarea.value.length, textarea.value.length);
   invalidateContextReview();

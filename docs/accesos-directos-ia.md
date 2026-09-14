@@ -1,8 +1,9 @@
 # Accesos directos del acompañante de lectura
 
-> Estado: Etapas 1 y 2 implementadas localmente. Las cinco acciones preparan
-> un borrador editable; antes de enviarlo se puede revisar, sin mutaciones, el
-> perfil, proveedor, alcance, material, fuentes recuperadas y paquete técnico.
+> Estado: Etapas 1, 2 y 3 implementadas localmente. Las cinco acciones
+> principales y las acciones agrupadas preparan un borrador editable; antes de
+> enviarlo se puede revisar, sin mutaciones, el perfil, proveedor, alcance,
+> material, fuentes recuperadas y paquete técnico.
 
 ## Por qué existe esta propuesta
 
@@ -71,6 +72,27 @@ expone a la interfaz mediante `GET /api/companion-actions`; no depende de
 DeepSeek, OpenClaw ni de otro proveedor. Cada definición tiene identificador,
 etiqueta, descripción, receta y requisitos de material y búsqueda.
 
+La Etapa 3 conserva esas cinco acciones siempre visibles y agrega el control
+plegable **Más formas de explorar**. Allí las acciones quedan agrupadas en:
+
+- **Comprender:** resumir subrayados, explicar un pasaje, identificar
+  conceptos, crear glosario y aportar contexto histórico o cultural.
+- **Interpretar:** analizar personajes, explorar conflictos y pensar la
+  evolución narrativa.
+- **Cuestionar:** contradecir una interpretación, ofrecer otra lectura,
+  construir argumento y contraargumento o señalar supuestos y ambigüedades.
+- **Relacionar:** comparar lecturas, buscar acuerdos o contradicciones y
+  proponer una ruta de lectura.
+- **Recordar:** síntesis, ideas para recordar, preguntas de repaso, tarjetas
+  de estudio y preguntas pendientes.
+
+El catálogo publica además `group`, `is_primary` y `search_behavior`. No hay
+una regla especial en JavaScript para un identificador concreto: toda acción
+con `search_behavior: enable` activa la búsqueda si estaba desactivada y al
+descartar restaura ese estado. Todas respetan el alcance elegido. Si una receta
+se beneficia especialmente de una selección y no la hay, la interfaz lo avisa
+sin bloquear el borrador.
+
 Al pulsar una acción, se completa la caja de mensaje actual para que el lector
 pueda editarla o descartarla antes de enviar. No se crea un turno ni se llama
 al proveedor hasta usar **Enviar**. El perfil de la conversación vigente se
@@ -138,6 +160,10 @@ Por eso el primer alcance debe ser pequeño, editable y transparente.
   alcance reales, y trazabilidad opcional del atajo en el mensaje del usuario:
   implementada. El identificador y la etiqueta se guardan como snapshot
   nullable, sin acoplar la base al catálogo de recetas.
+- Etapa 3: catálogo editorial agrupado y plegable, más acciones de estudio,
+  metadatos de grupo/prioridad/comportamiento de búsqueda y avisos de material
+  recomendado: implementada. No incorpora búsqueda semántica, Telegram,
+  recetas personalizables ni guardado automático.
 - Etapas posteriores: resultados persistentes, acciones personalizables,
   búsqueda semántica y Telegram: pendientes.
 
@@ -171,8 +197,11 @@ Por eso el primer alcance debe ser pequeño, editable y transparente.
 8. Registrar el turno y sus fuentes con el flujo normal del chat. **Hecho:**
    el mensaje de usuario puede conservar el id y la etiqueta del atajo; las
    fuentes continúan ligadas a la respuesta del asistente.
-9. Probar accesibilidad, pantallas pequeñas, errores y estados de carga.
-10. Documentar cómo agregar nuevas recetas sin modificar el proveedor.
+9. Ampliar el catálogo en grupos plegables sin desplazar el chat. **Hecho.**
+10. Declarar en cada receta si preserva o activa la búsqueda de biblioteca.
+    **Hecho.**
+11. Probar accesibilidad, pantallas pequeñas, errores y estados de carga.
+12. Documentar cómo agregar nuevas recetas sin modificar el proveedor.
 
 Esta planificación debe revisarse contra la interfaz vigente antes de comenzar
 la implementación.

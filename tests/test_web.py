@@ -160,7 +160,13 @@ class WebTests(unittest.TestCase):
             self.assertIn("function reviewContext()", book_script)
             self.assertIn("companion_action_id: currentCompanionActionId()", book_script)
             self.assertIn("function invalidateContextReview()", book_script)
+            self.assertIn('document.querySelector("#companion-more-actions").open = false;', book_script)
             stylesheet = (Path(__file__).parents[1] / "src/biblioteca_kindle/static/css/app.css").read_text()
+            self.assertIn('id="companion-more-actions"', page_text)
+            self.assertIn('id="companion-action-groups"', page_text)
+            self.assertIn("action.search_behavior === \"enable\"", book_script)
+            self.assertNotIn('action.id === "relate-library"', book_script)
+            self.assertIn(".companion-action-groups { display: grid;", stylesheet)
             self.assertIn(".new-conversation-dialog[open] { display: grid;", stylesheet)
             self.assertIn("#context-dialog[open] { display: grid;", stylesheet)
             self.assertIn("#context-form { display: grid; height: 100%;", stylesheet)
@@ -299,8 +305,15 @@ class WebTests(unittest.TestCase):
             self.assertIn('id="companion-action-list"', page.get_data(as_text=True))
             self.assertIn('id="companion-action-scope"', page.get_data(as_text=True))
             self.assertEqual(actions.status_code, 200)
-            self.assertEqual(len(actions.get_json()["items"]), 5)
-            self.assertEqual(actions.get_json()["items"][-1]["id"], "relate-library")
+            action_items = actions.get_json()["items"]
+            self.assertGreater(len(action_items), 5)
+            self.assertEqual(
+                [item["id"] for item in action_items if item["is_primary"]],
+                ["explain-selection", "detect-themes", "explore-symbols", "propose-questions", "relate-library"],
+            )
+            self.assertIn("group", action_items[0])
+            self.assertIn("search_behavior", action_items[0])
+            self.assertTrue(all(item["search_behavior"] == "enable" for item in action_items if item["group"] == "Relacionar"))
             self.assertIn('role="tablist"', page.get_data(as_text=True))
             self.assertIn("Memoria de lectura", page.get_data(as_text=True))
             self.assertEqual(created.status_code, 201)
@@ -411,12 +424,12 @@ class WebTests(unittest.TestCase):
                 "/api/works/source/conversations", json={"profile_id": "companion"}
             ).get_json()["id"]
             payload = {
-                "content": "Explorá símbolos del poder",
+                "content": "Analizá los personajes presentes en estos fragmentos",
                 "personal_note_ids": ["note"],
                 "annotation_ids": [],
                 "search_library": True,
                 "search_scope": "library",
-                "companion_action_id": "explore-symbols",
+                "companion_action_id": "analyze-characters",
             }
             before = client.get(f"/api/conversations/{conversation_id}").get_json()
             preview = client.post(
@@ -429,7 +442,7 @@ class WebTests(unittest.TestCase):
             self.assertEqual(before["context_sources"], after["context_sources"])
             self.assertEqual(data["profile"]["name"], "Compañero de lectura")
             self.assertEqual(data["provider"], {"name": "test", "ready": True})
-            self.assertEqual(data["action"], {"id": "explore-symbols", "label": "Explorar símbolos"})
+            self.assertEqual(data["action"], {"id": "analyze-characters", "label": "Analizar personajes"})
             self.assertEqual(data["draft"]["content"], payload["content"])
             self.assertEqual(data["material"]["count"], 1)
             self.assertEqual(data["library_sources"][0]["source_id"], "annotation")
@@ -438,8 +451,8 @@ class WebTests(unittest.TestCase):
             response = client.post(f"/api/conversations/{conversation_id}/respond", json=payload)
             detail = client.get(f"/api/conversations/{conversation_id}").get_json()
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(detail["messages"][0]["companion_action_id"], "explore-symbols")
-            self.assertEqual(detail["messages"][0]["companion_action_label_snapshot"], "Explorar símbolos")
+            self.assertEqual(detail["messages"][0]["companion_action_id"], "analyze-characters")
+            self.assertEqual(detail["messages"][0]["companion_action_label_snapshot"], "Analizar personajes")
             self.assertEqual(detail["messages"][1]["library_sources"][0]["source_id"], "annotation")
             self.assertEqual(provider.packet.as_dict(), data["packet"])
 

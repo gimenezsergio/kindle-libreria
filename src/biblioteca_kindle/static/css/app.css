@@ -558,6 +558,14 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 .companion-action-list { display: flex; gap: .45rem; margin-top: .6rem; overflow-x: auto; padding-bottom: .1rem; }
 .companion-action-list button { flex: 0 0 auto; min-height: 2.2rem; padding: .45rem .65rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); cursor: pointer; font: inherit; font-size: .72rem; }
 .companion-action-list button:hover, .companion-action-list button:focus-visible { border-color: var(--terracotta); color: var(--terracotta); }
+.companion-more-actions { margin-top: .55rem; }
+.companion-more-actions summary { width: fit-content; color: var(--terracotta); cursor: pointer; font-size: .72rem; font-weight: 700; }
+.companion-action-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; margin-top: .6rem; }
+.companion-action-group { min-width: 0; padding: .6rem; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 92%, var(--surface-warm)); }
+.companion-action-group h5 { margin: 0 0 .4rem; color: var(--muted); font-size: .64rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.companion-action-group-list { display: flex; flex-wrap: wrap; gap: .35rem; }
+.companion-action-group-list button { min-height: 2rem; padding: .4rem .55rem; border: 1px solid var(--line); border-radius: .25rem; background: var(--surface); color: var(--ink); cursor: pointer; font: inherit; font-size: .7rem; line-height: 1.25; text-align: left; }
+.companion-action-group-list button:hover, .companion-action-group-list button:focus-visible { border-color: var(--terracotta); color: var(--terracotta); }
 .companion-actions-loading { color: var(--muted); font-size: .72rem; }
 .companion-quick-actions .text-button { padding: .25rem 0; color: var(--terracotta); font-size: .7rem; white-space: nowrap; }
 .conversation-title-editor { width: fit-content; margin-top: .35rem; }
@@ -854,6 +862,7 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
   .book-details-grid > div:last-child { border-bottom: 0; }
   .book-details > .title-editor { position: static; width: 100%; margin-top: .5rem; box-shadow: none; }
   .book-header-compact + .book-tabs { margin-top: .65rem; }
+  .companion-action-groups { grid-template-columns: 1fr; }
   body.is-companion-focused .companion-heading { gap: .6rem; padding: .55rem .75rem; }
   body.is-companion-focused .focus-library-link { display: none; }
   body.is-companion-focused #focus-conversation-context { display: none; }

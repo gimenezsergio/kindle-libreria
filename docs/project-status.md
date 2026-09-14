@@ -68,15 +68,14 @@ rollback.
 
 ## Mejoras posteriores no bloqueantes
 
-- Ampliar los accesos directos del acompañante documentados en
-  [`accesos-directos-ia.md`](accesos-directos-ia.md). Las dos primeras etapas
-  ofrecen cinco recetas editables —explicar una selección, detectar temas,
-  explorar símbolos, proponer preguntas y relacionar con la biblioteca—,
-  muestran el perfil que responderá y permiten revisar sin mutaciones el
-  contexto real, proveedor, alcance, material y fuentes del próximo turno. El
-  mensaje puede conservar el atajo elegido como metadato nullable. Quedan
-  pendientes acciones personalizables, resultados persistentes y recuperación
-  semántica.
+- Los accesos directos del acompañante documentados en
+  [`accesos-directos-ia.md`](accesos-directos-ia.md) completaron sus tres
+  primeras etapas: cinco recetas principales editables, revisión no mutante de
+  contexto y un conjunto plegable de acciones para comprender, interpretar,
+  cuestionar, relacionar y recordar. El catálogo declara grupo, prioridad y
+  comportamiento de búsqueda; las acciones relacionales activan la búsqueda
+  cuando hace falta y respetan el alcance elegido. Quedan pendientes acciones
+  personalizables, resultados persistentes y recuperación semántica.
 - Incorporar búsqueda semántica para el acompañante de lectura. La versión
   actual ordena coincidencias textuales de forma determinista; una etapa futura
   debería generar representaciones vectoriales de títulos, subrayados, notas,
