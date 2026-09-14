@@ -267,16 +267,181 @@ async function loadOptions() {
   searchWorks.replaceChildren(...works.items.map((item) => new Option(item.title, item.id)));
 }
 
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function highlightCode(code, lang) {
+  const escaped = escapeHtml(code);
+  const normalizedLang = (lang || "").toLowerCase().trim();
+  const tokens = [];
+  const addToken = (cls, text) => {
+    tokens.push(`<span class="token-${cls}">${text}</span>`);
+    return `___TOKEN_${tokens.length - 1}___`;
+  };
+
+  let highlighted = escaped;
+  highlighted = highlighted.replace(/(["'`])(?:(?=(\\?))\2[\s\S])*?\1/g, (match) => addToken("string", match));
+  highlighted = highlighted.replace(/(\/\/[^\n]*|#[^\n]*|\/\*[\s\S]*?\*\/)/g, (match) => addToken("comment", match));
+  highlighted = highlighted.replace(/\b\d+(\.\d+)?\b/g, (match) => addToken("number", match));
+  const keywordsRegex = /\b(const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|class|extends|import|export|from|async|await|def|self|None|True|False|with|yield|lambda|SELECT|FROM|WHERE|INSERT|UPDATE|DELETE|JOIN|GROUP|BY|ORDER|LIMIT|CREATE|TABLE|DROP|ALTER|PRIMARY|KEY|FOREIGN|REFERENCES|AND|OR|NOT|IN|IS|NULL)\b/g;
+  highlighted = highlighted.replace(keywordsRegex, (match) => addToken("keyword", match));
+  highlighted = highlighted.replace(/\b([a-zA-Z_]\w*)\s*(?=\()/g, (match, p1) => addToken("function", p1));
+  highlighted = highlighted.replace(/___TOKEN_(\d+)___/g, (match, idx) => tokens[Number(idx)]);
+
+  return `<pre class="code-block"><code class="language-${escapeHtml(normalizedLang)}">${highlighted}</code></pre>`;
+}
+
+function renderMarkdown(rawText, librarySources = []) {
+  let text = String(rawText || "");
+
+  text = text.replace(/\[B(\d+)\]/g, (match, number) => {
+    const source = librarySources?.[Number(number) - 1];
+    return source ? `**[${source.label}: ${source.work_title}]**` : "**[Fuente de la biblioteca]**";
+  });
+
+  const codeBlocks = [];
+  text = text.replace(/```([a-zA-Z0-9_-]*)\n?([\s\S]*?)```/g, (match, lang, code) => {
+    codeBlocks.push(highlightCode(code.trimEnd(), lang));
+    return `\n\n___CODE_BLOCK_${codeBlocks.length - 1}___\n\n`;
+  });
+
+  text = escapeHtml(text);
+
+  const inlineCodes = [];
+  text = text.replace(/`([^`]+)`/g, (match, code) => {
+    inlineCodes.push(`<code class="inline-code">${code}</code>`);
+    return `___INLINE_CODE_${inlineCodes.length - 1}___`;
+  });
+
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, url) => {
+    const safeUrl = (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/")) ? url : "#";
+    return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+  });
+
+  text = text.replace(/\*\*\*([^*]+)\*\*\*/g, "<strong><em>$1</em></strong>");
+  text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  text = text.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  text = text.replace(/___([^_]+)___/g, "<strong><em>$1</em></strong>");
+  text = text.replace(/__([^_]+)__/g, "<strong>$1</strong>");
+  text = text.replace(/_([^_]+)_/g, "<em>$1</em>");
+  text = text.replace(/~~([^~]+)~~/g, "<del>$1</del>");
+
+  const lines = text.split("\n");
+  const htmlResult = [];
+  let inList = null;
+  let inBlockquote = false;
+  let blockquoteBuffer = [];
+
+  const closeList = () => {
+    if (inList) {
+      htmlResult.push(`</${inList}>`);
+      inList = null;
+    }
+  };
+
+  const closeBlockquote = () => {
+    if (inBlockquote) {
+      htmlResult.push(`<blockquote><p>${blockquoteBuffer.join("<br>")}</p></blockquote>`);
+      inBlockquote = false;
+      blockquoteBuffer = [];
+    }
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    const codeMatch = trimmed.match(/^___CODE_BLOCK_(\d+)___$/);
+    if (codeMatch) {
+      closeList();
+      closeBlockquote();
+      htmlResult.push(codeBlocks[Number(codeMatch[1])]);
+      continue;
+    }
+
+    if (!trimmed) {
+      closeList();
+      closeBlockquote();
+      continue;
+    }
+
+    if (trimmed.startsWith("&gt; ")) {
+      closeList();
+      inBlockquote = true;
+      blockquoteBuffer.push(trimmed.slice(5));
+      continue;
+    } else if (inBlockquote) {
+      closeBlockquote();
+    }
+
+    const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
+    if (headingMatch) {
+      closeList();
+      closeBlockquote();
+      const level = headingMatch[1].length;
+      htmlResult.push(`<h${level}>${headingMatch[2]}</h${level}>`);
+      continue;
+    }
+
+    if (/^(---|[*]{3,}|_{3,})$/.test(trimmed)) {
+      closeList();
+      closeBlockquote();
+      htmlResult.push("<hr>");
+      continue;
+    }
+
+    const ulMatch = trimmed.match(/^[-*]\s+(.*)$/);
+    if (ulMatch) {
+      closeBlockquote();
+      if (inList !== "ul") {
+        closeList();
+        inList = "ul";
+        htmlResult.push("<ul>");
+      }
+      htmlResult.push(`<li>${ulMatch[1]}</li>`);
+      continue;
+    }
+
+    const olMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+    if (olMatch) {
+      closeBlockquote();
+      if (inList !== "ol") {
+        closeList();
+        inList = "ol";
+        htmlResult.push("<ol>");
+      }
+      htmlResult.push(`<li>${olMatch[2]}</li>`);
+      continue;
+    }
+
+    closeList();
+    closeBlockquote();
+    htmlResult.push(`<p>${trimmed}</p>`);
+  }
+
+  closeList();
+  closeBlockquote();
+
+  let finalHtml = htmlResult.join("");
+  finalHtml = finalHtml.replace(/___INLINE_CODE_(\d+)___/g, (match, idx) => inlineCodes[Number(idx)]);
+
+  return finalHtml;
+}
+
 function messageCard(message) {
   const article = document.createElement("article");
   article.className = `conversation-message ${message.role}`;
   const label = document.createElement("strong");
   label.textContent = message.role === "assistant" ? "Acompañante" : "Vos";
-  const content = document.createElement("p");
-  content.textContent = String(message.content || "").replace(/\[B(\d+)\]/g, (match, number) => {
-    const source = message.library_sources?.[Number(number) - 1];
-    return source ? `[${source.label}: ${source.work_title}]` : "[Fuente de la biblioteca]";
-  });
+  const content = document.createElement("div");
+  content.className = "conversation-message-content";
+  content.innerHTML = renderMarkdown(message.content || "", message.library_sources);
   article.append(label, content);
   if (message.role === "user" && message.companion_action_label_snapshot) {
     const action = document.createElement("small");
@@ -320,8 +485,8 @@ function pendingMessageCard(profileName) {
   article.setAttribute("role", "status");
   const label = document.createElement("strong");
   label.textContent = profileName || "Acompañante";
-  const content = document.createElement("p");
-  content.className = "thinking-status";
+  const content = document.createElement("div");
+  content.className = "conversation-message-content thinking-status";
   content.append(document.createTextNode("Está pensando"));
   const dots = document.createElement("span");
   dots.className = "thinking-dots";
@@ -346,14 +511,14 @@ function cancelResponseAnimation({finish = false} = {}) {
 function revealAssistantResponse(pendingCard, answer, librarySources = []) {
   cancelResponseAnimation({finish: true});
   const card = messageCard({role: "assistant", content: answer, library_sources: librarySources});
-  const content = card.querySelector("p");
-  const text = content.textContent;
+  const content = card.querySelector(".conversation-message-content");
+  const text = answer;
   const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   pendingCard.replaceWith(card);
   scrollConversationToBottom();
   if (reducedMotion || !text) return Promise.resolve();
 
-  content.textContent = "";
+  content.innerHTML = "";
   content.setAttribute("aria-live", "off");
   card.setAttribute("aria-busy", "true");
   let resolveAnimation;
@@ -363,7 +528,7 @@ function revealAssistantResponse(pendingCard, answer, librarySources = []) {
   state.finish = () => {
     clearTimeout(state.timer);
     state.cancelled = true;
-    content.textContent = text;
+    content.innerHTML = renderMarkdown(text, librarySources);
     card.removeAttribute("aria-busy");
     content.removeAttribute("aria-live");
     if (responseAnimation === state) responseAnimation = null;
@@ -376,7 +541,7 @@ function revealAssistantResponse(pendingCard, answer, librarySources = []) {
       const remaining = text.length - position;
       const chunk = remaining > 240 ? 5 : remaining > 100 ? 3 : 2;
       position = Math.min(text.length, position + chunk);
-      content.textContent = text.slice(0, position);
+      content.innerHTML = renderMarkdown(text.slice(0, position), librarySources);
       scrollConversationToBottom();
       if (position >= text.length) {
         card.removeAttribute("aria-busy");
@@ -407,7 +572,10 @@ function appendTransientExchange(content) {
 function showResponseError(card, message) {
   card.classList.remove("conversation-message-pending");
   card.classList.add("conversation-message-error");
-  card.querySelector("p").textContent = `No pude responder: ${message}`;
+  const content = card.querySelector(".conversation-message-content") || card.querySelector("p");
+  if (content) {
+    content.textContent = `No pude responder: ${message}`;
+  }
 }
 
 function selectedContextCount() {

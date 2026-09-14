@@ -297,7 +297,29 @@ select { padding: .6rem 2rem .6rem .7rem; }
 .conversation-message.user { justify-self: end; border-right: 3px solid var(--terracotta); }
 .conversation-message.assistant { justify-self: start; border-left: 3px solid var(--green); }
 .conversation-message strong { font-size: .68rem; text-transform: uppercase; }
-.conversation-message p { margin: .35rem 0 0; line-height: 1.55; white-space: pre-wrap; }
+.conversation-message p { margin: .35rem 0 0; line-height: 1.55; }
+.conversation-message-content { margin-top: .4rem; line-height: 1.6; }
+.conversation-message-content p { margin: .4rem 0; line-height: 1.6; }
+.conversation-message-content h1, .conversation-message-content h2, .conversation-message-content h3, .conversation-message-content h4 { font-family: var(--serif); font-weight: 600; margin: .8rem 0 .3rem; color: var(--ink); }
+.conversation-message-content h1 { font-size: 1.3rem; }
+.conversation-message-content h2 { font-size: 1.15rem; }
+.conversation-message-content h3 { font-size: 1.05rem; }
+.conversation-message-content h4 { font-size: .95rem; }
+.conversation-message-content ul, .conversation-message-content ol { margin: .4rem 0 .6rem 1.3rem; padding: 0; }
+.conversation-message-content li { margin-bottom: .2rem; }
+.conversation-message-content blockquote { margin: .6rem 0; padding: .4rem .8rem; border-left: 3px solid var(--terracotta); background: color-mix(in srgb, var(--paper) 60%, transparent); color: var(--muted); font-style: italic; }
+.conversation-message-content blockquote p { margin: 0; }
+.conversation-message-content hr { border: 0; border-top: 1px solid var(--line); margin: .8rem 0; }
+.conversation-message-content a { color: var(--terracotta); text-decoration: underline; }
+.conversation-message-content code.inline-code { padding: .15rem .35rem; border-radius: .25rem; background: color-mix(in srgb, var(--ink) 8%, var(--surface)); border: 1px solid var(--line); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: .85em; color: var(--terracotta); }
+.conversation-message-content pre.code-block { margin: .7rem 0; padding: .85rem 1rem; border-radius: .4rem; background: #1e1e1e; color: #d4d4d4; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: .82rem; line-height: 1.5; overflow-x: auto; border: 1px solid #333; }
+.conversation-message-content pre.code-block code { font-family: inherit; background: transparent; padding: 0; border: 0; }
+.token-keyword { color: #569cd6; font-weight: 600; }
+.token-string { color: #ce9178; }
+.token-comment { color: #6a9955; font-style: italic; }
+.token-number { color: #b5cea8; }
+.token-function { color: #dcdcaa; }
+.token-variable { color: #9cdcfe; }
 .conversation-message-pending { color: var(--muted); }
 .conversation-message-error { border-left-color: var(--terracotta) !important; color: var(--terracotta); }
 .thinking-status { display: flex; gap: .45rem; align-items: center; }
