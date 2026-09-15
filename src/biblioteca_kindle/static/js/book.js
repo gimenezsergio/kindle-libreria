@@ -947,14 +947,20 @@ function renderContextReview(preview) {
     `Responderá: ${preview.profile.name}. ${provider} ${action} ${contextReviewScope(preview)} ${material} ${sources} La aplicación no contiene el texto completo.`;
   const details = document.querySelector("#prompt-preview-details");
   details.hidden = false;
+  details.open = true;
   document.querySelector("#prompt-preview-content").textContent =
     `INSTRUCCIONES DEL PERFIL\n${preview.packet.instructions}\n\nMENSAJES Y CONTEXTO\n${JSON.stringify(preview.packet.input, null, 2)}`;
+  details.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 async function reviewContext() {
   if (!activeConversationId) return;
-  const content = document.querySelector("#conversation-message").value.trim();
-  if (!content) throw new Error("Escribí o prepará un mensaje antes de revisar el contexto.");
+  const textarea = document.querySelector("#conversation-message");
+  const content = textarea.value.trim();
+  if (!content) {
+    textarea.focus();
+    throw new Error("Escribí o prepará un mensaje antes de revisar el contexto.");
+  }
   const preview = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/prompt-preview`, {
     method: "POST", headers: {"Content-Type": "application/json"},
     body: JSON.stringify(contextReviewPayload()),
