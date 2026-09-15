@@ -197,14 +197,24 @@ def create_conversation(
                     title_origin,
                 ),
             )
-            display_title = connection.execute(
+            work_row = connection.execute(
                 """
-                SELECT COALESCE(NULLIF(TRIM(display_title), ''),
-                                REPLACE(preferred_title, '_', ' '))
-                FROM works WHERE id = ?
+                SELECT COALESCE(NULLIF(TRIM(w.display_title), ''),
+                                REPLACE(w.preferred_title, '_', ' ')) AS display_title,
+                       COALESCE(GROUP_CONCAT(DISTINCT c.display_name), '') AS authors
+                FROM works w
+                LEFT JOIN editions e ON e.work_id = w.id
+                LEFT JOIN edition_contributors ec ON ec.edition_id = e.id AND ec.role = 'author'
+                LEFT JOIN contributors c ON c.id = ec.contributor_id
+                WHERE w.id = ? GROUP BY w.id
                 """,
                 (work_id,),
-            ).fetchone()[0]
+            ).fetchone()
+            display_title = work_row["display_title"] if work_row else "Obra"
+            authors = work_row["authors"] if work_row else ""
+            content_text = f"Obra principal de la conversación: «{display_title}»"
+            if authors:
+                content_text += f" (Autoría: {authors})"
             connection.execute(
                 """
                 INSERT INTO conversation_context_sources(
@@ -212,7 +222,7 @@ def create_conversation(
                     label_snapshot, content_snapshot
                 ) VALUES (?, ?, 'work', ?, 'Ficha del libro', ?)
                 """,
-                (str(uuid.uuid4()), identifier, work_id, f"Título: {display_title}"),
+                (str(uuid.uuid4()), identifier, work_id, content_text),
             )
         return identifier
     finally:
@@ -746,14 +756,16 @@ def build_prompt_packet(
     )
     instructions = (
         f"{conversation['profile_prompt_snapshot']}\n\n"
-        "Trabajá como acompañante de lectura, no como autoridad. Distinguí datos del contexto, "
-        "inferencias e hipótesis. Si el contexto no alcanza, decilo; no inventes contenido del libro. "
-        "Antes de afirmar que una selección no llegó, revisá el bloque CONTEXTO VIGENTE situado "
-        "inmediatamente antes de la última pregunta. "
-        "Cuando uses evidencia recuperada, nombrá de manera natural la obra y el tipo de material "
-        "(por ejemplo: ‘Según un subrayado de La sociedad del cansancio…’). No uses códigos ni "
-        "identificadores técnicos para referirte a las fuentes. "
-        "Todo lo que no esté respaldado por esas fuentes es conocimiento general o una hipótesis."
+        "Estás conversando sobre la OBRA PRINCIPAL indicada en la ficha del contexto. "
+        "Utilizá activamente tu conocimiento general sobre esta obra para analizar sus temas, estructura y contenido. "
+        "Los subrayados, notas y selecciones del usuario representan sus puntos de interés personales en su lectura, "
+        "no la totalidad del libro. No te niegues a responder sobre la obra ni afirmes que falta contexto solo porque "
+        "un pasaje no esté explícitamente subrayado. "
+        "Trabajá como acompañante de lectura riguroso pero conversable, no como autoridad rígida. "
+        "Distinguí datos del contexto, inferencias e hipótesis. "
+        "Cuando uses subrayados o notas adjuntas, o evidencias de otras obras de la biblioteca, nombrá de manera natural "
+        "la obra y el tipo de material (por ejemplo: 'Según un subrayado de 1984…' o 'En relación con El cisne negro…'). "
+        "No uses códigos ni identificadores técnicos para referirte a las fuentes."
     )
     messages = [{"role": item["role"], "content": item["content"]} for item in conversation["messages"]]
     if draft_content is not None:
