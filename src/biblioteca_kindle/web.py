@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import json
 import re
 import hmac
 import os
 import sqlite3
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request
 
 from .db import connect_database, migrate_database
 from .personal import (
@@ -33,7 +34,7 @@ from .conversations import (
     pin_library_sources,
     resolve_turn_context_sources,
 )
-from .ai import AIError, DraftProvider, load_environment_file, provider_from_environment
+from .ai import AIError, DraftProvider, PRESET_PROVIDERS, load_environment_file, provider_from_environment, save_environment_config
 from .companion_actions import get_companion_action, list_companion_actions
 from .library_search import LibrarySearchError
 from .retrieval import requested_library_sources as retrieve_library_sources
@@ -542,13 +543,161 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
     def book(work_id: str) -> str:
         return render_template("book.html", work_id=work_id)
 
+    @app.get("/settings")
     @app.get("/settings/ai-profiles")
-    def ai_profiles_settings() -> str:
-        return render_template("profiles.html")
-
     @app.get("/settings/covers")
-    def cover_settings() -> str:
-        return render_template("cover_setup.html")
+    def settings_page():
+        return render_template("settings.html")
+
+    def _load_custom_providers():
+        config_file = database_path.parent / "ai_providers.json"
+        if not config_file.is_file():
+            return {}
+        try:
+            return json.loads(config_file.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+
+    def _save_custom_providers(data: dict):
+        config_file = database_path.parent / "ai_providers.json"
+        config_file.parent.mkdir(parents=True, exist_ok=True)
+        config_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    @app.get("/api/ai-config")
+    @app.get("/api/ai-providers")
+    def get_ai_config():
+        custom = _load_custom_providers()
+        all_providers = dict(PRESET_PROVIDERS)
+        all_providers.update(custom)
+
+        active_id = os.getenv("BIBLIOTECA_AI_PROVIDER", "draft").strip().lower()
+
+        items = []
+        for provider_id, pdata in all_providers.items():
+            env_key_name = f"{provider_id.upper()}_API_KEY"
+            key = ""
+            if provider_id == active_id:
+                key = os.getenv("BIBLIOTECA_AI_API_KEY", "")
+            if not key:
+                key = os.getenv(env_key_name, "")
+            if not key and provider_id == "openai":
+                key = os.getenv("OPENAI_API_KEY", "")
+            if not key and provider_id == "deepseek":
+                key = os.getenv("DEEPSEEK_API_KEY", "")
+            if not key and provider_id == "gemini":
+                key = os.getenv("GEMINI_API_KEY", "")
+            if not key and provider_id == "openrouter":
+                key = os.getenv("OPENROUTER_API_KEY", "")
+
+            has_key = bool(key) or provider_id == "draft"
+            masked_key = f"{key[:4]}...{key[-4:]}" if len(key) >= 10 else ("****" if key else "")
+
+            base_url = pdata.get("base_url", "")
+            model = pdata.get("model", "")
+            protocol = pdata.get("protocol", "chat_completions")
+
+            if provider_id == active_id:
+                base_url = os.getenv("BIBLIOTECA_AI_BASE_URL", base_url)
+                model = os.getenv("BIBLIOTECA_AI_MODEL", model)
+                protocol = os.getenv("BIBLIOTECA_AI_PROTOCOL", protocol)
+
+            items.append({
+                "id": provider_id,
+                "name": pdata.get("name", provider_id),
+                "base_url": base_url,
+                "model": model,
+                "protocol": protocol,
+                "is_preset": provider_id in PRESET_PROVIDERS,
+                "is_active": provider_id == active_id,
+                "has_api_key": has_key,
+                "masked_api_key": masked_key,
+            })
+
+        # Backwards compatible format + new providers list
+        active_pdata = all_providers.get(active_id, PRESET_PROVIDERS["draft"])
+        active_key = os.getenv("BIBLIOTECA_AI_API_KEY", "")
+        masked_active = f"{active_key[:4]}...{active_key[-4:]}" if len(active_key) >= 10 else ("****" if active_key else "")
+
+        return jsonify(
+            provider=active_id,
+            active_provider_id=active_id,
+            model=os.getenv("BIBLIOTECA_AI_MODEL", active_pdata.get("model", "")),
+            base_url=os.getenv("BIBLIOTECA_AI_BASE_URL", active_pdata.get("base_url", "")),
+            has_api_key=bool(active_key) or active_id == "draft",
+            masked_api_key=masked_active,
+            providers=items,
+        )
+
+    @app.post("/api/ai-config")
+    @app.post("/api/ai-providers")
+    def set_ai_config():
+        data = request.get_json(silent=True) or {}
+        provider_id = str(data.get("id") or data.get("provider", "draft")).strip().lower()
+        if not provider_id:
+            return jsonify(error="El identificador de proveedor no puede estar vacío."), 400
+
+        custom = _load_custom_providers()
+        all_providers = dict(PRESET_PROVIDERS)
+        all_providers.update(custom)
+
+        existing = all_providers.get(provider_id, {})
+
+        name = str(data.get("name", existing.get("name", provider_id.title()))).strip()
+        base_url = str(data.get("base_url", existing.get("base_url", ""))).strip()
+        model = str(data.get("model", existing.get("model", ""))).strip()
+        protocol = str(data.get("protocol", existing.get("protocol", "chat_completions"))).strip()
+        api_key = str(data.get("api_key", "")).strip()
+
+        if provider_id not in PRESET_PROVIDERS:
+            custom[provider_id] = {
+                "id": provider_id,
+                "name": name,
+                "base_url": base_url,
+                "model": model,
+                "protocol": protocol,
+            }
+            _save_custom_providers(custom)
+
+        updates = {
+            "BIBLIOTECA_AI_PROVIDER": provider_id,
+            "BIBLIOTECA_AI_BASE_URL": base_url,
+            "BIBLIOTECA_AI_MODEL": model,
+            "BIBLIOTECA_AI_PROTOCOL": protocol,
+        }
+
+        if api_key:
+            updates["BIBLIOTECA_AI_API_KEY"] = api_key
+            updates[f"{provider_id.upper()}_API_KEY"] = api_key
+
+        env_path = database_path.parent / ".env"
+        save_environment_config(env_path, updates)
+
+        try:
+            active_provider = provider_from_environment()
+            app.config["AI_PROVIDER"] = active_provider
+        except AIError as err:
+            return jsonify(error=f"Configuración guardada en .env, pero el proveedor falló al inicializar: {err}"), 400
+
+        return jsonify(
+            message="Configuración de IA actualizada correctamente",
+            provider=active_provider.name,
+            ready=active_provider.ready,
+        )
+
+    @app.delete("/api/ai-providers/<provider_id>")
+    def delete_ai_provider(provider_id: str):
+        provider_id = provider_id.strip().lower()
+        if provider_id in PRESET_PROVIDERS:
+            return jsonify(error="No se pueden eliminar los proveedores predefinidos del sistema."), 400
+
+        custom = _load_custom_providers()
+        if provider_id in custom:
+            del custom[provider_id]
+            _save_custom_providers(custom)
+
+        return jsonify(message="Proveedor eliminado correctamente.")
+
+
 
     @app.get("/api/cover-setup")
     def cover_setup():

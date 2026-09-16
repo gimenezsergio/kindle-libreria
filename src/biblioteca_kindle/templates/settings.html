@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Ajustes de la biblioteca personal, proveedor de IA, perfiles y portadas">
+    <title>Ajustes · Biblioteca personal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <script src="{{ url_for('static', filename='js/profiles.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/cover_setup.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/settings.js') }}" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Inicio de Biblioteca personal">
+        <span class="brand-mark" aria-hidden="true">B</span>
+        <span>
+          <strong>Biblioteca Kindle</strong>
+          <small>Cuaderno y archivo personal</small>
+        </span>
+      </a>
+      <nav aria-label="Navegación principal">
+        <a class="nav-link" href="/">Resumen</a>
+        <a class="nav-link" href="/library">Biblioteca</a>
+        <a class="nav-link is-active" href="/settings">Ajustes</a>
+      </nav>
+      <span class="local-badge">Local y privada</span>
+    </header>
+
+    <main class="settings-page">
+      <a class="back-link" href="/library">← Volver a la biblioteca</a>
+      
+      <header class="settings-heading">
+        <div>
+          <p class="eyebrow">Configuración del sistema</p>
+          <h1>Ajustes generales</h1>
+          <p>Gestioná tu proveedor de Inteligencia Artificial, las API Keys, los perfiles de lectura y la curaduría de portadas.</p>
+        </div>
+      </header>
+
+      <nav class="settings-tabs" role="tablist" aria-label="Pestañas de ajustes">
+        <button type="button" class="tab-btn is-active" data-tab="provider" id="tab-provider" role="tab" aria-selected="true" aria-controls="panel-provider">
+          🤖 Proveedor y API Keys
+        </button>
+        <button type="button" class="tab-btn" data-tab="profiles" id="tab-profiles" role="tab" aria-selected="false" aria-controls="panel-profiles">
+          🎭 Perfiles IA
+        </button>
+        <button type="button" class="tab-btn" data-tab="covers" id="tab-covers" role="tab" aria-selected="false" aria-controls="panel-covers">
+          🎨 Curaduría de Portadas
+        </button>
+      </nav>
+
+      <!-- Panel 1: Proveedor y API Keys -->
+      <section class="tab-panel" id="panel-provider" role="tabpanel" aria-labelledby="tab-provider">
+        <div class="ai-config-card">
+          <header class="ai-config-header">
+            <div>
+              <p class="eyebrow">Motor de Inteligencia Artificial</p>
+              <h2>Proveedor y Credenciales</h2>
+              <p class="section-desc">Seleccioná qué proveedor utilizar para interactuar con tus libros y notas. Las credenciales se almacenan localmente en <code>work/.env</code> de forma privada.</p>
+            </div>
+            <div id="ai-status-badge" class="status-badge badge-draft">Draft (Borrador)</div>
+          </header>
+
+          <form id="ai-config-form" class="ai-config-form">
+            <div class="provider-select-bar">
+              <label for="provider-select" class="select-label">Proveedor de IA activo</label>
+              <div class="select-with-button">
+                <select id="provider-select" class="provider-dropdown">
+                  <option value="draft">Draft (Borrador / Desconectado)</option>
+                  <option value="openrouter">OpenRouter.ai</option>
+                  <option value="gemini">Google Gemini</option>
+                  <option value="openai">OpenAI</option>
+                  <option value="deepseek">DeepSeek</option>
+                  <option value="openclaw">OpenClaw (Local)</option>
+                  <option value="new">+ Agregar nuevo proveedor...</option>
+                </select>
+                <button type="button" id="btn-delete-provider" class="secondary-button danger-button" title="Eliminar este proveedor personalizado" hidden>Eliminar</button>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-field" id="field-provider-name" hidden>
+                <label for="ai-provider-name">Nombre del servicio</label>
+                <input id="ai-provider-name" type="text" placeholder="ej. Groq u Ollama" />
+                <small class="field-hint">Etiqueta para identificar tu proveedor.</small>
+              </div>
+
+              <div class="form-field full-width" id="field-api-key">
+                <label for="ai-api-key">API Key / Clave de Acceso</label>
+                <div class="input-with-button">
+                  <input id="ai-api-key" type="password" autocomplete="off" placeholder="sk-..." />
+                  <button type="button" id="toggle-api-key" class="secondary-button icon-button" title="Mostrar/ocultar clave">👁️</button>
+                </div>
+                <small class="field-hint" id="api-key-hint">Dejá en blanco para conservar la clave actual.</small>
+              </div>
+
+              <div class="form-field">
+                <label for="ai-model">Modelo de IA</label>
+                <input id="ai-model" type="text" placeholder="ej. google/gemini-2.5-flash" />
+                <small class="field-hint">Nombre del modelo (ej. google/gemini-2.5-flash, gpt-5-mini, etc.).</small>
+              </div>
+
+              <div class="form-field">
+                <label for="ai-base-url">Base URL (Endpoint)</label>
+                <input id="ai-base-url" type="text" placeholder="https://openrouter.ai/api/v1" />
+                <small class="field-hint">URL base (soporta OpenRouter, Gemini API, OpenAI, Ollama, etc.).</small>
+              </div>
+
+              <div class="form-field">
+                <label for="ai-protocol">Protocolo API</label>
+                <select id="ai-protocol">
+                  <option value="chat_completions">OpenAI Chat Completions (/chat/completions)</option>
+                  <option value="responses">OpenClaw / Relay (/responses)</option>
+                </select>
+                <small class="field-hint">Usá Chat Completions para la mayoría de las API de IA.</small>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="primary-button" id="save-ai-config">Guardar y Activar Proveedor</button>
+            </div>
+            <p class="form-feedback" id="ai-config-feedback" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+
+      <!-- Panel 2: Perfiles de IA -->
+      <section class="tab-panel" id="panel-profiles" role="tabpanel" aria-labelledby="tab-profiles" hidden>
+        <header class="section-subheading">
+          <div>
+            <p class="eyebrow">Acompañante de lectura</p>
+            <h2>Perfiles de conversación</h2>
+            <p>Definí distintas perspectivas para conversar sobre tus lecturas. El prompt original se conserva completo.</p>
+          </div>
+          <button id="new-profile" type="button" class="primary-button">Crear nuevo perfil</button>
+        </header>
+        <div class="profile-layout" aria-label="Administración de perfiles">
+          <div class="profile-list" id="profile-list"></div>
+          <form class="profile-form" id="profile-form" hidden>
+            <input id="profile-id" type="hidden">
+            <div class="form-heading">
+              <div><p class="eyebrow">Perfil</p><h3 id="profile-form-title">Nuevo perfil</h3></div>
+              <button class="text-button" id="close-profile" type="button">Cerrar</button>
+            </div>
+            <label>Nombre<input id="profile-name" type="text" required placeholder="Ej. Jenna"></label>
+            <label>Descripción breve<input id="profile-description" type="text" placeholder="Qué perspectiva aporta"></label>
+            <label>Prompt original<textarea id="profile-prompt" rows="14" required placeholder="Pegá acá el prompt completo, sin necesidad de reorganizarlo"></textarea></label>
+            <label class="check-field"><input id="profile-default" type="checkbox"><span>Usar como perfil predeterminado</span></label>
+            <div class="profile-actions">
+              <button type="submit">Guardar perfil</button>
+              <button class="secondary-button" id="archive-profile" type="button" hidden>Archivar</button>
+            </div>
+            <p class="form-feedback" id="profile-feedback" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+
+      <!-- Panel 3: Curaduría de Portadas -->
+      <section class="tab-panel" id="panel-covers" role="tabpanel" aria-labelledby="tab-covers" hidden>
+        <header class="section-subheading">
+          <p class="eyebrow">Taller de encuadernación digital</p>
+          <h2>Curaduría de portadas</h2>
+          <p>Confirmá la imagen que querés conservar para cada obra. Las elecciones permanecen fuera del Kindle.</p>
+        </header>
+        <section id="cover-review" aria-live="polite"></section>
+      </section>
+    </main>
+
+    <footer>
+      <span>Biblioteca Kindle</span>
+      <span>Local · privada · independiente</span>
+    </footer>
+
+    <nav class="mobile-nav" aria-label="Navegación móvil">
+      <a href="/">Resumen</a>
+      <a href="/library">Biblioteca</a>
+      <a class="is-active" href="/settings">Ajustes</a>
+    </nav>
+  </body>
+</html>

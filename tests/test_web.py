@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -622,6 +623,78 @@ class WebTests(unittest.TestCase):
     def test_server_rejects_external_network_binding(self) -> None:
         with self.assertRaisesRegex(ValueError, "127.0.0.1"):
             run_server("unused.sqlite3", host="0.0.0.0")
+
+    def test_ai_config_api_get_and_post(self) -> None:
+        original_env = dict(os.environ)
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                database = Path(directory) / "library.sqlite3"
+                migrate_database(database)
+                client = create_app(database).test_client()
+
+                page = client.get("/settings")
+                profiles_page = client.get("/settings/ai-profiles")
+                covers_page = client.get("/settings/covers")
+
+                self.assertEqual(page.status_code, 200)
+                self.assertIn("Ajustes generales", page.get_data(as_text=True))
+                self.assertEqual(profiles_page.status_code, 200)
+                self.assertEqual(covers_page.status_code, 200)
+
+                providers_get = client.get("/api/ai-providers")
+                self.assertEqual(providers_get.status_code, 200)
+                items = providers_get.get_json()["providers"]
+                provider_ids = [p["id"] for p in items]
+                self.assertIn("openrouter", provider_ids)
+                self.assertIn("gemini", provider_ids)
+
+                post_resp = client.post(
+                    "/api/ai-providers",
+                    json={
+                        "id": "openrouter",
+                        "name": "OpenRouter.ai",
+                        "api_key": "sk-or-v1-1234567890test",
+                        "model": "google/gemini-2.5-flash",
+                        "base_url": "https://openrouter.ai/api/v1",
+                        "protocol": "chat_completions",
+                    },
+                )
+                self.assertEqual(post_resp.status_code, 200)
+                self.assertEqual(post_resp.get_json()["provider"], "openrouter")
+
+                updated_get = client.get("/api/ai-config")
+                self.assertEqual(updated_get.get_json()["active_provider_id"], "openrouter")
+                self.assertEqual(updated_get.get_json()["model"], "google/gemini-2.5-flash")
+                self.assertTrue(updated_get.get_json()["has_api_key"])
+                self.assertEqual(updated_get.get_json()["masked_api_key"], "sk-o...test")
+
+                # Test custom provider creation
+                custom_post = client.post(
+                    "/api/ai-providers",
+                    json={
+                        "id": "groq",
+                        "name": "Groq Cloud",
+                        "api_key": "gsk_1234567890testkey",
+                        "model": "llama-3.3-70b-versatile",
+                        "base_url": "https://api.groq.com/openai/v1",
+                        "protocol": "chat_completions",
+                    },
+                )
+                self.assertEqual(custom_post.status_code, 200)
+                all_provs = client.get("/api/ai-providers").get_json()["providers"]
+                self.assertIn("groq", [p["id"] for p in all_provs])
+
+                # Delete custom provider
+                del_resp = client.delete("/api/ai-providers/groq")
+                self.assertEqual(del_resp.status_code, 200)
+                after_del = client.get("/api/ai-providers").get_json()["providers"]
+                self.assertNotIn("groq", [p["id"] for p in after_del])
+        finally:
+            os.environ.clear()
+            os.environ.update(original_env)
+
+
+
 
 
 if __name__ == "__main__":
