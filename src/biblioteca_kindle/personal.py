@@ -89,6 +89,53 @@ def create_collection(
     finally:
         connection.close()
 
+
+def update_collection(
+    database: Path | str,
+    collection_id: str,
+    name: str,
+    *,
+    description: str | None = None,
+) -> None:
+    name = " ".join(name.split())
+    if not name:
+        raise PersonalDataError("La colección necesita un nombre")
+    connection = _open_database(database)
+    try:
+        _require_row(connection, "collections", collection_id, "la colección")
+        with connection:
+            connection.execute(
+                """
+                UPDATE collections
+                SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (name, description, collection_id),
+            )
+    finally:
+        connection.close()
+
+
+def delete_collection(
+    database: Path | str,
+    collection_id: str,
+) -> None:
+    connection = _open_database(database)
+    try:
+        _require_row(connection, "collections", collection_id, "la colección")
+        with connection:
+            connection.execute(
+                "DELETE FROM work_collections WHERE collection_id = ?",
+                (collection_id,),
+            )
+            connection.execute(
+                "DELETE FROM collections WHERE id = ?",
+                (collection_id,),
+            )
+    finally:
+        connection.close()
+
+
 def assign_work_to_collection(
     database: Path | str,
     work_id: str,
@@ -124,6 +171,31 @@ def assign_work_to_collection(
         return existing is None
     finally:
         connection.close()
+
+
+def bulk_assign_works_to_collection(
+    database: Path | str,
+    collection_id: str,
+    work_ids: list[str],
+) -> None:
+    connection = _open_database(database)
+    try:
+        _require_row(connection, "collections", collection_id, "la colección")
+        for wid in work_ids:
+            _require_row(connection, "works", wid, "la obra")
+        with connection:
+            connection.execute(
+                "DELETE FROM work_collections WHERE collection_id = ?",
+                (collection_id,),
+            )
+            for wid in work_ids:
+                connection.execute(
+                    "INSERT INTO work_collections(work_id, collection_id, display_order) VALUES (?, ?, 0)",
+                    (wid, collection_id),
+                )
+    finally:
+        connection.close()
+
 
 
 def add_work_note(database: Path | str, work_id: str, body: str) -> str:

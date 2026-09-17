@@ -21,6 +21,20 @@
           <div><p class="eyebrow">Registro maestro · Anaquel digital</p><h1 id="catalog-title">Catálogo de lecturas</h1></div>
         </div>
 
+        <div class="collection-section">
+          <div class="collection-chips-bar">
+            <div class="collection-chips" id="collection-chips"></div>
+          </div>
+          <div class="collection-toolbar" id="collection-toolbar" hidden>
+            <span class="collection-selected-label">Categoría activa: <strong id="selected-collection-name"></strong></span>
+            <div class="collection-actions">
+              <button type="button" id="organize-collection-btn" class="btn-subtle btn-accent">➕ Organizar libros</button>
+              <button type="button" id="edit-collection-btn" class="btn-subtle">✏️ Renombrar</button>
+              <button type="button" id="delete-collection-btn" class="btn-subtle btn-danger">🗑️ Eliminar</button>
+            </div>
+          </div>
+        </div>
+
         <form class="catalog-controls" id="catalog-form" role="search">
           <label class="search-field"><span class="sr-only">Buscar por título o autor</span><input id="query" type="search" placeholder="Buscar por título o autor…" autocomplete="off"><span aria-hidden="true">⌕</span></label>
           <label>Presencia<select id="presence"><option value="all">Todos</option><option value="present">En el Kindle</option><option value="absent">Ausentes</option></select></label>
@@ -32,6 +46,46 @@
         <div class="book-list" id="book-list"></div>
         <div class="empty-state" id="empty-state" hidden><strong>No encontramos obras</strong><span>Probá quitando algún filtro o usando otra búsqueda.</span></div>
         <nav class="pagination" aria-label="Páginas de resultados"><button id="previous" type="button">← Anterior</button><span id="pagination-status"></span><button id="next" type="button">Siguiente →</button></nav>
+
+        <dialog id="collection-modal" class="modal-dialog">
+          <form id="collection-form" method="dialog">
+            <h3 id="modal-title">Nueva Colección</h3>
+            <input type="hidden" id="collection-id-input">
+            <label class="modal-field"><span>Nombre</span>
+              <input type="text" id="collection-name-input" required autocomplete="off" placeholder="Ej. Filosofía, 1leyendo...">
+            </label>
+            <label class="modal-field"><span>Descripción (opcional)</span>
+              <textarea id="collection-desc-input" rows="3" placeholder="Notas sobre esta colección..."></textarea>
+            </label>
+            <div class="modal-actions">
+              <button type="button" id="cancel-collection-btn" class="btn-subtle">Cancelar</button>
+              <button type="submit" class="btn-primary">Guardar</button>
+            </div>
+          </form>
+        </dialog>
+
+        <dialog id="collection-picker-dialog" class="modal-dialog picker-dialog">
+          <div class="modal-content">
+            <header class="dialog-heading">
+              <div>
+                <p class="eyebrow">Asignación masiva</p>
+                <h3 id="picker-dialog-title">Organizar libros</h3>
+              </div>
+              <button class="dialog-close" id="close-picker-btn" type="button" aria-label="Cerrar">×</button>
+            </header>
+            <div class="picker-search-bar">
+              <input type="search" id="picker-search-input" placeholder="Buscar libro en el catálogo…" autocomplete="off">
+              <span class="picker-count" id="picker-selection-count">0 seleccionados</span>
+            </div>
+            <div class="picker-book-list" id="picker-book-list">
+              <p class="picker-loading">Cargando catálogo de libros…</p>
+            </div>
+            <footer class="modal-actions">
+              <button type="button" id="cancel-picker-btn" class="btn-subtle">Cancelar</button>
+              <button type="button" id="save-picker-btn" class="btn-primary">Guardar cambios</button>
+            </footer>
+          </div>
+        </dialog>
       </section>
     </main>
     <footer><span>Biblioteca Kindle</span><span>Local · privada · independiente</span></footer>

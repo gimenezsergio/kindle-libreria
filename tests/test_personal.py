@@ -10,6 +10,7 @@ from biblioteca_kindle.personal import (
     add_work_note,
     add_work_relation,
     assign_work_to_collection,
+    bulk_assign_works_to_collection,
     create_collection,
     set_work_display_title,
 )
@@ -85,6 +86,25 @@ class PersonalDataTests(unittest.TestCase):
         finally:
             connection.close()
         self.assertEqual((row["note"], row["display_order"]), ("Revisada", 1))
+
+    def test_bulk_assign_works_to_collection_replaces_all_assignments(self) -> None:
+        collection = create_collection(self.database, "Filosofía")
+        assign_work_to_collection(self.database, "work-a", collection.id)
+
+        bulk_assign_works_to_collection(self.database, collection.id, ["work-b"])
+
+        connection = connect_database(self.database)
+        try:
+            work_ids = [
+                row["work_id"]
+                for row in connection.execute(
+                    "SELECT work_id FROM work_collections WHERE collection_id = ?",
+                    (collection.id,),
+                ).fetchall()
+            ]
+        finally:
+            connection.close()
+        self.assertEqual(work_ids, ["work-b"])
 
     def test_personal_notes_are_distinct_and_empty_note_is_rejected(self) -> None:
         first = add_work_note(self.database, "work-a", "  Una interpretación.  ")
