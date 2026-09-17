@@ -1296,6 +1296,172 @@ document.querySelectorAll("[data-book-tab]").forEach((tab) => {
 const requestedPanel = location.hash.replace("#panel-", "");
 const requestedTab = document.querySelector(`[data-book-tab="${requestedPanel}"]`);
 if (requestedTab) requestedTab.click();
+
+async function loadCoverDialogData() {
+  const feedback = document.querySelector("#cover-dialog-feedback");
+  const grid = document.querySelector("#cover-candidates-grid");
+  if (feedback) feedback.textContent = "";
+  if (grid) grid.innerHTML = "<p>Cargando candidatas…</p>";
+
+  try {
+    const data = await jsonRequest(`/api/cover-setup/${encodeURIComponent(window.WORK_ID)}`);
+    renderCoverCandidates(data);
+  } catch (error) {
+    if (grid) grid.innerHTML = "<p class='is-error'>No se pudieron cargar las candidatas de portada.</p>";
+  }
+}
+
+function renderCoverCandidates(data) {
+  const grid = document.querySelector("#cover-candidates-grid");
+  if (!grid) return;
+  if (!data.candidates || data.candidates.length === 0) {
+    grid.innerHTML = "<p class='empty-candidates'>No hay portadas candidatas registradas todavía. Podés buscar en internet.</p>";
+    return;
+  }
+
+  const cards = data.candidates.map((candidate) => {
+    const isSelected = data.status === "confirmed" && data.selected_path === candidate.path;
+    const card = document.createElement("article");
+    card.className = `cover-candidate-card${isSelected ? " is-selected" : ""}`;
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+
+    const img = document.createElement("img");
+    img.src = `/static/covers/${encodeURIComponent(candidate.path)}`;
+    img.alt = `Portada ${candidate.source}`;
+
+    const info = document.createElement("span");
+    info.textContent = `${candidate.source}${isSelected ? " (Actual)" : ""}`;
+
+    card.append(img, info);
+
+    const applyCover = async () => {
+      if (isSelected) return;
+      const feedback = document.querySelector("#cover-dialog-feedback");
+      if (feedback) feedback.textContent = "Guardando portada…";
+      try {
+        await jsonRequest(`/api/cover-setup/${encodeURIComponent(window.WORK_ID)}`, {
+          method: "PATCH",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({selected_path: candidate.path, review_status: "confirmed"}),
+        });
+        if (feedback) feedback.textContent = "Portada actualizada correctamente.";
+        await loadBook();
+        await loadCoverDialogData();
+      } catch (err) {
+        if (feedback) feedback.textContent = err.message || "Error al actualizar la portada.";
+      }
+    };
+
+    card.addEventListener("click", applyCover);
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        applyCover();
+      }
+    });
+
+    return card;
+  });
+
+  grid.replaceChildren(...cards);
+}
+
+async function searchOnlineCoverForBook() {
+  const button = document.querySelector("#search-online-cover");
+  const feedback = document.querySelector("#cover-dialog-feedback");
+  if (button) {
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    button.textContent = "Buscando…";
+  }
+  if (feedback) feedback.textContent = "Buscando portadas en internet, esto puede tomar unos segundos…";
+
+  try {
+    const res = await jsonRequest(`/api/cover-setup/${encodeURIComponent(window.WORK_ID)}/search`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: "{}",
+    });
+    if (feedback) {
+      feedback.textContent = res.added > 0 
+        ? `Se agregaron ${res.added} nuevas candidatas desde internet.`
+        : "No se encontraron nuevas portadas en internet.";
+    }
+    await loadBook();
+    await loadCoverDialogData();
+  } catch (err) {
+    if (feedback) feedback.textContent = err.message || "Error durante la búsqueda online.";
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.removeAttribute("aria-busy");
+      button.textContent = "🔎 Buscar en internet";
+    }
+  }
+}
+
+async function removeCoverForBook() {
+  const feedback = document.querySelector("#cover-dialog-feedback");
+  if (feedback) feedback.textContent = "Quitando portada…";
+  try {
+    await jsonRequest(`/api/cover-setup/${encodeURIComponent(window.WORK_ID)}`, {
+      method: "PATCH",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({selected_path: null, review_status: "none"}),
+    });
+    if (feedback) feedback.textContent = "Se quitó la portada del libro.";
+    await loadBook();
+    await loadCoverDialogData();
+  } catch (err) {
+    if (feedback) feedback.textContent = err.message || "Error al quitar la portada.";
+  }
+}
+
+async function uploadLocalCoverForBook(file) {
+  if (!file) return;
+  const feedback = document.querySelector("#cover-dialog-feedback");
+  if (feedback) feedback.textContent = "Subiendo imagen…";
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const response = await fetch(`/api/cover-setup/${encodeURIComponent(window.WORK_ID)}/upload`, {
+      method: "POST",
+      body: formData,
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "No se pudo subir la imagen");
+
+    if (feedback) feedback.textContent = "Portada subida y seleccionada correctamente.";
+    await loadBook();
+    await loadCoverDialogData();
+  } catch (err) {
+    if (feedback) feedback.textContent = err.message || "Error al subir la imagen.";
+  }
+}
+
+document.querySelector("#open-cover-dialog")?.addEventListener("click", () => {
+  const dialog = document.querySelector("#book-cover-dialog");
+  if (dialog) {
+    dialog.showModal();
+    loadCoverDialogData();
+  }
+});
+document.querySelector("#close-cover-dialog")?.addEventListener("click", () => {
+  document.querySelector("#book-cover-dialog")?.close();
+});
+document.querySelector("#search-online-cover")?.addEventListener("click", searchOnlineCoverForBook);
+document.querySelector("#remove-cover")?.addEventListener("click", removeCoverForBook);
+document.querySelector("#upload-cover-input")?.addEventListener("change", (event) => {
+  const file = event.target.files?.[0];
+  if (file) {
+    uploadLocalCoverForBook(file);
+    event.target.value = "";
+  }
+});
+
 loadBook().catch(showBookLoadError);
 loadAnnotations();
 loadPersonal();

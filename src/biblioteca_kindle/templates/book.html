@@ -16,7 +16,10 @@
     <main><article class="book-page">
       <a class="back-link" href="/library">← Volver a la biblioteca</a>
       <header class="book-header book-header-compact">
-        <div class="book-header-cover" id="book-header-cover"><img id="book-cover-image" alt="" hidden><span id="book-cover-placeholder" aria-hidden="true">—</span></div>
+        <div class="book-header-cover-col">
+          <div class="book-header-cover" id="book-header-cover"><img id="book-cover-image" alt="" hidden><span id="book-cover-placeholder" aria-hidden="true">—</span></div>
+          <button type="button" class="change-cover-btn" id="open-cover-dialog" aria-haspopup="dialog" aria-controls="book-cover-dialog">📷 Portada</button>
+        </div>
         <div class="book-header-identity"><p class="sr-only" id="identity-state">Ficha de lectura</p><h1 id="book-title">Consultando…</h1><p class="book-author" id="book-author"></p>
           <p class="book-summary"><span id="book-presence">—</span><span><strong id="book-annotation-total">—</strong> anotaciones</span><span id="book-language">Idioma no disponible</span><span id="book-activity">Seguimiento no disponible</span></p>
         </div>
@@ -143,6 +146,26 @@
         <div class="empty-state" id="annotation-empty" hidden><strong>No hay anotaciones para estos filtros</strong><span>Probá con otro tipo o fuente.</span></div>
         <nav class="pagination" aria-label="Páginas de anotaciones"><button id="annotation-previous" type="button">← Anterior</button><span id="annotation-page"></span><button id="annotation-next" type="button">Siguiente →</button></nav>
       </section>
+      <dialog class="context-dialog book-cover-dialog" id="book-cover-dialog" aria-labelledby="book-cover-dialog-title">
+        <form method="dialog" class="dialog-heading">
+          <div>
+            <p class="eyebrow">Portada del libro</p>
+            <h2 id="book-cover-dialog-title">Cambiar portada</h2>
+            <p>Elegí una portada candidata o buscá en internet.</p>
+          </div>
+          <button class="dialog-close" value="cancel" aria-label="Cerrar diálogo de portada">×</button>
+        </form>
+        <div class="cover-dialog-body">
+          <div class="cover-candidates-grid" id="cover-candidates-grid"></div>
+          <p class="form-feedback cover-feedback" id="cover-dialog-feedback" role="status" aria-live="polite"></p>
+          <footer class="dialog-actions">
+            <label class="secondary-button upload-cover-label">📁 Subir desde mi PC<input type="file" id="upload-cover-input" accept="image/*" hidden></label>
+            <button class="secondary-button cover-search-button" id="search-online-cover" type="button">🔎 Buscar en internet</button>
+            <button class="secondary-button danger-button" id="remove-cover" type="button">Quitar portada</button>
+            <button class="secondary-button" id="close-cover-dialog" type="button">Cerrar</button>
+          </footer>
+        </div>
+      </dialog>
     </article></main>
     <footer><span>Biblioteca Kindle</span><span>Local · privada · independiente</span></footer>
     <nav class="mobile-nav" aria-label="Navegación móvil"><a href="/">Resumen</a><a href="/library">Biblioteca</a><a class="is-active" href="#panel-memory">Lectura</a><a href="/settings">Ajustes</a></nav>
