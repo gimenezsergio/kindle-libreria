@@ -28,10 +28,13 @@ def _text(value: object, label: str, *, required: bool = False) -> str:
 
 
 def create_profile(database: Path | str, *, name: object, description: object = "",
-                   prompt: object, is_default: bool = False) -> str:
+                   prompt: object, is_default: bool = False,
+                   provider_id: str | None = None, model_override: str | None = None) -> str:
     profile_name = _text(name, "El nombre", required=True)
     profile_description = _text(description, "La descripción")
     profile_prompt = _text(prompt, "El prompt", required=True)
+    pid = _text(provider_id, "El proveedor") if provider_id else None
+    moverride = _text(model_override, "El modelo") if model_override else None
     identifier = str(uuid.uuid4())
     connection = _open_database(database)
     try:
@@ -39,8 +42,9 @@ def create_profile(database: Path | str, *, name: object, description: object = 
             if is_default:
                 connection.execute("UPDATE ai_profiles SET is_default = 0")
             connection.execute(
-                "INSERT INTO ai_profiles(id, name, description, prompt, is_default) VALUES (?, ?, ?, ?, ?)",
-                (identifier, profile_name, profile_description, profile_prompt, int(is_default)),
+                """INSERT INTO ai_profiles(id, name, description, prompt, is_default, provider_id, model_override)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (identifier, profile_name, profile_description, profile_prompt, int(is_default), pid, moverride),
             )
         return identifier
     except sqlite3.IntegrityError as error:
@@ -60,6 +64,13 @@ def update_profile(database: Path | str, profile_id: str, payload: dict) -> None
         prompt = _text(payload.get("prompt", current["prompt"]), "El prompt", required=True)
         is_archived = bool(payload.get("is_archived", current["is_archived"]))
         is_default = bool(payload.get("is_default", current["is_default"]))
+        
+        provider_id_val = payload.get("provider_id", current["provider_id"] if "provider_id" in current.keys() else None)
+        model_override_val = payload.get("model_override", current["model_override"] if "model_override" in current.keys() else None)
+        
+        pid = _text(provider_id_val, "El proveedor") if provider_id_val else None
+        moverride = _text(model_override_val, "El modelo") if model_override_val else None
+
         if is_archived and is_default:
             raise ProfileError("Un perfil archivado no puede ser el predeterminado")
         with connection:
@@ -67,8 +78,9 @@ def update_profile(database: Path | str, profile_id: str, payload: dict) -> None
                 connection.execute("UPDATE ai_profiles SET is_default = 0 WHERE id != ?", (profile_id,))
             connection.execute(
                 """UPDATE ai_profiles SET name = ?, description = ?, prompt = ?,
-                   is_default = ?, is_archived = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?""",
-                (name, description, prompt, int(is_default), int(is_archived), profile_id),
+                   is_default = ?, is_archived = ?, provider_id = ?, model_override = ?,
+                   updated_at = CURRENT_TIMESTAMP WHERE id = ?""",
+                (name, description, prompt, int(is_default), int(is_archived), pid, moverride, profile_id),
             )
     except sqlite3.IntegrityError as error:
         raise ProfileError("Ya existe un perfil activo con ese nombre") from error

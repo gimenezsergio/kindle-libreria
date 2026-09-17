@@ -15,7 +15,26 @@ function profileCard(profile) {
   const title = document.createElement("h2"); title.textContent = profile.name;
   const description = document.createElement("p"); description.textContent = profile.description || "Sin descripción";
   content.append(title, description);
-  if (profile.is_default) { const badge = document.createElement("span"); badge.className = "profile-badge"; badge.textContent = "Predeterminado"; content.append(badge); }
+
+  const badges = document.createElement("div");
+  badges.className = "profile-badges";
+
+  if (profile.is_default) {
+    const badge = document.createElement("span");
+    badge.className = "profile-badge";
+    badge.textContent = "Predeterminado";
+    badges.append(badge);
+  }
+
+  const providerLabel = profile.provider_id
+    ? `${profile.provider_id.toUpperCase()}${profile.model_override ? ` (${profile.model_override})` : ""}`
+    : "IA Global";
+  const provBadge = document.createElement("span");
+  provBadge.className = "profile-badge provider-badge";
+  provBadge.textContent = providerLabel;
+  badges.append(provBadge);
+
+  content.append(badges);
   const button = document.createElement("button"); button.type = "button"; button.textContent = "Editar"; button.addEventListener("click", () => openProfile(profile));
   article.append(content, button); return article;
 }
@@ -30,6 +49,8 @@ function openProfile(profile = null) {
   document.querySelector("#profile-id").value = profile?.id || "";
   document.querySelector("#profile-name").value = profile?.name || "";
   document.querySelector("#profile-description").value = profile?.description || "";
+  document.querySelector("#profile-provider").value = profile?.provider_id || "";
+  document.querySelector("#profile-model").value = profile?.model_override || "";
   document.querySelector("#profile-prompt").value = profile?.prompt || "";
   document.querySelector("#profile-default").checked = Boolean(profile?.is_default);
   document.querySelector("#profile-form-title").textContent = profile ? "Editar perfil" : "Nuevo perfil";
@@ -40,7 +61,14 @@ function openProfile(profile = null) {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault(); const id = document.querySelector("#profile-id").value;
-  const payload = {name: document.querySelector("#profile-name").value, description: document.querySelector("#profile-description").value, prompt: document.querySelector("#profile-prompt").value, is_default: document.querySelector("#profile-default").checked};
+  const payload = {
+    name: document.querySelector("#profile-name").value,
+    description: document.querySelector("#profile-description").value,
+    provider_id: document.querySelector("#profile-provider").value || null,
+    model_override: document.querySelector("#profile-model").value || null,
+    prompt: document.querySelector("#profile-prompt").value,
+    is_default: document.querySelector("#profile-default").checked,
+  };
   try { await requestJson(id ? `/api/ai-profiles/${encodeURIComponent(id)}` : "/api/ai-profiles", {method: id ? "PATCH" : "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload)}); form.hidden = true; await loadProfiles(); }
   catch (error) { document.querySelector("#profile-feedback").textContent = error.message; }
 });

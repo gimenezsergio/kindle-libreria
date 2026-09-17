@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import os
 import tempfile
 import unittest
@@ -692,6 +693,64 @@ class WebTests(unittest.TestCase):
         finally:
             os.environ.clear()
             os.environ.update(original_env)
+
+    def test_book_cover_setup_detail(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "library.sqlite3"
+            static_dir = Path(temp_dir) / "static"
+            static_dir.mkdir(parents=True, exist_ok=True)
+            migrate_database(database_path)
+            conn = connect_database(database_path)
+            conn.execute(
+                "INSERT INTO works (id, preferred_title) VALUES (?, ?)",
+                ("work_cover_test", "Libro con Portada")
+            )
+            conn.execute(
+                """INSERT INTO cover_candidates (id, work_id, local_path, source_label, confidence, status)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                ("cand1", "work_cover_test", "work_cover_test_cand1.jpg", "Open Library", "high", "available")
+            )
+            conn.commit()
+            conn.close()
+
+            app = create_app(database_path)
+            client = app.test_client()
+
+            res = client.get("/api/cover-setup/work_cover_test")
+            self.assertEqual(res.status_code, 200)
+            data = res.get_json()
+            self.assertEqual(data["work_id"], "work_cover_test")
+            self.assertEqual(len(data["candidates"]), 1)
+            self.assertEqual(data["candidates"][0]["path"], "work_cover_test_cand1.jpg")
+            self.assertEqual(data["status"], "pending")
+
+    def test_book_cover_setup_upload(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "library.sqlite3"
+            migrate_database(database_path)
+            conn = connect_database(database_path)
+            conn.execute(
+                "INSERT INTO works (id, preferred_title) VALUES (?, ?)",
+                ("work_upload_test", "Libro Upload")
+            )
+            conn.commit()
+            conn.close()
+
+            app = create_app(database_path)
+            client = app.test_client()
+
+            data = {
+                "file": (io.BytesIO(b"fake image data"), "test_cover.jpg")
+            }
+            res = client.post("/api/cover-setup/work_upload_test/upload", data=data, content_type="multipart/form-data")
+            self.assertEqual(res.status_code, 201)
+            json_res = res.get_json()
+            self.assertTrue(json_res["saved"])
+
+            detail = client.get("/api/cover-setup/work_upload_test").get_json()
+            self.assertEqual(detail["status"], "confirmed")
+            self.assertEqual(len(detail["candidates"]), 1)
+            self.assertEqual(detail["candidates"][0]["source"], "Subida local")
 
 
 

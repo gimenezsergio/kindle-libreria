@@ -226,6 +226,57 @@ class ResponsesProvider:
         return text.strip()
 
 
+def resolve_provider_for_profile(provider_id: str | None = None, model_override: str | None = None) -> AIProvider:
+    if not provider_id or provider_id == "global":
+        provider = provider_from_environment()
+        if model_override and isinstance(provider, ResponsesProvider):
+            return ResponsesProvider(
+                name=provider.name,
+                base_url=provider.base_url,
+                api_key=provider.api_key,
+                model=model_override,
+                protocol=provider.protocol,
+            )
+        return provider
+
+    kind = provider_id.strip().lower()
+    if kind == "draft":
+        return DraftProvider()
+
+    preset = PRESET_PROVIDERS.get(kind, {})
+    default_url = preset.get("base_url", "https://api.openai.com/v1")
+    default_model = model_override or preset.get("model", "")
+    default_protocol = preset.get("protocol", "chat_completions")
+
+    key = os.getenv("BIBLIOTECA_AI_API_KEY", "")
+    if not key or kind != os.getenv("BIBLIOTECA_AI_PROVIDER", "draft").strip().lower():
+        env_key_map = {
+            "openai": "OPENAI_API_KEY",
+            "deepseek": "DEEPSEEK_API_KEY",
+            "gemini": "GEMINI_API_KEY",
+            "openrouter": "OPENROUTER_API_KEY",
+        }
+        if kind in env_key_map:
+            key = os.getenv(env_key_map[kind], "") or key
+
+    url = preset.get("base_url", default_url)
+    if kind == os.getenv("BIBLIOTECA_AI_PROVIDER", "draft").strip().lower():
+        url = os.getenv("BIBLIOTECA_AI_BASE_URL", url)
+
+    protocol = preset.get("protocol", default_protocol)
+
+    try:
+        return ResponsesProvider(
+            name=kind,
+            base_url=url,
+            api_key=key,
+            model=default_model,
+            protocol=protocol,
+        )
+    except AIError:
+        return DraftProvider()
+
+
 def provider_from_environment() -> AIProvider:
     kind = os.getenv("BIBLIOTECA_AI_PROVIDER", "draft").strip().lower()
     if kind == "draft":

@@ -5,9 +5,11 @@ import re
 import hmac
 import os
 import sqlite3
+import uuid
 from pathlib import Path
 
 from flask import Flask, jsonify, redirect, render_template, request
+from werkzeug.utils import secure_filename
 
 from .db import connect_database, migrate_database
 from .personal import (
@@ -15,8 +17,11 @@ from .personal import (
     add_work_note,
     add_work_relation,
     assign_work_to_collection,
+    bulk_assign_works_to_collection,
     create_collection,
+    delete_collection,
     set_work_display_title,
+    update_collection,
 )
 from .profiles import ProfileError, create_profile, update_profile
 from .cover_search import CoverSearchError, search_covers
@@ -34,7 +39,7 @@ from .conversations import (
     pin_library_sources,
     resolve_turn_context_sources,
 )
-from .ai import AIError, DraftProvider, PRESET_PROVIDERS, load_environment_file, provider_from_environment, save_environment_config
+from .ai import AIError, DraftProvider, PRESET_PROVIDERS, load_environment_file, provider_from_environment, resolve_provider_for_profile, save_environment_config
 from .companion_actions import get_companion_action, list_companion_actions
 from .library_search import LibrarySearchError
 from .retrieval import requested_library_sources as retrieve_library_sources
@@ -156,9 +161,12 @@ def _summary(connection) -> dict:
 
 
 def _works_page(connection, *, query: str, presence: str, annotated: bool,
-                sort: str, page: int, page_size: int) -> dict:
+                collection: str | None = None, sort: str, page: int, page_size: int) -> dict:
     conditions = []
     parameters: list[object] = []
+    if collection:
+        conditions.append("w.id IN (SELECT work_id FROM work_collections WHERE collection_id = ?)")
+        parameters.append(collection)
     if query:
         conditions.append(f"({DISPLAY_TITLE_SQL} LIKE ? OR w.preferred_title LIKE ? OR COALESCE(c.authors, '') LIKE ?)")
         pattern = f"%{query}%"
@@ -482,6 +490,22 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
             "conversation": conversation,
         }
 
+    def resolve_conversation_provider(conversation_id: str) -> AIProvider:
+        connection = connect_database(database_path)
+        try:
+            row = connection.execute(
+                """SELECT p.provider_id, p.model_override
+                   FROM reading_conversations c
+                   JOIN ai_profiles p ON c.profile_id = p.id
+                   WHERE c.id = ?""",
+                (conversation_id,)
+            ).fetchone()
+            if row and (row["provider_id"] or row["model_override"]):
+                return resolve_provider_for_profile(row["provider_id"], row["model_override"])
+        finally:
+            connection.close()
+        return provider
+
     def companion_turn_preview(turn: dict, payload: dict) -> dict:
         action = turn["action"]
         context_sources = turn["context_sources"]
@@ -489,9 +513,10 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
             item for item in context_sources
             if item["source_type"] in {"personal_note", "annotation"}
         ]
+        conv_provider = resolve_conversation_provider(turn["conversation"]["id"])
         return {
             "profile": {"name": turn["conversation"]["profile_name_snapshot"]},
-            "provider": {"name": provider.name, "ready": provider.ready},
+            "provider": {"name": conv_provider.name, "ready": conv_provider.ready},
             "action": (
                 {"id": action.id, "label": action.label} if action is not None else None
             ),
@@ -719,6 +744,25 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
             return jsonify(items=items)
         finally: connection.close()
 
+    @app.get("/api/cover-setup/<work_id>")
+    def cover_setup_detail(work_id: str):
+        connection = connect_database(database_path)
+        try:
+            candidates = [dict(row) for row in connection.execute(
+                """SELECT id, local_path AS path, source_label AS source, isbn,
+                           edition_label, confidence, status, search_round
+                    FROM cover_candidates WHERE work_id = ?
+                    ORDER BY display_order, created_at""", (work_id,)
+            )]
+            pref = connection.execute("SELECT review_status, selected_path FROM work_cover_preferences WHERE work_id = ?", (work_id,)).fetchone()
+            return jsonify(
+                work_id=work_id,
+                candidates=candidates,
+                status=pref["review_status"] if pref else "pending",
+                selected_path=pref["selected_path"] if pref else None
+            )
+        finally: connection.close()
+
     @app.patch("/api/cover-setup/<work_id>")
     def cover_setup_update(work_id: str):
         payload = _json_body()
@@ -747,6 +791,43 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
             return jsonify(added=added), 201
         except CoverSearchError as error:
             return jsonify(error=str(error)), 400
+
+    @app.post("/api/cover-setup/<work_id>/upload")
+    def cover_setup_upload(work_id: str):
+        if "file" not in request.files:
+            return jsonify(error="No se envió ninguna imagen."), 400
+        file = request.files["file"]
+        if not file or not file.filename:
+            return jsonify(error="Archivo de imagen inválido."), 400
+
+        filename = secure_filename(file.filename)
+        ext = Path(filename).suffix.lower()
+        if ext not in {".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"}:
+            return jsonify(error="Formato de imagen no soportado. Usá JPG, PNG, WEBP o GIF."), 400
+
+        candidate_id = f"custom-{uuid.uuid4().hex[:8]}"
+        local_filename = f"user_{work_id}_{candidate_id}{ext}"
+        covers_dir = Path(app.static_folder) / "covers"
+        covers_dir.mkdir(parents=True, exist_ok=True)
+        file.save(covers_dir / local_filename)
+
+        connection = connect_database(database_path)
+        try:
+            with connection:
+                connection.execute(
+                    """INSERT INTO cover_candidates (id, work_id, local_path, source_label, confidence, status)
+                       VALUES (?, ?, ?, ?, ?, ?)""",
+                    (candidate_id, work_id, local_filename, "Subida local", "high", "available")
+                )
+                connection.execute(
+                    """INSERT INTO work_cover_preferences (work_id, selected_path, review_status)
+                       VALUES (?, ?, 'confirmed')
+                       ON CONFLICT(work_id) DO UPDATE SET selected_path=excluded.selected_path, review_status=excluded.review_status, updated_at=CURRENT_TIMESTAMP""",
+                    (work_id, local_filename)
+                )
+            return jsonify(saved=True, path=local_filename), 201
+        finally:
+            connection.close()
 
     @app.get("/api/ai-profiles")
     def ai_profiles():
@@ -902,12 +983,13 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
             )
             library_sources = turn["library_sources"]
             packet = turn["packet"]
-            if not provider.ready:
+            conv_provider = resolve_conversation_provider(conversation_id)
+            if not conv_provider.ready:
                 return jsonify(mode="draft", prompt=packet.as_dict(), library_sources=library_sources), 202
-            answer = provider.respond(packet)
+            answer = conv_provider.respond(packet)
             message_id = add_message(database_path, conversation_id=conversation_id, role="assistant", content=answer)
             attach_library_sources(database_path, message_id, library_sources)
-            return jsonify(mode=provider.name, answer=answer, library_sources=library_sources)
+            return jsonify(mode=conv_provider.name, answer=answer, library_sources=library_sources)
         except (ConversationError, PersonalDataError, LibrarySearchError, AIError, ValueError) as error:
             return jsonify(error=str(error)), 400
 
@@ -966,6 +1048,7 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
         query = request.args.get("q", "").strip()[:200]
         presence = request.args.get("presence", "all")
         annotated = request.args.get("annotated", "false").lower() == "true"
+        collection = request.args.get("collection", "").strip() or None
         sort = request.args.get("sort", "title")
         try:
             page = max(1, int(request.args.get("page", "1")))
@@ -980,7 +1063,7 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
         try:
             return jsonify(_works_page(
                 connection, query=query, presence=presence, annotated=annotated,
-                sort=sort, page=page, page_size=page_size,
+                collection=collection, sort=sort, page=page, page_size=page_size,
             ))
         finally:
             connection.close()
@@ -1044,7 +1127,14 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
         connection = connect_database(database_path)
         try:
             rows = connection.execute(
-                "SELECT id, parent_id, name, description FROM collections ORDER BY name COLLATE NOCASE"
+                """
+                SELECT c.id, c.parent_id, c.name, c.description,
+                       COUNT(wc.work_id) AS works_count
+                FROM collections c
+                LEFT JOIN work_collections wc ON wc.collection_id = c.id
+                GROUP BY c.id
+                ORDER BY c.name COLLATE NOCASE
+                """
             ).fetchall()
             return jsonify(items=[dict(row) for row in rows])
         finally:
@@ -1061,6 +1151,51 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
             return jsonify(id=result.id, created=result.created), 201 if result.created else 200
         except PersonalDataError as error:
             return jsonify(error=str(error)), 400
+
+    @app.put("/api/collections/<collection_id>")
+    def collection_update(collection_id: str):
+        try:
+            payload = _json_body()
+            update_collection(
+                database_path, collection_id, str(payload.get("name", "")),
+                description=payload.get("description"),
+            )
+            return jsonify(success=True)
+        except PersonalDataError as error:
+            return jsonify(error=str(error)), 400
+
+    @app.delete("/api/collections/<collection_id>")
+    def collection_delete(collection_id: str):
+        try:
+            delete_collection(database_path, collection_id)
+            return jsonify(success=True)
+        except PersonalDataError as error:
+            return jsonify(error=str(error)), 400
+
+    @app.get("/api/collections/<collection_id>/works")
+    def collection_works(collection_id: str):
+        connection = connect_database(database_path)
+        try:
+            rows = connection.execute(
+                "SELECT work_id FROM work_collections WHERE collection_id = ?",
+                (collection_id,),
+            ).fetchall()
+            return jsonify(work_ids=[row["work_id"] for row in rows])
+        finally:
+            connection.close()
+
+    @app.post("/api/collections/<collection_id>/works")
+    def collection_works_bulk_update(collection_id: str):
+        try:
+            payload = _json_body()
+            work_ids = payload.get("work_ids", [])
+            if not isinstance(work_ids, list):
+                raise PersonalDataError("work_ids debe ser una lista")
+            bulk_assign_works_to_collection(database_path, collection_id, [str(wid) for wid in work_ids])
+            return jsonify(success=True)
+        except PersonalDataError as error:
+            return jsonify(error=str(error)), 400
+
 
     @app.get("/api/work-options")
     def work_options():

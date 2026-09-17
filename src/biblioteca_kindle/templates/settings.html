@@ -145,6 +145,18 @@
             </div>
             <label>Nombre<input id="profile-name" type="text" required placeholder="Ej. Jenna"></label>
             <label>Descripción breve<input id="profile-description" type="text" placeholder="Qué perspectiva aporta"></label>
+            <label>Proveedor de IA para este perfil
+              <select id="profile-provider">
+                <option value="">Predeterminado global</option>
+                <option value="draft">Draft (Borrador / Desconectado)</option>
+                <option value="gemini">Google Gemini</option>
+                <option value="openai">OpenAI</option>
+                <option value="deepseek">DeepSeek</option>
+                <option value="openrouter">OpenRouter.ai</option>
+                <option value="openclaw">OpenClaw (Local)</option>
+              </select>
+            </label>
+            <label>Modelo específico (opcional)<input id="profile-model" type="text" placeholder="Ej. gpt-4o-mini, gemini-2.5-pro (opcional)"></label>
             <label>Prompt original<textarea id="profile-prompt" rows="14" required placeholder="Pegá acá el prompt completo, sin necesidad de reorganizarlo"></textarea></label>
             <label class="check-field"><input id="profile-default" type="checkbox"><span>Usar como perfil predeterminado</span></label>
             <div class="profile-actions">
