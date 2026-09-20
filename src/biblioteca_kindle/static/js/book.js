@@ -254,8 +254,9 @@ async function loadOptions() {
     jsonRequest("/api/collections"), jsonRequest("/api/work-options"), jsonRequest("/api/ai-profiles"),
   ]);
   const collectionSelect = document.querySelector("#collection-select");
-  collectionSelect.replaceChildren(...collections.items.map((item) => new Option(item.name, item.id)));
-  collectionSelect.disabled = collections.items.length === 0;
+  const userCollections = collections.items.filter((item) => !item.is_system);
+  collectionSelect.replaceChildren(...userCollections.map((item) => new Option(item.name, item.id)));
+  collectionSelect.disabled = userCollections.length === 0;
   const relationSelect = document.querySelector("#relation-target");
   const alternatives = works.items.filter((item) => item.id !== window.WORK_ID);
   relationSelect.replaceChildren(...alternatives.map((item) => new Option(item.title, item.id)));

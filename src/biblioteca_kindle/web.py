@@ -165,8 +165,11 @@ def _works_page(connection, *, query: str, presence: str, annotated: bool,
     conditions = []
     parameters: list[object] = []
     if collection:
-        conditions.append("w.id IN (SELECT work_id FROM work_collections WHERE collection_id = ?)")
-        parameters.append(collection)
+        if collection == "uncategorized":
+            conditions.append("w.id NOT IN (SELECT work_id FROM work_collections)")
+        else:
+            conditions.append("w.id IN (SELECT work_id FROM work_collections WHERE collection_id = ?)")
+            parameters.append(collection)
     if query:
         conditions.append(f"({DISPLAY_TITLE_SQL} LIKE ? OR w.preferred_title LIKE ? OR COALESCE(c.authors, '') LIKE ?)")
         pattern = f"%{query}%"
@@ -1154,7 +1157,24 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
                 ORDER BY c.name COLLATE NOCASE
                 """
             ).fetchall()
-            return jsonify(items=[dict(row) for row in rows])
+            items = [dict(row) for row in rows]
+            uncategorized_count = connection.execute(
+                """
+                SELECT COUNT(*) FROM works w
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM work_collections wc WHERE wc.work_id = w.id
+                )
+                """
+            ).fetchone()[0]
+            uncategorized = {
+                "id": "uncategorized",
+                "parent_id": None,
+                "name": "Sin categoría",
+                "description": "Obras que no pertenecen a ninguna colección",
+                "works_count": uncategorized_count,
+                "is_system": True,
+            }
+            return jsonify(items=[uncategorized] + items)
         finally:
             connection.close()
 

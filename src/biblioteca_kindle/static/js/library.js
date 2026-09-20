@@ -183,6 +183,10 @@ function updateToolbar() {
   if (selectedCollection) {
     toolbar.hidden = false;
     text(selectedNameLabel, selectedCollection.name);
+    const isSystem = Boolean(selectedCollection.is_system || selectedCollection.id === "uncategorized");
+    if (editBtn) editBtn.hidden = isSystem;
+    if (deleteBtn) deleteBtn.hidden = isSystem;
+    if (organizeBtn) organizeBtn.hidden = isSystem;
   } else {
     toolbar.hidden = true;
   }
