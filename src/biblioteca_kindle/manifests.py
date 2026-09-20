@@ -147,6 +147,13 @@ def _parse_manifest_records(
             if content_id.casefold() not in candidate.name.casefold():
                 continue
             candidates.append(row)
+        if len(candidates) > 1:
+            def format_priority(row):
+                ext = PurePosixPath(row["source_relative_path"]).suffix.lower()
+                priorities = {".kfx": 1, ".azw3": 2, ".mobi": 3, ".pdf": 4, ".azw": 5}
+                return priorities.get(ext, 99)
+            candidates.sort(key=format_priority)
+            candidates = [candidates[0]]
         if len(candidates) != 1:
             raise ManifestImportError(
                 f"Se esperó un libro para {sidecar.as_posix()} y se encontraron {len(candidates)}"
