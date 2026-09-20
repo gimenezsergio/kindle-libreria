@@ -93,6 +93,15 @@ PRESET_PROVIDERS = {
         "base_url": "",
         "model": "",
         "protocol": "chat_completions",
+        "models": [],
+    },
+    "gemini": {
+        "id": "gemini",
+        "name": "Google Gemini",
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "model": "gemini-3.6-flash",
+        "protocol": "chat_completions",
+        "models": ["gemini-3.6-flash", "gemini-3.1-pro-preview", "gemini-1.5-flash", "gemini-1.5-pro"],
     },
     "openrouter": {
         "id": "openrouter",
@@ -100,27 +109,30 @@ PRESET_PROVIDERS = {
         "base_url": "https://openrouter.ai/api/v1",
         "model": "google/gemini-2.5-flash",
         "protocol": "chat_completions",
-    },
-    "gemini": {
-        "id": "gemini",
-        "name": "Google Gemini",
-        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
-        "model": "gemini-2.5-flash",
-        "protocol": "chat_completions",
+        "models": [
+            "google/gemini-2.5-flash",
+            "google/gemini-2.5-pro",
+            "anthropic/claude-3.5-sonnet",
+            "deepseek/deepseek-r1",
+            "openai/gpt-4o-mini",
+            "meta-llama/llama-3.3-70b-instruct",
+        ],
     },
     "openai": {
         "id": "openai",
         "name": "OpenAI",
         "base_url": "https://api.openai.com/v1",
-        "model": "gpt-5-mini",
+        "model": "gpt-4o-mini",
         "protocol": "chat_completions",
+        "models": ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "o3-mini"],
     },
     "deepseek": {
         "id": "deepseek",
         "name": "DeepSeek",
         "base_url": "https://api.deepseek.com",
-        "model": "deepseek-v4-flash",
-        "protocol": "responses",
+        "model": "deepseek-chat",
+        "protocol": "chat_completions",
+        "models": ["deepseek-chat", "deepseek-reasoner"],
     },
     "openclaw": {
         "id": "openclaw",
@@ -128,6 +140,7 @@ PRESET_PROVIDERS = {
         "base_url": "http://127.0.0.1:18789/v1",
         "model": "openclaw",
         "protocol": "responses",
+        "models": ["openclaw"],
     },
 }
 
@@ -158,15 +171,25 @@ class ResponsesProvider:
         return self.base_url if self.base_url.endswith("/chat/completions") else f"{self.base_url}/chat/completions"
 
     def respond(self, packet: PromptPacket) -> str:
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
-        if "openrouter" in self.base_url.lower() or self.name == "openrouter":
-            headers["HTTP-Referer"] = "http://localhost:5000"
-            headers["X-Title"] = "Biblioteca Kindle"
-
-        if self.protocol == "responses":
+        if self.name == "gemini" or "generativelanguage.googleapis.com" in self.base_url:
+            model_clean = self.model.replace("models/", "") if self.model else "gemini-3.6-flash"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_clean}:generateContent?key={self.api_key}"
+            headers = {"Content-Type": "application/json"}
+            user_parts = []
+            for item in packet.input:
+                content = item.get("content", "")
+                if content:
+                    user_parts.append(content)
+            user_text = "\n\n".join(user_parts) if user_parts else "Hola"
+            body_dict = {
+                "systemInstruction": {"parts": [{"text": packet.instructions}]},
+                "contents": [{"parts": [{"text": user_text}]}],
+            }
+        elif self.protocol == "responses":
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            }
             url = self.base_url if self.base_url.endswith("/responses") else f"{self.base_url}/responses"
             body_dict = {
                 "model": self.model,
@@ -175,6 +198,14 @@ class ResponsesProvider:
                 "store": False,
             }
         else:
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            }
+            if "openrouter" in self.base_url.lower() or self.name == "openrouter":
+                headers["HTTP-Referer"] = "http://localhost:5000"
+                headers["X-Title"] = "Biblioteca Kindle"
+
             url = self.base_url if self.base_url.endswith("/chat/completions") else f"{self.base_url}/chat/completions"
             user_parts = []
             for item in packet.input:
@@ -214,6 +245,13 @@ class ResponsesProvider:
                     text = choice["message"].get("content")
                 elif "text" in choice:
                     text = choice.get("text")
+
+        if not text and isinstance(data, dict) and "candidates" in data and isinstance(data["candidates"], list) and len(data["candidates"]) > 0:
+            cand = data["candidates"][0]
+            if isinstance(cand, dict) and "content" in cand and isinstance(cand["content"], dict):
+                parts = cand["content"].get("parts", [])
+                if isinstance(parts, list):
+                    text = "".join(p.get("text", "") for p in parts if isinstance(p, dict))
 
         if not text and isinstance(data, dict):
             text = data.get("output_text")

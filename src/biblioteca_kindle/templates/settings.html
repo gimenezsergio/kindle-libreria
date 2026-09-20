@@ -6,13 +6,14 @@
     <meta name="description" content="Ajustes de la biblioteca personal, proveedor de IA, perfiles y portadas">
     <title>Ajustes · Biblioteca personal</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/profiles.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/cover_setup.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/settings.js') }}" defer></script>
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="/" aria-label="Inicio de Biblioteca personal">
+      <a class="brand" href="/library" aria-label="Inicio de Biblioteca personal">
         <span class="brand-mark" aria-hidden="true">B</span>
         <span>
           <strong>Biblioteca Kindle</strong>
@@ -20,7 +21,6 @@
         </span>
       </a>
       <nav aria-label="Navegación principal">
-        <a class="nav-link" href="/">Resumen</a>
         <a class="nav-link" href="/library">Biblioteca</a>
         <a class="nav-link is-active" href="/settings">Ajustes</a>
       </nav>
@@ -34,7 +34,7 @@
         <div>
           <p class="eyebrow">Configuración del sistema</p>
           <h1>Ajustes generales</h1>
-          <p>Gestioná tu proveedor de Inteligencia Artificial, las API Keys, los perfiles de lectura y la curaduría de portadas.</p>
+          <p>Gestioná tu proveedor de Inteligencia Artificial, las API Keys, los perfiles de lectura, la curaduría de portadas y las métricas del sistema.</p>
         </div>
       </header>
 
@@ -47,6 +47,9 @@
         </button>
         <button type="button" class="tab-btn" data-tab="covers" id="tab-covers" role="tab" aria-selected="false" aria-controls="panel-covers">
           🎨 Curaduría de Portadas
+        </button>
+        <button type="button" class="tab-btn" data-tab="status" id="tab-status" role="tab" aria-selected="false" aria-controls="panel-status">
+          📊 Estado del Archivo
         </button>
       </nav>
 
@@ -96,9 +99,12 @@
               </div>
 
               <div class="form-field">
-                <label for="ai-model">Modelo de IA</label>
-                <input id="ai-model" type="text" placeholder="ej. google/gemini-2.5-flash" />
-                <small class="field-hint">Nombre del modelo (ej. google/gemini-2.5-flash, gpt-5-mini, etc.).</small>
+                <label for="ai-model-select">Modelo de IA</label>
+                <select id="ai-model-select" class="provider-dropdown">
+                  <option value="">Seleccionar modelo...</option>
+                </select>
+                <input id="ai-model" type="text" placeholder="ej. gemini-3.6-flash" style="margin-top: 6px;" />
+                <small class="field-hint">Elegí un modelo sugerido arriba o escribí uno personalizado en el campo.</small>
               </div>
 
               <div class="form-field">
@@ -156,7 +162,12 @@
                 <option value="openclaw">OpenClaw (Local)</option>
               </select>
             </label>
-            <label>Modelo específico (opcional)<input id="profile-model" type="text" placeholder="Ej. gpt-4o-mini, gemini-2.5-pro (opcional)"></label>
+            <label>Modelo específico (opcional)
+              <select id="profile-model-select" class="provider-dropdown" style="margin-bottom: 6px;">
+                <option value="">Seleccionar de la lista de sugeridos...</option>
+              </select>
+              <input id="profile-model" type="text" placeholder="O escribí un modelo personalizado (opcional)">
+            </label>
             <label>Prompt original<textarea id="profile-prompt" rows="14" required placeholder="Pegá acá el prompt completo, sin necesidad de reorganizarlo"></textarea></label>
             <label class="check-field"><input id="profile-default" type="checkbox"><span>Usar como perfil predeterminado</span></label>
             <div class="profile-actions">
@@ -177,6 +188,62 @@
         </header>
         <section id="cover-review" aria-live="polite"></section>
       </section>
+
+      <!-- Panel 4: Estado del Archivo y Métricas -->
+      <section class="tab-panel" id="panel-status" role="tabpanel" aria-labelledby="tab-status" hidden>
+        <div class="dashboard">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Ex libris · Tu archivo de lectura</p>
+              <h2>Panorama del archivo de lectura</h2>
+            </div>
+            <div class="library-state" aria-live="polite">
+              <span class="state-dot" aria-hidden="true"></span>
+              <div>
+                <strong id="state-title">Consultando la biblioteca…</strong>
+                <span id="state-detail">La información permanece en tu equipo.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="metrics" aria-label="Estado de la biblioteca">
+            <article class="metric metric-primary"><span class="metric-label">Obras</span><strong id="works-count">—</strong><span id="editions-detail">Catálogo local</span></article>
+            <article class="metric"><span class="metric-label">Anotaciones</span><strong id="annotations-count">—</strong><span id="annotations-detail">Subrayados, notas y marcadores</span></article>
+            <article class="metric"><span class="metric-label">En el Kindle</span><strong id="present-count">—</strong><span id="presence-detail">Entregas presentes</span></article>
+            <article class="metric"><span class="metric-label">Organización propia</span><strong id="collections-count">—</strong><span id="organization-detail">Colecciones creadas</span></article>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="panel annotation-panel">
+              <div class="panel-heading">
+                <div><p class="eyebrow">Memoria de lectura</p><h3>Anotaciones recuperadas</h3></div>
+                <span class="panel-total" id="annotation-total">—</span>
+              </div>
+              <div class="annotation-types">
+                <div><span class="type-mark highlight"></span><span>Subrayados</span><strong id="highlight-count">—</strong></div>
+                <div><span class="type-mark note"></span><span>Notas</span><strong id="note-count">—</strong></div>
+                <div><span class="type-mark bookmark"></span><span>Marcadores</span><strong id="bookmark-count">—</strong></div>
+              </div>
+            </article>
+
+            <article class="panel sync-panel">
+              <p class="eyebrow">Origen</p><h3>Última sincronización</h3>
+              <p class="sync-date" id="sync-date">Consultando…</p>
+              <dl>
+                <div><dt>Fuentes procesadas</dt><dd id="source-count">—</dd></div>
+                <div><dt>Advertencias</dt><dd id="warning-count">—</dd></div>
+              </dl>
+              <p class="privacy-note">El Kindle no necesita estar conectado para consultar esta biblioteca.</p>
+            </article>
+
+            <article class="panel review-panel">
+              <p class="eyebrow">Calidad del catálogo</p><h3>Identidades por revisar</h3>
+              <div class="review-count"><strong id="review-count">—</strong><span>obras requieren atención</span></div>
+              <p id="provisional-detail">Las coincidencias inciertas se conservan sin fusionarlas automáticamente.</p>
+            </article>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer>
@@ -185,7 +252,6 @@
     </footer>
 
     <nav class="mobile-nav" aria-label="Navegación móvil">
-      <a href="/">Resumen</a>
       <a href="/library">Biblioteca</a>
       <a class="is-active" href="/settings">Ajustes</a>
     </nav>

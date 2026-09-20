@@ -44,13 +44,86 @@ async function loadProfiles() {
   list.replaceChildren(...data.items.map(profileCard));
 }
 
+const PROVIDER_MODELS = {
+  gemini: ["gemini-3.6-flash", "gemini-3.1-pro-preview", "gemini-1.5-flash", "gemini-1.5-pro"],
+  openrouter: ["google/gemini-2.5-flash", "google/gemini-2.5-pro", "anthropic/claude-3.5-sonnet", "deepseek/deepseek-r1", "openai/gpt-4o-mini", "meta-llama/llama-3.3-70b-instruct"],
+  openai: ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "o3-mini"],
+  deepseek: ["deepseek-chat", "deepseek-reasoner"],
+  openclaw: ["openclaw"],
+};
+
+const profileProviderSelect = document.querySelector("#profile-provider");
+const profileModelSelect = document.querySelector("#profile-model-select");
+const profileModelInput = document.querySelector("#profile-model");
+
+function updateProfileModelSelect(providerId, currentModel = "") {
+  if (!profileModelSelect) return;
+  profileModelSelect.innerHTML = "";
+  
+  const defaultOpt = document.createElement("option");
+  defaultOpt.value = "";
+  defaultOpt.textContent = "-- Seleccionar de la lista de sugeridos --";
+  profileModelSelect.appendChild(defaultOpt);
+
+  const modelsList = PROVIDER_MODELS[providerId] || [];
+  modelsList.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m;
+    opt.textContent = m;
+    profileModelSelect.appendChild(opt);
+  });
+
+  const customOpt = document.createElement("option");
+  customOpt.value = "custom";
+  customOpt.textContent = "✍️ Escribir modelo personalizado...";
+  profileModelSelect.appendChild(customOpt);
+
+  if (currentModel && modelsList.includes(currentModel)) {
+    profileModelSelect.value = currentModel;
+  } else if (currentModel) {
+    profileModelSelect.value = "custom";
+  } else {
+    profileModelSelect.value = "";
+  }
+}
+
+if (profileProviderSelect && profileModelSelect) {
+  profileProviderSelect.addEventListener("change", (e) => {
+    updateProfileModelSelect(e.target.value, profileModelInput.value);
+  });
+}
+
+if (profileModelSelect && profileModelInput) {
+  profileModelSelect.addEventListener("change", (e) => {
+    if (e.target.value && e.target.value !== "custom") {
+      profileModelInput.value = e.target.value;
+    }
+  });
+
+  profileModelInput.addEventListener("input", () => {
+    const val = profileModelInput.value.trim();
+    const providerId = profileProviderSelect.value;
+    const modelsList = PROVIDER_MODELS[providerId] || [];
+    if (modelsList.includes(val)) {
+      profileModelSelect.value = val;
+    } else if (val) {
+      profileModelSelect.value = "custom";
+    } else {
+      profileModelSelect.value = "";
+    }
+  });
+}
+
 function openProfile(profile = null) {
   form.hidden = false;
   document.querySelector("#profile-id").value = profile?.id || "";
   document.querySelector("#profile-name").value = profile?.name || "";
   document.querySelector("#profile-description").value = profile?.description || "";
-  document.querySelector("#profile-provider").value = profile?.provider_id || "";
-  document.querySelector("#profile-model").value = profile?.model_override || "";
+  const providerVal = profile?.provider_id || "";
+  const modelVal = profile?.model_override || "";
+  document.querySelector("#profile-provider").value = providerVal;
+  document.querySelector("#profile-model").value = modelVal;
+  updateProfileModelSelect(providerVal, modelVal);
   document.querySelector("#profile-prompt").value = profile?.prompt || "";
   document.querySelector("#profile-default").checked = Boolean(profile?.is_default);
   document.querySelector("#profile-form-title").textContent = profile ? "Editar perfil" : "Nuevo perfil";

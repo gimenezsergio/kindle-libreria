@@ -557,8 +557,8 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
             return jsonify(error=str(error)), 400
 
     @app.get("/")
-    def index() -> str:
-        return render_template("index.html")
+    def index():
+        return redirect("/library")
 
     @app.get("/library")
     def library() -> str:
@@ -571,6 +571,7 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
     @app.get("/settings")
     @app.get("/settings/ai-profiles")
     @app.get("/settings/covers")
+    @app.get("/settings/status")
     def settings_page():
         return render_template("settings.html")
 
@@ -632,6 +633,7 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
                 "base_url": base_url,
                 "model": model,
                 "protocol": protocol,
+                "models": pdata.get("models", []),
                 "is_preset": provider_id in PRESET_PROVIDERS,
                 "is_active": provider_id == active_id,
                 "has_api_key": has_key,

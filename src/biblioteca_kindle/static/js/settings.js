@@ -36,6 +36,7 @@ function initTabs() {
     const path = window.location.pathname;
     if (path.endsWith('/covers')) initialTab = 'covers';
     else if (path.endsWith('/ai-profiles')) initialTab = 'profiles';
+    else if (path.endsWith('/status')) initialTab = 'status';
   }
   if (initialTab && document.getElementById(`panel-${initialTab}`)) {
     switchTab(initialTab);
@@ -96,6 +97,60 @@ async function initAiConfigForm() {
     }
   }
 
+  const modelSelect = document.getElementById('ai-model-select');
+
+  if (modelSelect && modelInput) {
+    modelSelect.addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (val && val !== 'custom') {
+        modelInput.value = val;
+      }
+    });
+
+    modelInput.addEventListener('input', () => {
+      const currentVal = modelInput.value.trim();
+      const matchingOpt = Array.from(modelSelect.options).find(opt => opt.value === currentVal);
+      if (matchingOpt) {
+        modelSelect.value = currentVal;
+      } else if (currentVal) {
+        modelSelect.value = 'custom';
+      }
+    });
+  }
+
+  function populateModelDropdown(p) {
+    if (!modelSelect) return;
+    modelSelect.innerHTML = '';
+
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = '-- Seleccionar un modelo de la lista --';
+    modelSelect.appendChild(defaultOpt);
+
+    const modelsList = (p && p.models) ? p.models : [];
+    const currentModel = p ? (p.model || '') : '';
+
+    modelsList.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m;
+      modelSelect.appendChild(opt);
+    });
+
+    const customOpt = document.createElement('option');
+    customOpt.value = 'custom';
+    customOpt.textContent = '✍️ Escribir modelo personalizado...';
+    modelSelect.appendChild(customOpt);
+
+    if (currentModel && modelsList.includes(currentModel)) {
+      modelSelect.value = currentModel;
+    } else if (currentModel) {
+      modelSelect.value = 'custom';
+    } else {
+      modelSelect.value = '';
+    }
+  }
+
   function selectProvider(id) {
     feedback.textContent = '';
     feedback.className = 'form-feedback';
@@ -106,6 +161,7 @@ async function initAiConfigForm() {
       providerNameInput.value = '';
       baseUrlInput.value = 'https://';
       modelInput.value = '';
+      populateModelDropdown(null);
       protocolSelect.value = 'chat_completions';
       btnDelete.hidden = true;
       apiKeyHint.textContent = 'Ingresá la clave API para este nuevo proveedor.';
@@ -120,6 +176,7 @@ async function initAiConfigForm() {
     providerNameInput.value = p.name || '';
     baseUrlInput.value = p.base_url || '';
     modelInput.value = p.model || '';
+    populateModelDropdown(p);
     protocolSelect.value = p.protocol || 'chat_completions';
 
     btnDelete.hidden = p.is_preset;
