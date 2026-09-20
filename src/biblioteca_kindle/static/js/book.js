@@ -1309,34 +1309,52 @@ document.querySelectorAll("[data-context-tab]").forEach((tab) => {
 document.querySelector("#annotation-filters").addEventListener("input", () => { annotationPage = 1; loadAnnotations(); });
 document.querySelector("#annotation-previous").addEventListener("click", () => { if (annotationPage > 1) { annotationPage -= 1; loadAnnotations(); } });
 document.querySelector("#annotation-next").addEventListener("click", () => { if (annotationPage < annotationPages) { annotationPage += 1; loadAnnotations(); } });
-document.querySelectorAll("[data-book-tab]").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    const selected = tab.dataset.bookTab;
-    document.querySelectorAll("[data-book-tab]").forEach((item) => {
-      item.setAttribute("aria-selected", String(item === tab));
-      item.tabIndex = item === tab ? 0 : -1;
-    });
-    document.querySelectorAll("[data-book-panel]").forEach((panel) => {
-      panel.hidden = panel.dataset.bookPanel !== selected;
-    });
-    setCompanionFocus(selected === "companion");
-    history.replaceState(null, "", `#panel-${selected}`);
+
+function setSidebarCollapsed(collapsed) {
+  const workspace = document.querySelector("#book-workspace");
+  const toggleBtn = document.querySelector("#toggle-sidebar");
+  if (workspace) workspace.classList.toggle("is-sidebar-collapsed", collapsed);
+  if (toggleBtn) toggleBtn.setAttribute("aria-expanded", String(!collapsed));
+  try { localStorage.setItem("book-sidebar-collapsed", String(collapsed)); } catch (e) {}
+}
+
+function selectSidebarTab(tabName) {
+  setSidebarCollapsed(false);
+  document.querySelectorAll("[data-sidebar-tab]").forEach((tab) => {
+    const isTarget = tab.dataset.sidebarTab === tabName;
+    tab.setAttribute("aria-selected", String(isTarget));
+    tab.classList.toggle("is-active", isTarget);
   });
-  tab.addEventListener("keydown", (event) => {
-    if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
-    const tabs = [...document.querySelectorAll("[data-book-tab]")];
-    const direction = event.key === "ArrowRight" ? 1 : -1;
-    const next = tabs[(tabs.indexOf(tab) + direction + tabs.length) % tabs.length];
-    event.preventDefault(); next.focus(); next.click();
+  document.querySelectorAll(".sidebar-panel").forEach((panel) => {
+    const isTarget = panel.dataset.bookPanel === tabName;
+    panel.hidden = !isTarget;
+    panel.classList.toggle("is-active", isTarget);
+  });
+  history.replaceState(null, "", `#panel-${tabName}`);
+}
+
+document.querySelector("#toggle-sidebar")?.addEventListener("click", () => {
+  const workspace = document.querySelector("#book-workspace");
+  const isCollapsed = workspace?.classList.contains("is-sidebar-collapsed");
+  setSidebarCollapsed(!isCollapsed);
+});
+
+document.querySelector("#close-sidebar")?.addEventListener("click", () => {
+  setSidebarCollapsed(true);
+});
+
+document.querySelectorAll("[data-sidebar-tab]").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    selectSidebarTab(tab.dataset.sidebarTab);
   });
 });
+
+const savedCollapsed = localStorage.getItem("book-sidebar-collapsed") === "true";
+if (savedCollapsed) setSidebarCollapsed(true);
+
 const requestedPanel = location.hash.replace("#panel-", "");
-const requestedTab = document.querySelector(`[data-book-tab="${requestedPanel}"]`);
-if (requestedTab) {
-  requestedTab.click();
-} else {
-  const companionTab = document.querySelector('[data-book-tab="companion"]');
-  if (companionTab) companionTab.click();
+if (requestedPanel && ["memory", "notebook"].includes(requestedPanel)) {
+  selectSidebarTab(requestedPanel);
 }
 
 const emptyForm = document.querySelector("#empty-conversation-form");
