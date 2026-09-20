@@ -970,20 +970,33 @@ async function reviewContext() {
 }
 
 async function loadOptions() {
-  const [profiles, works] = await Promise.all([
-    jsonRequest("/api/ai/profiles"),
-    jsonRequest("/api/works"),
+  const [collections, works, profiles] = await Promise.all([
+    jsonRequest("/api/collections"),
+    jsonRequest("/api/work-options"),
+    jsonRequest("/api/ai-profiles"),
   ]);
+  const collectionSelect = document.querySelector("#collection-select");
+  const userCollections = collections.items.filter((item) => !item.is_system);
+  collectionSelect.replaceChildren(...userCollections.map((item) => new Option(item.name, item.id)));
+  collectionSelect.disabled = userCollections.length === 0;
+
+  const relationSelect = document.querySelector("#relation-target");
+  const alternatives = works.items.filter((item) => item.id !== window.WORK_ID);
+  relationSelect.replaceChildren(...alternatives.map((item) => new Option(item.title, item.id)));
+
   const profileSelect = document.querySelector("#conversation-profile");
   profileSelect.replaceChildren(...profiles.items.map((item) => new Option(item.name, item.id, item.is_default, item.is_default)));
+
   const emptyProfileSelect = document.querySelector("#empty-conversation-profile");
   if (emptyProfileSelect) {
     emptyProfileSelect.replaceChildren(...profiles.items.map((item) => new Option(item.name, item.id, item.is_default, item.is_default)));
   }
+
   document.querySelector("#new-conversation").disabled = profiles.items.length === 0;
   document.querySelector("#open-new-conversation").disabled = profiles.items.length === 0;
   const emptyStartBtn = document.querySelector("#empty-start-conversation");
   if (emptyStartBtn) emptyStartBtn.disabled = profiles.items.length === 0;
+
   const searchWorks = document.querySelector("#library-search-works");
   searchWorks.replaceChildren(...works.items.map((item) => new Option(item.title, item.id)));
 }
