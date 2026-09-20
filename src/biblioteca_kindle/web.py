@@ -8,7 +8,7 @@ import sqlite3
 import uuid
 from pathlib import Path
 
-from flask import Flask, jsonify, redirect, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, send_from_directory
 from werkzeug.utils import secure_filename
 
 from .db import connect_database, migrate_database
@@ -448,6 +448,16 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
     openclaw_token = os.environ.get("BIBLIOTECA_OPENCLAW_TOKEN", "")
     provider = ai_provider or provider_from_environment()
     app.register_blueprint(create_openclaw_blueprint(database_path, openclaw_token))
+
+    @app.route("/static/covers/<path:filename>")
+    def serve_cover(filename: str):
+        static_covers = Path(app.static_folder) / "covers" / filename
+        if static_covers.is_file():
+            return send_from_directory(Path(app.static_folder) / "covers", filename)
+        work_covers = database_path.parent / "covers" / filename
+        if work_covers.is_file():
+            return send_from_directory(database_path.parent / "covers", filename)
+        return ("Cover image not found", 404)
 
     def requested_library_sources(
         conversation_id: str, payload: dict, *, conversation: dict | None = None
