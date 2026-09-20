@@ -225,7 +225,6 @@ def _works_page(connection, *, query: str, presence: str, annotated: bool,
     items = []
     for row in rows:
         item = dict(row)
-        item["cover"] = PILOT_COVERS.get(item["id"])
         preference = connection.execute(
             "SELECT selected_path, review_status FROM work_cover_preferences WHERE work_id = ?",
             (item["id"],),
@@ -235,6 +234,13 @@ def _works_page(connection, *, query: str, presence: str, annotated: bool,
                 item["cover"] = None
             elif preference["selected_path"]:
                 item["cover"] = {"path": preference["selected_path"], "source": "Elegida por vos"}
+        else:
+            candidate = connection.execute(
+                "SELECT local_path, source_label FROM cover_candidates WHERE work_id = ? AND status = 'available' ORDER BY display_order LIMIT 1",
+                (item["id"],),
+            ).fetchone()
+            if candidate is not None:
+                item["cover"] = {"path": candidate["local_path"], "source": candidate["source_label"]}
         items.append(item)
     return {
         "items": items,
