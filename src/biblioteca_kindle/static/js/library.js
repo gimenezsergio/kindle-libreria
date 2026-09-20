@@ -273,13 +273,34 @@ deleteBtn?.addEventListener("click", async () => {
   }
 });
 
+function scrollToCatalogTop() {
+  const target = document.querySelector("#collection-chips") || document.querySelector("#catalog-form") || list;
+  if (target) {
+    const yOffset = -90;
+    const y = target.getBoundingClientRect().top + window.pageYOffset + yOffset;
+    window.scrollTo({ top: y, behavior: "smooth" });
+  }
+}
+
 controls.addEventListener("input", () => {
   page = 1;
   clearTimeout(debounce);
   debounce = setTimeout(loadBooks, 180);
 });
-document.querySelector("#previous").addEventListener("click", () => { if (page > 1) { page -= 1; loadBooks(); } });
-document.querySelector("#next").addEventListener("click", () => { if (page < pages) { page += 1; loadBooks(); } });
+document.querySelector("#previous").addEventListener("click", () => {
+  if (page > 1) {
+    page -= 1;
+    loadBooks();
+    scrollToCatalogTop();
+  }
+});
+document.querySelector("#next").addEventListener("click", () => {
+  if (page < pages) {
+    page += 1;
+    loadBooks();
+    scrollToCatalogTop();
+  }
+});
 document.querySelector("#grid-view").addEventListener("click", () => { view = "grid"; localStorage.setItem("library-view", view); applyView(); });
 document.querySelector("#list-view").addEventListener("click", () => { view = "list"; localStorage.setItem("library-view", view); applyView(); });
 

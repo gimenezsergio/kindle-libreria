@@ -485,7 +485,7 @@ button, input, select, textarea, a { -webkit-tap-highlight-color: transparent; }
 
 .site-header {
   position: sticky; top: 0; z-index: 20; min-height: 4.25rem;
-  padding: .65rem max(1.25rem, calc((100vw - 78rem) / 2));
+  padding: .65rem max(1.25rem, calc((100vw - 94rem) / 2));
   background: color-mix(in srgb, var(--paper) 94%, transparent);
   backdrop-filter: blur(12px);
 }
@@ -499,7 +499,8 @@ button, input, select, textarea, a { -webkit-tap-highlight-color: transparent; }
 .nav-link.is-active { border-bottom-color: var(--terracotta); }
 .local-badge { padding: .4rem .65rem; border: 1px solid #c8dec2; border-radius: .2rem; background: #eaf2ec; letter-spacing: .03em; text-transform: none; }
 
-.dashboard, .catalog, .book-page, .settings-page, .cover-setup { width: min(100%, 78rem); margin-inline: auto; }
+.dashboard, .book-page, .settings-page, .cover-setup { width: min(100%, 78rem); margin-inline: auto; }
+.catalog { width: min(100%, 94rem); margin-inline: auto; }
 .dashboard, .catalog, .settings-page, .cover-setup { padding-top: clamp(2.5rem, 5vw, 4.5rem); }
 .page-heading { margin-bottom: 2.25rem; }
 .eyebrow { margin-bottom: .65rem; font-size: .68rem; letter-spacing: .13em; }
