@@ -35,7 +35,7 @@
         </details>
       </header>
       <p class="book-load-feedback" id="book-load-feedback" role="alert" hidden></p>
-      <nav class="book-tabs" role="tablist" aria-label="Secciones del libro"><button type="button" role="tab" aria-selected="true" aria-controls="panel-memory" data-book-tab="memory">Memoria de lectura</button><button type="button" role="tab" aria-selected="false" aria-controls="panel-notebook" data-book-tab="notebook">Cuaderno propio</button><button type="button" role="tab" aria-selected="false" aria-controls="panel-companion" data-book-tab="companion">Acompañante</button></nav>
+      <nav class="book-tabs" role="tablist" aria-label="Secciones del libro"><button type="button" role="tab" aria-selected="false" aria-controls="panel-memory" data-book-tab="memory">Memoria de lectura</button><button type="button" role="tab" aria-selected="false" aria-controls="panel-notebook" data-book-tab="notebook">Cuaderno propio</button><button type="button" role="tab" aria-selected="true" aria-controls="panel-companion" data-book-tab="companion">Acompañante</button></nav>
       <section class="personal-workspace book-panel" id="panel-notebook" data-book-panel="notebook" aria-labelledby="personal-title" hidden>
         <div class="section-heading"><div><p class="eyebrow">Cuaderno propio</p><h2 id="personal-title">Pensar esta lectura</h2></div><span>Guardado solo en esta computadora</span></div>
         <div class="personal-grid">
@@ -55,7 +55,7 @@
         </div>
         <p class="form-feedback" id="personal-feedback" role="status" aria-live="polite"></p>
       </section>
-      <section class="reading-companion book-panel" id="panel-companion" data-book-panel="companion" aria-labelledby="conversation-title" hidden>
+      <section class="reading-companion book-panel" id="panel-companion" data-book-panel="companion" aria-labelledby="conversation-title">
         <header class="companion-heading">
           <div class="companion-intro"><p class="eyebrow">Acompañante de lectura</p><h2 id="conversation-title">Conversar sobre esta lectura</h2><p>Conversá con el perfil que elijas y, si querés, buscá evidencia en toda tu biblioteca.</p></div>
           <div class="companion-focus-context" aria-label="Libro y conversación actual"><button id="exit-companion-focus" class="focus-exit-button" type="button">← Volver a la ficha</button><span id="focus-book-context">Cargando libro…</span><span id="focus-conversation-context" hidden></span><a href="/library" class="focus-library-link">Biblioteca</a></div>
@@ -67,7 +67,20 @@
         </div>
         <div class="companion-layout companion-workbench">
           <div class="conversation-panel">
-            <div class="conversation-empty" id="conversation-empty"><strong>Todavía no hay una conversación abierta</strong><p>Elegí un perfil y creá una para empezar a registrar tus preguntas.</p></div>
+            <div class="conversation-empty" id="conversation-empty">
+              <div class="empty-companion-icon" aria-hidden="true">✦</div>
+              <h3>Conversar sobre esta lectura</h3>
+              <p>Elegí una perspectiva de lectura para hacer preguntas, profundizar en ideas clave o conectar pasajes con tu cuaderno.</p>
+              <form id="empty-conversation-form" class="empty-companion-form">
+                <label>Perfil de lectura<select id="empty-conversation-profile" required><option>Cargando perfiles…</option></select></label>
+                <button type="submit" class="empty-start-btn" id="empty-start-conversation" disabled>✦ Iniciar conversación</button>
+              </form>
+              <div class="empty-suggestions">
+                <button type="button" class="empty-suggestion-chip" data-prompt="¿Cuáles son las ideas principales y la tesis central de este libro?">💡 Ideas principales</button>
+                <button type="button" class="empty-suggestion-chip" data-prompt="¿Qué preguntas fundamentales o prácticas plantea esta lectura?">❓ Preguntas clave</button>
+                <button type="button" class="empty-suggestion-chip" data-prompt="Resumir y analizar los subrayados registrados en esta obra.">📝 Resumir notas</button>
+              </div>
+            </div>
             <div class="conversation-active" id="conversation-active" hidden>
               <section class="chat-column" aria-label="Conversación">
                 <header class="active-conversation-header"><div><p class="eyebrow" id="active-conversation-profile"></p><h3 id="active-conversation-title"></h3><details class="conversation-title-editor"><summary>Editar título</summary><form id="conversation-title-form"><label for="active-conversation-title-input">Título de la conversación</label><div><input id="active-conversation-title-input" type="text" maxlength="120" required><button type="submit">Guardar</button></div></form></details></div><span class="attached-count" id="attached-count">Sin material adjunto</span></header>
@@ -135,7 +148,7 @@
           <p class="companion-action-help">Elegí una acción para preparar un mensaje editable; no se envía todavía.</p>
         </div>
       </dialog>
-      <section class="book-annotations book-panel" id="panel-memory" data-book-panel="memory" aria-labelledby="annotations-title">
+      <section class="book-annotations book-panel" id="panel-memory" data-book-panel="memory" aria-labelledby="annotations-title" hidden>
         <div class="section-heading"><div><p class="eyebrow">Memoria de lectura</p><h2 id="annotations-title">Subrayados y notas</h2></div><span id="annotation-result-count">Consultando…</span></div>
         <form class="annotation-filters" id="annotation-filters">
           <label>Tipo<select id="kind"><option value="all">Todos</option><option value="highlight">Subrayados</option><option value="note">Notas</option><option value="bookmark">Marcadores</option></select></label>

@@ -969,6 +969,25 @@ async function reviewContext() {
   renderContextReview(preview);
 }
 
+async function loadOptions() {
+  const [profiles, works] = await Promise.all([
+    jsonRequest("/api/ai/profiles"),
+    jsonRequest("/api/works"),
+  ]);
+  const profileSelect = document.querySelector("#conversation-profile");
+  profileSelect.replaceChildren(...profiles.items.map((item) => new Option(item.name, item.id, item.is_default, item.is_default)));
+  const emptyProfileSelect = document.querySelector("#empty-conversation-profile");
+  if (emptyProfileSelect) {
+    emptyProfileSelect.replaceChildren(...profiles.items.map((item) => new Option(item.name, item.id, item.is_default, item.is_default)));
+  }
+  document.querySelector("#new-conversation").disabled = profiles.items.length === 0;
+  document.querySelector("#open-new-conversation").disabled = profiles.items.length === 0;
+  const emptyStartBtn = document.querySelector("#empty-start-conversation");
+  if (emptyStartBtn) emptyStartBtn.disabled = profiles.items.length === 0;
+  const searchWorks = document.querySelector("#library-search-works");
+  searchWorks.replaceChildren(...works.items.map((item) => new Option(item.title, item.id)));
+}
+
 async function loadProviderStatus() {
   const status = await jsonRequest("/api/ai/status");
   document.querySelector("#provider-notice").textContent = status.ready
@@ -1016,7 +1035,11 @@ async function openConversation(identifier) {
 async function loadConversations(preferredId = activeConversationId) {
   const data = await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/conversations`);
   renderConversationOptions(data.items, preferredId);
-  if (!data.items.length) return;
+  if (!data.items.length) {
+    document.querySelector("#conversation-empty").hidden = false;
+    document.querySelector("#conversation-active").hidden = true;
+    return;
+  }
   const next = data.items.some((item) => item.id === preferredId) ? preferredId : data.items[0].id;
   await openConversation(next);
 }
@@ -1296,7 +1319,54 @@ document.querySelectorAll("[data-book-tab]").forEach((tab) => {
 });
 const requestedPanel = location.hash.replace("#panel-", "");
 const requestedTab = document.querySelector(`[data-book-tab="${requestedPanel}"]`);
-if (requestedTab) requestedTab.click();
+if (requestedTab) {
+  requestedTab.click();
+} else {
+  const companionTab = document.querySelector('[data-book-tab="companion"]');
+  if (companionTab) companionTab.click();
+}
+
+const emptyForm = document.querySelector("#empty-conversation-form");
+if (emptyForm) {
+  emptyForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const profileId = document.querySelector("#empty-conversation-profile")?.value;
+    if (!profileId) return;
+    try {
+      const created = await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/conversations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile_id: profileId }),
+      });
+      await loadConversations(created.id);
+    } catch (err) {
+      alert("No se pudo iniciar la conversación: " + (err.message || err));
+    }
+  });
+}
+
+document.querySelectorAll(".empty-suggestion-chip").forEach((chip) => {
+  chip.addEventListener("click", async () => {
+    const promptText = chip.dataset.prompt;
+    const profileId = document.querySelector("#empty-conversation-profile")?.value || document.querySelector("#conversation-profile")?.value;
+    if (!profileId) return;
+    try {
+      const created = await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/conversations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile_id: profileId }),
+      });
+      await loadConversations(created.id);
+      const msgArea = document.querySelector("#conversation-message");
+      if (msgArea) {
+        msgArea.value = promptText;
+        msgArea.focus();
+      }
+    } catch (err) {
+      alert("No se pudo iniciar la conversación: " + (err.message || err));
+    }
+  });
+});
 
 async function loadCoverDialogData() {
   const feedback = document.querySelector("#cover-dialog-feedback");
