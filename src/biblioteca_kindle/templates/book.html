@@ -13,7 +13,6 @@
       <nav aria-label="Navegación principal"><a class="nav-link is-active" href="/library">Biblioteca</a><a class="nav-link" href="/settings">Ajustes</a></nav>
     </header>
     <main><article class="book-page">
-      <a class="back-link" href="/library">← Volver a la biblioteca</a>
       <header class="book-header book-header-compact">
         <div class="book-header-cover-col">
           <div class="book-header-cover" id="book-header-cover"><img id="book-cover-image" alt="" hidden><span id="book-cover-placeholder" aria-hidden="true">—</span></div>
@@ -22,9 +21,10 @@
         <div class="book-header-identity">
           <p class="sr-only" id="identity-state">Ficha de lectura</p>
           <div class="book-title-header-row">
+            <a class="back-link-inline" href="/library" title="Volver a la biblioteca">← Volver</a>
             <h1 id="book-title">Consultando…</h1>
             <details class="title-editor">
-              <summary title="Editar título mostrado">✏️ Editar título</summary>
+              <summary title="Editar título mostrado">✏️</summary>
               <form id="title-form">
                 <label>Título para la aplicación<input id="display-title-input" type="text" required></label>
                 <div class="title-editor-actions">
@@ -67,25 +67,21 @@
             <span id="focus-book-context" hidden></span>
             <span id="focus-conversation-context" hidden></span>
             <button id="exit-companion-focus" class="focus-exit-button" type="button" hidden>← Volver</button>
-            <header class="companion-heading">
-              <div class="companion-intro">
-                <p class="eyebrow">Acompañante de lectura</p>
-                <h2 id="conversation-title">Conversar sobre esta lectura</h2>
-              </div>
-              <div class="companion-actions">
-                <button id="open-new-conversation" type="button" disabled>+ Nueva conversación</button>
-              </div>
-            </header>
-            <div class="conversation-toolbar">
-              <label>Conversación
+            <h2 id="conversation-title" class="sr-only">Conversar sobre esta lectura</h2>
+
+            <div class="chat-topbar">
+              <div class="chat-topbar-select">
                 <select id="conversation-list" aria-label="Conversaciones de este libro">
                   <option>Cargando…</option>
                 </select>
-              </label>
-              <details class="provider-status">
-                <summary id="provider-notice">Consultando IA…</summary>
-                <p id="provider-description"></p>
-              </details>
+              </div>
+              <div class="chat-topbar-actions">
+                <button id="open-new-conversation" type="button" disabled>+ Nueva conversación</button>
+                <details class="provider-status">
+                  <summary id="provider-notice">Consultando IA…</summary>
+                  <p id="provider-description"></p>
+                </details>
+              </div>
             </div>
             <div class="companion-layout companion-workbench">
               <div class="conversation-panel">
