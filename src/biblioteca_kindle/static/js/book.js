@@ -1037,7 +1037,7 @@ async function openConversation(identifier) {
   setText("active-conversation-title", conversationDisplayTitle(conversation));
   const focusConversation = document.querySelector("#focus-conversation-context");
   focusConversation.textContent = `${conversation.profile_name_snapshot || "Perfil no disponible"} · ${conversationDisplayTitle(conversation)}`;
-  focusConversation.hidden = false;
+  focusConversation.hidden = !document.body.classList.contains("is-companion-focused");
   document.querySelector("#active-conversation-title-input").value = conversation.title || "";
   document.querySelector("#conversation-title-form").closest("details").removeAttribute("open");
   const messages = conversation.messages.map(messageCard);
