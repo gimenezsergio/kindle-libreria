@@ -904,8 +904,12 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 .book-header-actions { display: flex; align-items: center; gap: .5rem; }
 .sidebar-toggle-btn { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem .85rem; border: 1px solid var(--line); border-radius: .25rem; background: var(--surface); color: var(--ink); font-size: .82rem; font-weight: 600; cursor: pointer; transition: all .15s ease; }
 .sidebar-toggle-btn:hover { background: var(--surface-warm); border-color: var(--terracotta); color: var(--terracotta); }
-.sidebar-toggle-btn[aria-expanded="false"] { opacity: .75; }
+.sidebar-toggle-btn[aria-expanded="false"] { opacity: .75; background: var(--surface-warm); }
 .title-editor-actions { display: flex; gap: .5rem; margin-top: .5rem; }
+
+/* Floating sidebar button when collapsed */
+.floating-sidebar-btn { position: fixed; right: 1.5rem; bottom: 2rem; z-index: 90; display: inline-flex; align-items: center; gap: .5rem; padding: .7rem 1.1rem; border: 1px solid var(--terracotta); border-radius: 2rem; background: var(--terracotta); color: var(--surface); font-size: .85rem; font-weight: 700; box-shadow: 0 .4rem 1.2rem rgba(0, 0, 0, .2); cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
+.floating-sidebar-btn:hover { transform: translateY(-2px); box-shadow: 0 .6rem 1.6rem rgba(0, 0, 0, .28); }
 
 /* 2-Column Book Workspace */
 .book-workspace { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(18rem, 24rem); gap: 1.25rem; margin-top: 1rem; align-items: start; transition: grid-template-columns .2s ease; }
@@ -923,6 +927,18 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 .sidebar-content { overflow-y: auto; max-height: calc(100vh - 5.5rem); padding: 1rem; }
 .sidebar-panel { display: none; }
 .sidebar-panel.is-active, .sidebar-panel:not([hidden]) { display: block; }
+
+/* Sidebar personal workspace / Cuaderno layout */
+.sidebar-panel .personal-workspace { margin: 0; padding: 0; }
+.sidebar-panel .personal-grid { display: flex; flex-direction: column; gap: 1rem; }
+.personal-accordion { border: 1px solid var(--line); border-radius: .25rem; background: var(--surface); overflow: hidden; }
+.accordion-summary { display: flex; align-items: center; justify-content: space-between; padding: .75rem 1rem; background: var(--paper); cursor: pointer; user-select: none; font-family: var(--serif); list-style: none; }
+.accordion-summary::-webkit-details-marker { display: none; }
+.accordion-summary h3 { margin: 0; font-size: 1.1rem; font-weight: 500; }
+.accordion-chevron { font-size: .9rem; color: var(--muted); transition: transform .2s ease; }
+.personal-accordion[open] > .accordion-summary .accordion-chevron { transform: rotate(180deg); }
+.accordion-content { padding: 1rem; border-top: 1px solid var(--line); display: grid; gap: 1rem; }
+.sidebar-panel .personal-items { max-height: 12rem; }
 
 @media (max-width: 960px) {
   .book-workspace { grid-template-columns: 1fr; }

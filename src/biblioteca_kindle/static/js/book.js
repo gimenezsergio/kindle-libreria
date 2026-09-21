@@ -1313,10 +1313,23 @@ document.querySelector("#annotation-next").addEventListener("click", () => { if 
 function setSidebarCollapsed(collapsed) {
   const workspace = document.querySelector("#book-workspace");
   const toggleBtn = document.querySelector("#toggle-sidebar");
+  const toggleLabel = document.querySelector("#toggle-sidebar-label");
+  const floatingBtn = document.querySelector("#floating-open-sidebar");
+
   if (workspace) workspace.classList.toggle("is-sidebar-collapsed", collapsed);
-  if (toggleBtn) toggleBtn.setAttribute("aria-expanded", String(!collapsed));
+  if (toggleBtn) {
+    toggleBtn.setAttribute("aria-expanded", String(!collapsed));
+    if (toggleLabel) toggleLabel.textContent = collapsed ? "📌 Abrir Notas y Cuaderno" : "Ocultar panel lateral";
+  }
+  if (floatingBtn) {
+    floatingBtn.hidden = !collapsed;
+  }
   try { localStorage.setItem("book-sidebar-collapsed", String(collapsed)); } catch (e) {}
 }
+
+document.querySelector("#floating-open-sidebar")?.addEventListener("click", () => {
+  setSidebarCollapsed(false);
+});
 
 function selectSidebarTab(tabName) {
   setSidebarCollapsed(false);

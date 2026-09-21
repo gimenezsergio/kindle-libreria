@@ -46,7 +46,7 @@
         <div class="book-header-actions">
           <button type="button" class="sidebar-toggle-btn" id="toggle-sidebar" aria-expanded="true" title="Mostrar/ocultar panel lateral">
             <span class="sidebar-toggle-icon" aria-hidden="true">◧</span>
-            <span>Notas y Cuaderno</span>
+            <span id="toggle-sidebar-label">Ocultar panel lateral</span>
           </button>
         </div>
         <div hidden>
@@ -56,6 +56,10 @@
         </div>
       </header>
       <p class="book-load-feedback" id="book-load-feedback" role="alert" hidden></p>
+
+      <button type="button" class="floating-sidebar-btn" id="floating-open-sidebar" title="Abrir panel de Subrayados y Cuaderno" hidden>
+        <span>📌 Subrayados y Cuaderno</span> ◀
+      </button>
 
       <div class="book-workspace" id="book-workspace">
         <main class="workspace-main">
@@ -183,19 +187,28 @@
                 <div><h2 id="personal-title">Pensar esta lectura</h2></div>
               </div>
               <div class="personal-grid">
-                <article class="personal-panel">
-                  <h3>Colecciones</h3><div class="personal-items" id="collection-items"></div>
-                  <form id="assign-collection-form"><label>Colección<select id="collection-select" required></select></label><label>Comentario<input id="collection-note" type="text" placeholder="Por qué pertenece aquí"></label><button type="submit">Asignar colección</button></form>
-                  <form class="inline-create" id="create-collection-form"><label>Nueva colección<input id="collection-name" type="text" required placeholder="Ej. Poder y autoridad"></label><button type="submit">Crear</button></form>
-                </article>
-                <article class="personal-panel">
-                  <h3>Notas propias</h3><div class="personal-items" id="personal-note-items"></div>
-                  <form id="personal-note-form"><label>Nueva nota<textarea id="personal-note-body" required rows="4" placeholder="Una interpretación, una pregunta, una conexión…"></textarea></label><button type="submit">Guardar nota</button></form>
-                </article>
-                <article class="personal-panel">
-                  <h3>Relaciones</h3><div class="personal-items" id="relation-items"></div>
-                  <form id="relation-form"><label>Otra obra<select id="relation-target" required></select></label><label>Tipo<input id="relation-type" required placeholder="tema, símbolo, contraste…"></label><label>Explicación<textarea id="relation-explanation" rows="2"></textarea></label><label class="check-field"><input id="relation-symmetric" type="checkbox" checked><span>Relación simétrica</span></label><button type="submit">Crear relación</button></form>
-                </article>
+                <details class="personal-accordion" open>
+                  <summary class="accordion-summary"><h3>Colecciones</h3><span class="accordion-chevron">▾</span></summary>
+                  <div class="accordion-content">
+                    <div class="personal-items" id="collection-items"></div>
+                    <form id="assign-collection-form"><label>Colección<select id="collection-select" required></select></label><label>Comentario<input id="collection-note" type="text" placeholder="Por qué pertenece aquí"></label><button type="submit">Asignar colección</button></form>
+                    <form class="inline-create" id="create-collection-form"><label>Nueva colección<input id="collection-name" type="text" required placeholder="Ej. Poder y autoridad"></label><button type="submit">Crear</button></form>
+                  </div>
+                </details>
+                <details class="personal-accordion" open>
+                  <summary class="accordion-summary"><h3>Notas propias</h3><span class="accordion-chevron">▾</span></summary>
+                  <div class="accordion-content">
+                    <div class="personal-items" id="personal-note-items"></div>
+                    <form id="personal-note-form"><label>Nueva nota<textarea id="personal-note-body" required rows="3" placeholder="Una interpretación, una pregunta, una conexión…"></textarea></label><button type="submit">Guardar nota</button></form>
+                  </div>
+                </details>
+                <details class="personal-accordion" open>
+                  <summary class="accordion-summary"><h3>Relaciones</h3><span class="accordion-chevron">▾</span></summary>
+                  <div class="accordion-content">
+                    <div class="personal-items" id="relation-items"></div>
+                    <form id="relation-form"><label>Otra obra<select id="relation-target" required></select></label><label>Tipo<input id="relation-type" required placeholder="tema, símbolo, contraste…"></label><label>Explicación<textarea id="relation-explanation" rows="2"></textarea></label><label class="check-field"><input id="relation-symmetric" type="checkbox" checked><span>Relación simétrica</span></label><button type="submit">Crear relación</button></form>
+                  </div>
+                </details>
               </div>
               <p class="form-feedback" id="personal-feedback" role="status" aria-live="polite"></p>
             </section>
