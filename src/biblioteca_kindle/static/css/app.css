@@ -922,16 +922,39 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 .sidebar-panel.is-active, .sidebar-panel:not([hidden]) { display: block; }
 
 /* Sidebar personal workspace / Cuaderno layout */
-.sidebar-panel .personal-workspace { margin: 0; padding: 0; }
-.sidebar-panel .personal-grid { display: flex; flex-direction: column; gap: 1rem; }
+.sidebar-panel .book-annotations,
+.sidebar-panel .personal-workspace { margin: 0; padding: 0; max-width: none; }
+.sidebar-panel .section-heading { margin-bottom: .75rem; align-items: baseline; }
+.sidebar-panel .section-heading h2 { font-size: 1.25rem; }
+.sidebar-panel .section-heading > span { font-size: .72rem; }
+
+/* Subrayados inside Sidebar */
+.sidebar-panel .annotation-filters { display: flex; gap: .5rem; padding: .5rem .75rem; border: 1px solid var(--line); border-radius: .2rem; background: var(--paper); margin-bottom: .75rem; }
+.sidebar-panel .annotation-filters label { flex: 1; font-size: .62rem; display: flex; flex-direction: column; gap: .25rem; color: var(--muted); font-weight: 700; text-transform: uppercase; }
+.sidebar-panel .annotation-filters select { width: 100%; padding: .35rem .5rem; font-size: .78rem; border: 1px solid var(--line); background: var(--surface); border-radius: .2rem; color: var(--ink); }
+.sidebar-panel .annotation-list { margin-top: .5rem; display: flex; flex-direction: column; gap: .5rem; }
+.sidebar-panel .annotation-card { padding: .85rem 1rem; border: 1px solid var(--line); border-radius: .2rem; border-left: .3rem solid #aaa; background: var(--surface); margin: 0; }
+.sidebar-panel .annotation-card blockquote { margin: .5rem 0 .25rem; font-size: .95rem; line-height: 1.45; max-width: none; }
+
+/* Cuaderno (Accordions & Forms) inside Sidebar */
+.sidebar-panel .personal-grid { display: flex; flex-direction: column; gap: .75rem; }
 .personal-accordion { border: 1px solid var(--line); border-radius: .25rem; background: var(--surface); overflow: hidden; }
-.accordion-summary { display: flex; align-items: center; justify-content: space-between; padding: .75rem 1rem; background: var(--paper); cursor: pointer; user-select: none; font-family: var(--serif); list-style: none; }
+.accordion-summary { display: flex; align-items: center; justify-content: space-between; padding: .65rem .85rem; background: var(--paper); cursor: pointer; user-select: none; font-family: var(--serif); list-style: none; }
 .accordion-summary::-webkit-details-marker { display: none; }
-.accordion-summary h3 { margin: 0; font-size: 1.1rem; font-weight: 500; }
-.accordion-chevron { font-size: .9rem; color: var(--muted); transition: transform .2s ease; }
+.accordion-summary h3 { margin: 0; font-size: 1.05rem; font-weight: 500; color: var(--ink); }
+.accordion-chevron { font-size: .85rem; color: var(--muted); transition: transform .2s ease; }
 .personal-accordion[open] > .accordion-summary .accordion-chevron { transform: rotate(180deg); }
-.accordion-content { padding: 1rem; border-top: 1px solid var(--line); display: grid; gap: 1rem; }
-.sidebar-panel .personal-items { max-height: 12rem; }
+.accordion-content { padding: .85rem; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: .75rem; }
+.accordion-content .personal-items { max-height: 12rem; margin-bottom: .25rem; display: flex; flex-direction: column; gap: .5rem; overflow-y: auto; }
+.accordion-content form { display: flex; flex-direction: column; gap: .6rem; padding-top: .6rem; border-top: 1px solid var(--line); margin: 0; }
+.accordion-content form label { display: flex; flex-direction: column; gap: .25rem; color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.accordion-content form input[type="text"],
+.accordion-content form textarea,
+.accordion-content form select { width: 100%; padding: .45rem .6rem; border: 1px solid var(--line); border-radius: .2rem; background: var(--surface); color: var(--ink); font: inherit; font-size: .82rem; box-sizing: border-box; }
+.accordion-content form textarea { resize: vertical; min-height: 3.5rem; }
+.accordion-content form label.check-field { flex-direction: row; align-items: center; gap: .5rem; font-weight: normal; text-transform: none; color: var(--ink); font-size: .78rem; }
+.accordion-content form button { padding: .5rem .85rem; border: 0; border-radius: .2rem; background: var(--terracotta); color: var(--surface); font-size: .8rem; font-weight: 600; cursor: pointer; align-self: start; }
+.accordion-content form button:hover { opacity: .9; }
 
 @media (max-width: 960px) {
   .book-workspace { grid-template-columns: 1fr; }
