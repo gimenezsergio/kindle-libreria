@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ficha del libro · Biblioteca personal</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=rail2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=rail3">
     <script>window.WORK_ID = {{ work_id|tojson }};</script>
-    <script src="{{ url_for('static', filename='js/book.js') }}?v=rail2" defer></script>
+    <script src="{{ url_for('static', filename='js/book.js') }}?v=rail3" defer></script>
   </head>
   <body class="notebooklm-body">
     <header class="site-header">
@@ -14,15 +14,15 @@
     </header>
     <main class="notebooklm-main"><article class="book-page notebooklm-page">
       
-      <!-- Top Slim Header -->
+      <!-- Top Slim Header (NotebookLM Single-Row Header) -->
       <header class="book-header book-header-compact notebook-topbar">
         <div class="topbar-left">
           <a class="back-link-inline" href="/library" title="Volver a la biblioteca">← Biblioteca</a>
-        </div>
-
-        <div class="book-header-identity">
-          <p class="sr-only" id="identity-state">Ficha de lectura</p>
-          <div class="book-header-cover" id="book-header-cover"><img id="book-cover-image" alt="" hidden><span id="book-cover-placeholder" aria-hidden="true">—</span></div>
+          <span class="topbar-divider" aria-hidden="true">/</span>
+          <div class="book-header-cover" id="book-header-cover" title="Cambiar portada">
+            <img id="book-cover-image" alt="" hidden>
+            <span id="book-cover-placeholder" aria-hidden="true">—</span>
+          </div>
           <div class="book-header-info">
             <div class="book-title-header-row">
               <h1 id="book-title">Consultando…</h1>
@@ -39,19 +39,24 @@
               </details>
             </div>
             <p class="book-author" id="book-author"></p>
-            <p class="book-summary">
-              <span id="book-presence">—</span>
-              <span><strong id="book-annotation-total">—</strong> anotaciones</span>
-              <span id="book-language">Idioma no disponible</span>
-              <span id="book-activity">Seguimiento no disponible</span>
-            </p>
           </div>
-          <button type="button" class="change-cover-btn" id="open-cover-dialog" aria-haspopup="dialog" aria-controls="book-cover-dialog">📷 Portada</button>
         </div>
 
-        <div class="topbar-right"></div>
+        <div class="topbar-right">
+          <div class="header-annotation-badge">
+            <span id="book-annotation-total">—</span> anotaciones
+          </div>
+          <button type="button" class="change-cover-btn" id="open-cover-dialog" aria-haspopup="dialog" aria-controls="book-cover-dialog">
+            📷 Cambiar portada
+          </button>
+        </div>
 
+        <!-- Hidden container for JS DOM compatibility -->
         <div hidden>
+          <p id="identity-state">Ficha de lectura</p>
+          <span id="book-presence"></span>
+          <span id="book-language"></span>
+          <span id="book-activity"></span>
           <span id="edition-count"></span><p id="edition-detail"></p>
           <span id="progress-position"></span><p id="progress-detail"></p>
           <span id="personal-count"></span><p id="personal-detail"></p>

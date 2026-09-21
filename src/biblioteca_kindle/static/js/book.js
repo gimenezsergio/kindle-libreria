@@ -1399,6 +1399,10 @@ document.querySelector("#rail-btn-relations")?.addEventListener("click", () => {
   details?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
+document.querySelector("#book-header-cover")?.addEventListener("click", () => {
+  document.querySelector("#open-cover-dialog")?.click();
+});
+
 const savedLeftCollapsed = localStorage.getItem("notebook-left-collapsed") === "true";
 if (savedLeftCollapsed) setLeftSidebarCollapsed(true);
 
