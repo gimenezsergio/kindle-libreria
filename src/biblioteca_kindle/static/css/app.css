@@ -831,8 +831,8 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 .companion-workbench { display: block; width: 100%; min-height: 0; }
 .conversation-list { padding: .75rem; }
 .conversation-panel { max-width: none; width: 100%; padding: 0; }
-.conversation-active { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, .8fr); min-height: 42rem; }
-.chat-column { display: flex; min-width: 0; height: clamp(34rem, calc(100vh - 12rem), 54rem); max-height: calc(100vh - 10rem); flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: .35rem; overflow: hidden; }
+.conversation-active { display: block; width: 100%; min-height: 0; }
+.chat-column { display: flex; min-width: 0; width: 100%; height: clamp(34rem, calc(100vh - 12rem), 54rem); max-height: calc(100vh - 10rem); flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: .35rem; overflow: hidden; }
 .active-conversation-header { flex: 0 0 auto; display: flex; justify-content: space-between; gap: 1rem; align-items: center; padding: 1rem 1.4rem; border-bottom: 1px solid var(--line); background: var(--surface); }
 .active-conversation-header .eyebrow { margin-bottom: .25rem; }
 .active-conversation-header h3 { margin: 0 !important; font-family: var(--serif); font-size: 1.35rem !important; font-weight: 400; }
@@ -1109,7 +1109,7 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 .notebook-workspace { display: grid; grid-template-columns: 20rem minmax(0, 1fr) 20rem; gap: 1rem; margin-top: .75rem; align-items: start; transition: grid-template-columns .25s ease; }
 .sidebar-left { grid-column: 1; }
 .notebook-center { grid-column: 2; min-width: 0; }
-.notebook-center .conversation-active { display: flex; flex-direction: column; gap: 1rem; min-height: 0; width: 100%; }
+.notebook-center .conversation-active { display: block; width: 100%; min-height: 0; }
 .sidebar-right { grid-column: 3; }
 
 .notebook-workspace.is-left-collapsed { grid-template-columns: 3.5rem minmax(0, 1fr) 20rem; }
@@ -1149,6 +1149,15 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 
 /* Hide Old Edge Floating Open Buttons */
 .floating-sidebar-btn { display: none !important; }
+
+/* Left Sidebar Tab Switcher */
+.sidebar-tab-nav { display: flex; border-bottom: 1px solid var(--line); background: var(--paper); margin-bottom: .75rem; border-radius: .25rem .25rem 0 0; overflow: hidden; }
+.sidebar-tab-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: .35rem; padding: .5rem .75rem; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font-size: .78rem; font-weight: 700; cursor: pointer; transition: all .15s ease; }
+.sidebar-tab-btn:hover { color: var(--ink); background: color-mix(in srgb, var(--surface) 60%, transparent); }
+.sidebar-tab-btn.is-active { color: var(--terracotta); border-bottom-color: var(--terracotta); background: var(--surface); }
+.tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.1rem; height: 1.1rem; padding: 0 .3rem; border-radius: 999px; background: var(--terracotta); color: var(--surface); font-size: .62rem; font-weight: 700; }
+.left-tab-panel { display: flex; flex-direction: column; gap: .75rem; }
+.left-tab-panel[hidden] { display: none !important; }
 
 /* Sidebar internal sections */
 .notebook-sidebar .book-annotations,

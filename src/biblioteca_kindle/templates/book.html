@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ficha del libro · Biblioteca personal</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=rail9">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=rail10">
     <script>window.WORK_ID = {{ work_id|tojson }};</script>
-    <script src="{{ url_for('static', filename='js/book.js') }}?v=rail9" defer></script>
+    <script src="{{ url_for('static', filename='js/book.js') }}?v=rail10" defer></script>
   </head>
   <body class="notebooklm-body">
     <header class="site-header">
@@ -96,33 +96,56 @@
             <button type="button" class="sidebar-close-btn" id="close-left-sidebar" title="Ocultar fuentes">✕</button>
           </div>
           <div class="sidebar-content">
-            <section class="book-annotations" id="panel-memory" data-book-panel="memory" aria-labelledby="annotations-title">
-              <div class="section-heading">
-                <div><h2 id="annotations-title">Subrayados y notas</h2></div>
-                <span id="annotation-result-count">Consultando…</span>
-              </div>
-              <form class="annotation-filters" id="annotation-filters">
-                <label>Tipo<select id="kind"><option value="all">Todos</option><option value="highlight">Subrayados</option><option value="note">Notas</option><option value="bookmark">Marcadores</option></select></label>
-                <label>Fuente<select id="source"><option value="all">Todas</option><option value="clippings">My Clippings</option><option value="krds">KRDS</option><option value="han">HAN</option></select></label>
-              </form>
-              <div class="annotation-list" id="annotation-list"></div>
-              <div class="empty-state" id="annotation-empty" hidden><strong>No hay anotaciones para estos filtros</strong><span>Probá con otro tipo o fuente.</span></div>
-              <nav class="pagination" aria-label="Páginas de anotaciones"><button id="annotation-previous" type="button">← Anterior</button><span id="annotation-page"></span><button id="annotation-next" type="button">Siguiente →</button></nav>
-            </section>
+            <!-- Sidebar Tab Navigation -->
+            <div class="sidebar-tab-nav" role="tablist">
+              <button type="button" class="sidebar-tab-btn is-active" id="left-tab-annotations" role="tab">
+                Subrayados
+              </button>
+              <button type="button" class="sidebar-tab-btn" id="left-tab-material" role="tab">
+                Material IA <span class="tab-badge" id="material-tab-count">0</span>
+              </button>
+            </div>
 
-            <!-- Context Search Scope Panel -->
-            <section class="context-scope-panel">
-              <details class="library-search" open>
-                <summary><span>Buscar conexiones en mi biblioteca</span><input id="library-search-enabled" type="checkbox" aria-label="Consultar la biblioteca al enviar"></summary>
-                <div class="library-search-controls">
-                  <label>Alcance<select id="library-search-scope"><option value="library">Toda la biblioteca</option><option value="current">Solo este libro</option><option value="selected">Libros elegidos</option></select></label>
-                  <label id="library-search-works-label" hidden>Libros<select id="library-search-works" multiple size="4"></select></label>
-                  <button class="secondary-button" id="preview-library-search" type="button">Ver contexto sugerido</button>
+            <!-- Tab 1: Subrayados & Notas -->
+            <div class="left-tab-panel" id="left-panel-annotations" role="tabpanel">
+              <section class="book-annotations" id="panel-memory" data-book-panel="memory" aria-labelledby="annotations-title">
+                <div class="section-heading">
+                  <div><h2 id="annotations-title">Subrayados y notas</h2></div>
+                  <span id="annotation-result-count">Consultando…</span>
                 </div>
-                <div class="library-search-results" id="library-search-results"><p>Escribí tu mensaje para revisar las fuentes.</p></div>
-                <button class="text-button" id="pin-library-context" type="button" hidden>Fijar seleccionados</button>
-              </details>
-            </section>
+                <form class="annotation-filters" id="annotation-filters">
+                  <label>Tipo<select id="kind"><option value="all">Todos</option><option value="highlight">Subrayados</option><option value="note">Notas</option><option value="bookmark">Marcadores</option></select></label>
+                  <label>Fuente<select id="source"><option value="all">Todas</option><option value="clippings">My Clippings</option><option value="krds">KRDS</option><option value="han">HAN</option></select></label>
+                </form>
+                <div class="annotation-list" id="annotation-list"></div>
+                <div class="empty-state" id="annotation-empty" hidden><strong>No hay anotaciones para estos filtros</strong><span>Probá con otro tipo o fuente.</span></div>
+                <nav class="pagination" aria-label="Páginas de anotaciones"><button id="annotation-previous" type="button">← Anterior</button><span id="annotation-page"></span><button id="annotation-next" type="button">Siguiente →</button></nav>
+              </section>
+
+              <!-- Context Search Scope Panel -->
+              <section class="context-scope-panel">
+                <details class="library-search" open>
+                  <summary><span>Buscar conexiones en mi biblioteca</span><input id="library-search-enabled" type="checkbox" aria-label="Consultar la biblioteca al enviar"></summary>
+                  <div class="library-search-controls">
+                    <label>Alcance<select id="library-search-scope"><option value="library">Toda la biblioteca</option><option value="current">Solo este libro</option><option value="selected">Libros elegidos</option></select></label>
+                    <label id="library-search-works-label" hidden>Libros<select id="library-search-works" multiple size="4"></select></label>
+                    <button class="secondary-button" id="preview-library-search" type="button">Ver contexto sugerido</button>
+                  </div>
+                  <div class="library-search-results" id="library-search-results"><p>Escribí tu mensaje para revisar las fuentes.</p></div>
+                  <button class="text-button" id="pin-library-context" type="button" hidden>Fijar seleccionados</button>
+                </details>
+              </section>
+            </div>
+
+            <!-- Tab 2: Material para conversar (Contexto IA) -->
+            <div class="left-tab-panel" id="left-panel-material" role="tabpanel" hidden>
+              <section class="material-column-content" id="material-column-content">
+                <header><div><p class="eyebrow">Contexto adjunto</p><h3>Material para conversar</h3></div><span id="material-summary-count">0 adjuntos</span></header>
+                <div class="attached-material" id="attached-material"><p>La ficha del libro se incluye siempre.</p></div>
+                <button class="add-material-button" id="open-context-picker" type="button">+ Agregar material</button>
+                <section class="prompt-preview" aria-live="polite"><button class="secondary-button" id="review-context" type="button">Revisar contexto</button><p id="prompt-preview-summary">Antes de enviar, podés revisar qué perfil, material y fuentes recibirá el proveedor.</p><details id="prompt-preview-details" hidden><summary>Detalle técnico</summary><pre id="prompt-preview-content"></pre></details></section>
+              </section>
+            </div>
           </div>
         </aside>
 
@@ -155,7 +178,7 @@
                 <span id="active-conversation-title" hidden></span>
               </div>
               <div class="chat-topbar-actions">
-                <span class="attached-count" id="attached-count">Sin material adjunto</span>
+                <span class="attached-count" id="attached-count" title="Ver material adjunto">Sin material adjunto</span>
                 <details class="provider-status">
                   <summary id="provider-notice">Consultando IA…</summary>
                   <p id="provider-description"></p>
@@ -192,16 +215,6 @@
                       <p class="form-feedback" id="conversation-feedback" role="status" aria-live="polite"></p>
                     </div>
                   </section>
-
-                  <aside class="material-column" aria-label="Material para la conversación">
-                    <button class="mobile-material-toggle" id="mobile-material-toggle" type="button" aria-controls="material-column-content" aria-expanded="false">Material para conversar <span id="mobile-material-count">0 adjuntos</span></button>
-                    <div class="material-column-content" id="material-column-content">
-                      <header><div><p class="eyebrow">Contexto adjunto</p><h3>Material para conversar</h3></div><span id="material-summary-count">0 adjuntos</span></header>
-                      <div class="attached-material" id="attached-material"><p>La ficha del libro se incluye siempre.</p></div>
-                      <button class="add-material-button" id="open-context-picker" type="button">+ Agregar material</button>
-                      <section class="prompt-preview" aria-live="polite"><button class="secondary-button" id="review-context" type="button">Revisar contexto</button><p id="prompt-preview-summary">Antes de enviar, podés revisar qué perfil, material y fuentes recibirá el proveedor.</p><details id="prompt-preview-details" hidden><summary>Detalle técnico</summary><pre id="prompt-preview-content"></pre></details></section>
-                    </div>
-                  </aside>
                 </div>
               </div>
             </div>

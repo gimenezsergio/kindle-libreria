@@ -894,6 +894,7 @@ async function loadContext(identifier) {
   setText("note-option-count", `(${data.notes.length})`);
   setText("material-summary-count", `${selectedCount} ${selectedCount === 1 ? "adjunto" : "adjuntos"}`);
   setText("mobile-material-count", `${selectedCount} ${selectedCount === 1 ? "adjunto" : "adjuntos"}`);
+  setText("material-tab-count", String(selectedCount));
   setText("attached-count", selectedCount ? `${selectedCount} ${selectedCount === 1 ? "fragmento adjunto" : "fragmentos adjuntos"}` : "Sin material adjunto");
   renderAttachedMaterial(data, selectedNotes, selectedAnnotations);
   renderCompanionActionScope();
@@ -1292,6 +1293,30 @@ document.querySelector("#context-form").addEventListener("submit", async (event)
     document.querySelector("#context-dialog").close();
   } catch (error) { document.querySelector("#conversation-feedback").textContent = error.message; }
 });
+function switchLeftSidebarTab(tabName) {
+  const isMaterial = tabName === "material";
+  const annotationsPanel = document.querySelector("#left-panel-annotations");
+  const materialPanel = document.querySelector("#left-panel-material");
+  const tabAnnotations = document.querySelector("#left-tab-annotations");
+  const tabMaterial = document.querySelector("#left-tab-material");
+
+  if (annotationsPanel) annotationsPanel.hidden = isMaterial;
+  if (materialPanel) materialPanel.hidden = !isMaterial;
+  if (tabAnnotations) tabAnnotations.classList.toggle("is-active", !isMaterial);
+  if (tabMaterial) tabMaterial.classList.toggle("is-active", isMaterial);
+}
+
+document.querySelector("#left-tab-annotations")?.addEventListener("click", () => switchLeftSidebarTab("annotations"));
+document.querySelector("#left-tab-material")?.addEventListener("click", () => switchLeftSidebarTab("material"));
+document.querySelector("#rail-btn-material")?.addEventListener("click", () => {
+  expandLeftSidebar();
+  switchLeftSidebarTab("material");
+});
+document.querySelector("#attached-count")?.addEventListener("click", () => {
+  expandLeftSidebar();
+  switchLeftSidebarTab("material");
+});
+
 document.querySelector("#open-context-picker").addEventListener("click", () => {
   document.querySelector("#context-search").value = "";
   document.querySelectorAll(".context-options label").forEach((label) => { label.hidden = false; });
