@@ -471,7 +471,7 @@ function renderMarkdown(rawText, librarySources = []) {
         inList = "ol";
         htmlResult.push("<ol>");
       }
-      htmlResult.push(`<li>${olMatch[1]}</li>`);
+      htmlResult.push(`<li>${olMatch[2]}</li>`);
       continue;
     }
 
