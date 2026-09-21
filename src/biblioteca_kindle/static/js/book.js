@@ -356,7 +356,17 @@ function renderMarkdown(rawText, librarySources = []) {
 
   const closeBlockquote = () => {
     if (inBlockquote) {
-      htmlResult.push(`<blockquote><p>${blockquoteBuffer.join("<br>")}</p></blockquote>`);
+      const content = blockquoteBuffer.join("\n");
+      const calloutMatch = content.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*([\s\S]*)$/i);
+      if (calloutMatch) {
+        const type = calloutMatch[1].toLowerCase();
+        const body = calloutMatch[2].replace(/\n/g, "<br>");
+        const icons = { note: "ℹ️", tip: "💡", important: "📌", warning: "⚠️", caution: "🚨" };
+        const titles = { note: "Nota", tip: "Consejo", important: "Importante", warning: "Advertencia", caution: "Precaución" };
+        htmlResult.push(`<div class="markdown-callout callout-${type}"><div class="callout-header"><span>${icons[type] || "💡"}</span><strong>${titles[type] || "Nota"}</strong></div><div class="callout-body">${body}</div></div>`);
+      } else {
+        htmlResult.push(`<blockquote><p>${blockquoteBuffer.join("<br>")}</p></blockquote>`);
+      }
       inBlockquote = false;
       blockquoteBuffer = [];
     }
@@ -378,6 +388,29 @@ function renderMarkdown(rawText, librarySources = []) {
       closeList();
       closeBlockquote();
       continue;
+    }
+
+    // Detect Table Row Block
+    if (trimmed.startsWith("|") && trimmed.endsWith("|") && trimmed.length > 2) {
+      closeList();
+      closeBlockquote();
+      const tableLines = [trimmed];
+      while (i + 1 < lines.length && lines[i + 1].trim().startsWith("|") && lines[i + 1].trim().endsWith("|")) {
+        i++;
+        tableLines.push(lines[i].trim());
+      }
+      if (tableLines.length >= 2 && /^\|[\s-:]+\|$/.test(tableLines[1].replace(/[^|-:]/g, ""))) {
+        const parseRow = (r) => r.slice(1, -1).split("|").map((c) => c.trim());
+        const headerCells = parseRow(tableLines[0]);
+        const bodyRows = tableLines.slice(2).map(parseRow);
+        let tableHtml = `<div class="table-wrapper"><table><thead><tr>${headerCells.map((c) => `<th>${c}</th>`).join("")}</tr></thead><tbody>`;
+        bodyRows.forEach((row) => {
+          tableHtml += `<tr>${row.map((c) => `<td>${c}</td>`).join("")}</tr>`;
+        });
+        tableHtml += `</tbody></table></div>`;
+        htmlResult.push(tableHtml);
+        continue;
+      }
     }
 
     if (trimmed.startsWith("&gt; ")) {
@@ -405,6 +438,19 @@ function renderMarkdown(rawText, librarySources = []) {
       continue;
     }
 
+    const taskMatch = trimmed.match(/^[-*]\s+\[([ xX])\]\s+(.*)$/);
+    if (taskMatch) {
+      closeBlockquote();
+      if (inList !== "ul") {
+        closeList();
+        inList = "ul";
+        htmlResult.push('<ul class="task-list">');
+      }
+      const checked = taskMatch[1].toLowerCase() === "x" ? "checked" : "";
+      htmlResult.push(`<li class="task-item"><input type="checkbox" ${checked} disabled> <span>${taskMatch[2]}</span></li>`);
+      continue;
+    }
+
     const ulMatch = trimmed.match(/^[-*]\s+(.*)$/);
     if (ulMatch) {
       closeBlockquote();
@@ -425,7 +471,7 @@ function renderMarkdown(rawText, librarySources = []) {
         inList = "ol";
         htmlResult.push("<ol>");
       }
-      htmlResult.push(`<li>${olMatch[2]}</li>`);
+      htmlResult.push(`<li>${olMatch[1]}</li>`);
       continue;
     }
 
