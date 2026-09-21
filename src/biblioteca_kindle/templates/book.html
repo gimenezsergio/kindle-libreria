@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ficha del libro · Biblioteca personal</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=rail10">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=rail12">
     <script>window.WORK_ID = {{ work_id|tojson }};</script>
-    <script src="{{ url_for('static', filename='js/book.js') }}?v=rail10" defer></script>
+    <script src="{{ url_for('static', filename='js/book.js') }}?v=rail12" defer></script>
   </head>
   <body class="notebooklm-body">
     <header class="site-header">
@@ -92,20 +92,19 @@
           </div>
 
           <div class="sidebar-header-bar">
-            <h3>📚 Fuentes & Subrayados</h3>
+            <h3>📚 Fuentes & Material</h3>
             <button type="button" class="sidebar-close-btn" id="close-left-sidebar" title="Ocultar fuentes">✕</button>
           </div>
+          <!-- Sidebar Tab Navigation (Sticky at top below header) -->
+          <div class="sidebar-tab-nav" role="tablist" aria-label="Secciones del panel izquierdo">
+            <button type="button" class="sidebar-tab-btn is-active" id="left-tab-annotations" role="tab" aria-selected="true" aria-controls="left-panel-annotations">
+              📖 Subrayados
+            </button>
+            <button type="button" class="sidebar-tab-btn" id="left-tab-material" role="tab" aria-selected="false" aria-controls="left-panel-material">
+              ✨ Contexto IA <span class="tab-badge" id="material-tab-count">0</span>
+            </button>
+          </div>
           <div class="sidebar-content">
-            <!-- Sidebar Tab Navigation -->
-            <div class="sidebar-tab-nav" role="tablist">
-              <button type="button" class="sidebar-tab-btn is-active" id="left-tab-annotations" role="tab">
-                Subrayados
-              </button>
-              <button type="button" class="sidebar-tab-btn" id="left-tab-material" role="tab">
-                Material IA <span class="tab-badge" id="material-tab-count">0</span>
-              </button>
-            </div>
-
             <!-- Tab 1: Subrayados & Notas -->
             <div class="left-tab-panel" id="left-panel-annotations" role="tabpanel">
               <section class="book-annotations" id="panel-memory" data-book-panel="memory" aria-labelledby="annotations-title">
@@ -121,6 +120,15 @@
                 <div class="empty-state" id="annotation-empty" hidden><strong>No hay anotaciones para estos filtros</strong><span>Probá con otro tipo o fuente.</span></div>
                 <nav class="pagination" aria-label="Páginas de anotaciones"><button id="annotation-previous" type="button">← Anterior</button><span id="annotation-page"></span><button id="annotation-next" type="button">Siguiente →</button></nav>
               </section>
+            </div>
+
+            <!-- Tab 2: Material para conversar & Búsqueda IA -->
+            <div class="left-tab-panel" id="left-panel-material" role="tabpanel" hidden>
+              <section class="material-column-content" id="material-column-content">
+                <header><div><p class="eyebrow">Contexto adjunto</p><h3>Material para conversar</h3></div><span id="material-summary-count">0 adjuntos</span></header>
+                <div class="attached-material" id="attached-material"><p>La ficha del libro se incluye siempre.</p></div>
+                <button class="add-material-button" id="open-context-picker" type="button">+ Agregar material</button>
+              </section>
 
               <!-- Context Search Scope Panel -->
               <section class="context-scope-panel">
@@ -135,15 +143,11 @@
                   <button class="text-button" id="pin-library-context" type="button" hidden>Fijar seleccionados</button>
                 </details>
               </section>
-            </div>
 
-            <!-- Tab 2: Material para conversar (Contexto IA) -->
-            <div class="left-tab-panel" id="left-panel-material" role="tabpanel" hidden>
-              <section class="material-column-content" id="material-column-content">
-                <header><div><p class="eyebrow">Contexto adjunto</p><h3>Material para conversar</h3></div><span id="material-summary-count">0 adjuntos</span></header>
-                <div class="attached-material" id="attached-material"><p>La ficha del libro se incluye siempre.</p></div>
-                <button class="add-material-button" id="open-context-picker" type="button">+ Agregar material</button>
-                <section class="prompt-preview" aria-live="polite"><button class="secondary-button" id="review-context" type="button">Revisar contexto</button><p id="prompt-preview-summary">Antes de enviar, podés revisar qué perfil, material y fuentes recibirá el proveedor.</p><details id="prompt-preview-details" hidden><summary>Detalle técnico</summary><pre id="prompt-preview-content"></pre></details></section>
+              <section class="prompt-preview" aria-live="polite">
+                <button class="secondary-button" id="review-context" type="button">Revisar contexto</button>
+                <p id="prompt-preview-summary">Antes de enviar, podés revisar qué perfil, material y fuentes recibirá el proveedor.</p>
+                <details id="prompt-preview-details" hidden><summary>Detalle técnico</summary><pre id="prompt-preview-content"></pre></details>
               </section>
             </div>
           </div>

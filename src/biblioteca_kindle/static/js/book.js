@@ -824,13 +824,35 @@ function renderLibraryResults(items) {
 
 async function previewLibrarySearch() {
   if (!activeConversationId) return;
-  const query = document.querySelector("#conversation-message").value.trim();
-  if (!query) throw new Error("Escribí primero la pregunta que querés explorar.");
-  const data = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/library-search`, {
-    method: "POST", headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({search_query: query, ...searchScopePayload()}),
-  });
-  librarySearchResults = data.items; previewSearchQuery = query; renderLibraryResults(data.items);
+  const resultsContainer = document.querySelector("#library-search-results");
+  const query = document.querySelector("#conversation-message")?.value.trim() || "";
+  
+  if (!query) {
+    if (resultsContainer) {
+      resultsContainer.innerHTML = `<p class="library-search-empty-hint" style="color: var(--terracotta); font-size: 0.85rem; padding: 0.35rem 0;">⚠️ Escribí primero tu pregunta en la casilla de chat para buscar pasajes de la biblioteca.</p>`;
+    }
+    document.querySelector("#conversation-message")?.focus();
+    return;
+  }
+  
+  if (resultsContainer) {
+    resultsContainer.innerHTML = `<p class="library-search-loading" style="color: var(--muted); font-size: 0.85rem; padding: 0.35rem 0;">⏳ Buscando pasajes relevantes…</p>`;
+  }
+
+  try {
+    const data = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/library-search`, {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({search_query: query, ...searchScopePayload()}),
+    });
+    librarySearchResults = data.items;
+    previewSearchQuery = query;
+    renderLibraryResults(data.items);
+  } catch (error) {
+    if (resultsContainer) {
+      resultsContainer.innerHTML = `<p class="library-search-error" style="color: var(--terracotta); font-size: 0.85rem; padding: 0.35rem 0;">Error al buscar contexto: ${error.message}</p>`;
+    }
+    throw error;
+  }
 }
 
 function contextChoice(item, type, selected) {
@@ -1187,8 +1209,9 @@ document.querySelector("#new-conversation-form").addEventListener("submit", asyn
     document.querySelector("#conversation-feedback").textContent = error.message;
   } finally { button.disabled = false; }
 });
-document.querySelector("#mobile-material-toggle").addEventListener("click", (event) => {
+document.querySelector("#mobile-material-toggle")?.addEventListener("click", (event) => {
   const column = document.querySelector(".material-column");
+  if (!column) return;
   const expanded = !column.classList.contains("is-mobile-open");
   column.classList.toggle("is-mobile-open", expanded);
   event.currentTarget.setAttribute("aria-expanded", String(expanded));
