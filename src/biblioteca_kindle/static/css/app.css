@@ -1117,12 +1117,14 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 .notebook-workspace.is-left-collapsed { grid-template-columns: 3.5rem minmax(0, 1fr) 20rem; }
 .notebook-workspace.is-left-collapsed .sidebar-left { min-width: 3.5rem; }
 .notebook-workspace.is-left-collapsed .sidebar-left .sidebar-header-bar,
+.notebook-workspace.is-left-collapsed .sidebar-left .sidebar-tab-nav,
 .notebook-workspace.is-left-collapsed .sidebar-left .sidebar-content { display: none; }
 .notebook-workspace.is-left-collapsed .sidebar-left .sidebar-rail { display: flex; }
 
 .notebook-workspace.is-right-collapsed { grid-template-columns: 20rem minmax(0, 1fr) 3.5rem; }
 .notebook-workspace.is-right-collapsed .sidebar-right { min-width: 3.5rem; }
 .notebook-workspace.is-right-collapsed .sidebar-right .sidebar-header-bar,
+.notebook-workspace.is-right-collapsed .sidebar-right .sidebar-tab-nav,
 .notebook-workspace.is-right-collapsed .sidebar-right .sidebar-content { display: none; }
 .notebook-workspace.is-right-collapsed .sidebar-right .sidebar-rail { display: flex; }
 
