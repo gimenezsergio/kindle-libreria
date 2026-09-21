@@ -1340,8 +1340,24 @@ document.querySelector("#close-left-sidebar")?.addEventListener("click", () => {
   setLeftSidebarCollapsed(true);
 });
 
+document.querySelector("#expand-left-sidebar")?.addEventListener("click", () => {
+  setLeftSidebarCollapsed(false);
+});
+
 document.querySelector("#floating-open-left")?.addEventListener("click", () => {
   setLeftSidebarCollapsed(false);
+});
+
+document.querySelector("#rail-btn-annotations")?.addEventListener("click", () => {
+  setLeftSidebarCollapsed(false);
+  document.querySelector("#panel-memory")?.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+document.querySelector("#rail-btn-search")?.addEventListener("click", () => {
+  setLeftSidebarCollapsed(false);
+  const searchDetails = document.querySelector(".library-search");
+  if (searchDetails) searchDetails.open = true;
+  document.querySelector("#preview-library-search")?.focus();
 });
 
 document.querySelector("#toggle-right-sidebar")?.addEventListener("click", () => {
@@ -1354,8 +1370,33 @@ document.querySelector("#close-right-sidebar")?.addEventListener("click", () => 
   setRightSidebarCollapsed(true);
 });
 
+document.querySelector("#expand-right-sidebar")?.addEventListener("click", () => {
+  setRightSidebarCollapsed(false);
+});
+
 document.querySelector("#floating-open-right")?.addEventListener("click", () => {
   setRightSidebarCollapsed(false);
+});
+
+document.querySelector("#rail-btn-collections")?.addEventListener("click", () => {
+  setRightSidebarCollapsed(false);
+  const details = document.querySelector("#assign-collection-form")?.closest("details");
+  if (details) details.open = true;
+  details?.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+document.querySelector("#rail-btn-notes")?.addEventListener("click", () => {
+  setRightSidebarCollapsed(false);
+  const details = document.querySelector("#create-note-form")?.closest("details");
+  if (details) details.open = true;
+  details?.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+document.querySelector("#rail-btn-relations")?.addEventListener("click", () => {
+  setRightSidebarCollapsed(false);
+  const details = document.querySelector("#create-relation-form")?.closest("details");
+  if (details) details.open = true;
+  details?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 const savedLeftCollapsed = localStorage.getItem("notebook-left-collapsed") === "true";

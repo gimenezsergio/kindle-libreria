@@ -82,6 +82,14 @@
         
         <!-- LEFT COLUMN: Fuentes & Subrayados -->
         <aside class="notebook-sidebar sidebar-left" id="sidebar-left">
+          <!-- Thin Railbar when collapsed -->
+          <div class="sidebar-rail" id="sidebar-left-rail">
+            <button type="button" class="rail-btn rail-expand-btn" id="expand-left-sidebar" title="Expandir Fuentes y subrayados" aria-label="Expandir Fuentes">▶</button>
+            <div class="rail-divider"></div>
+            <button type="button" class="rail-btn" id="rail-btn-annotations" title="Subrayados y notas" aria-label="Ir a subrayados">📚</button>
+            <button type="button" class="rail-btn" id="rail-btn-search" title="Buscar conexiones en biblioteca" aria-label="Ir a buscar en biblioteca">🔍</button>
+          </div>
+
           <div class="sidebar-header-bar">
             <h3>📚 Fuentes & Subrayados</h3>
             <button type="button" class="sidebar-close-btn" id="close-left-sidebar" title="Ocultar fuentes">✕</button>
@@ -203,6 +211,15 @@
 
         <!-- RIGHT COLUMN: Cuaderno Propio -->
         <aside class="notebook-sidebar sidebar-right" id="sidebar-right">
+          <!-- Thin Railbar when collapsed -->
+          <div class="sidebar-rail" id="sidebar-right-rail">
+            <button type="button" class="rail-btn rail-expand-btn" id="expand-right-sidebar" title="Expandir Cuaderno propio" aria-label="Expandir Cuaderno">◀</button>
+            <div class="rail-divider"></div>
+            <button type="button" class="rail-btn" id="rail-btn-collections" title="Colecciones" aria-label="Ir a Colecciones">🏷️</button>
+            <button type="button" class="rail-btn" id="rail-btn-notes" title="Notas propias" aria-label="Ir a Notas propias">📝</button>
+            <button type="button" class="rail-btn" id="rail-btn-relations" title="Relaciones" aria-label="Ir a Relaciones">🔗</button>
+          </div>
+
           <div class="sidebar-header-bar">
             <h3>📝 Cuaderno Propio</h3>
             <button type="button" class="sidebar-close-btn" id="close-right-sidebar" title="Ocultar cuaderno">✕</button>
