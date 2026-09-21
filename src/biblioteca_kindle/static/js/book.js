@@ -399,7 +399,7 @@ function renderMarkdown(rawText, librarySources = []) {
         i++;
         tableLines.push(lines[i].trim());
       }
-      if (tableLines.length >= 2 && /^\|[\s-:]+\|$/.test(tableLines[1].replace(/[^|-:]/g, ""))) {
+      if (tableLines.length >= 2 && /^\|[\s:\-]+\|$/.test(tableLines[1].replace(/[^|:\-]/g, ""))) {
         const parseRow = (r) => r.slice(1, -1).split("|").map((c) => c.trim());
         const headerCells = parseRow(tableLines[0]);
         const bodyRows = tableLines.slice(2).map(parseRow);
