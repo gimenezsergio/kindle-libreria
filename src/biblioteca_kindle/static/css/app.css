@@ -828,7 +828,7 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 /* Mesa de trabajo del acompañante: conversación y fuentes permanecen juntas. */
 .companion-heading { align-items: center; padding: 1.4rem 1.5rem; }
 .companion-heading h2 { font-size: 1.75rem; }
-.companion-workbench { grid-template-columns: minmax(11rem, 13.5rem) minmax(0, 1fr); min-height: 42rem; }
+.companion-workbench { display: block; width: 100%; min-height: 0; }
 .conversation-list { padding: .75rem; }
 .conversation-panel { max-width: none; width: 100%; padding: 0; }
 .conversation-active { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, .8fr); min-height: 42rem; }
@@ -1107,10 +1107,6 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 .sidebar-left { grid-column: 1; }
 .notebook-center { grid-column: 2; min-width: 0; }
 .notebook-center .conversation-active { display: flex; flex-direction: column; gap: 1rem; min-height: 0; width: 100%; }
-@media (min-width: 1480px) {
-  .notebook-center .conversation-active { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
-}
-.notebook-workspace.is-left-collapsed.is-right-collapsed .notebook-center .conversation-active { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, .8fr); }
 .sidebar-right { grid-column: 3; }
 
 .notebook-workspace.is-left-collapsed { grid-template-columns: 3.5rem minmax(0, 1fr) 20rem; }
