@@ -901,25 +901,31 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 .notebooklm-body { overflow-x: hidden; }
 .notebooklm-page { width: min(98vw, 130rem); max-width: 130rem; padding-top: .75rem; }
 
-.notebook-topbar { display: flex; align-items: center; justify-content: space-between; gap: .85rem; height: 2.75rem; min-height: 2.75rem; padding: 0 .85rem; border: 1px solid var(--line); background: var(--surface); border-radius: .3rem; box-shadow: 0 1px 3px rgba(0, 0, 0, .04); box-sizing: border-box; }
-.topbar-left { display: flex; align-items: center; gap: .65rem; min-width: 0; flex: 1; height: 100%; }
-.back-link-inline { color: var(--terracotta); font-size: .8rem; font-weight: 600; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
-.back-link-inline:hover { text-decoration: underline; }
-.topbar-divider { color: var(--line); font-size: .95rem; font-weight: 300; user-select: none; flex-shrink: 0; }
+.notebook-topbar { display: flex; align-items: center; justify-content: space-between; gap: .85rem; height: 3.2rem; min-height: 3.2rem; padding: 0 .85rem; border: 1px solid var(--line); background: var(--surface); border-radius: .35rem; box-shadow: 0 1px 3px rgba(0, 0, 0, .04); box-sizing: border-box; }
+.notebook-topbar .topbar-left { display: flex; align-items: center; gap: .65rem; min-width: 0; flex: 1; height: 100%; margin: 0; padding: 0; }
+.notebook-topbar .back-link-inline { color: var(--terracotta); font-size: .8rem; font-weight: 600; text-decoration: none; white-space: nowrap; flex-shrink: 0; margin: 0; }
+.notebook-topbar .back-link-inline:hover { text-decoration: underline; }
+.notebook-topbar .topbar-divider { color: var(--line); font-size: .95rem; font-weight: 300; user-select: none; flex-shrink: 0; margin: 0; }
 
-.book-header-cover { width: 1.6rem; height: 2.1rem; flex-shrink: 0; border-radius: .2rem; overflow: hidden; box-shadow: 0 1px 4px rgba(0, 0, 0, .15); background: #d9d1c5; cursor: pointer; position: relative; transition: transform .15s ease; }
-.book-header-cover:hover { transform: scale(1.08); }
-.book-header-cover img { width: 100%; height: 100%; object-fit: cover; }
-.book-header-cover span { display: grid; place-items: center; height: 100%; font-family: var(--serif); font-size: .8rem; background: var(--paper); color: var(--muted); }
+.notebook-topbar .book-header-cover { width: 1.8rem; height: 2.4rem; flex-shrink: 0; border-radius: .2rem; overflow: hidden; box-shadow: 0 1px 4px rgba(0, 0, 0, .15); background: #d9d1c5; cursor: pointer; position: relative; transition: transform .15s ease; margin: 0; }
+.notebook-topbar .book-header-cover:hover { transform: scale(1.08); }
+.notebook-topbar .book-header-cover img { width: 100%; height: 100%; object-fit: cover; }
+.notebook-topbar .book-header-cover span { display: grid; place-items: center; height: 100%; font-family: var(--serif); font-size: .8rem; background: var(--paper); color: var(--muted); }
 
-.book-header-info { min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-.book-title-header-row { display: flex; align-items: center; gap: .35rem; min-width: 0; }
-.book-title-header-row h1 { font-size: .95rem; font-weight: 600; max-width: 45ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.15; margin: 0; color: var(--ink); }
-.book-author { font-size: .72rem; color: var(--muted); margin: .05rem 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.1; }
+.notebook-topbar .book-header-info { min-width: 0; display: flex; flex-direction: column; justify-content: center; margin: 0; padding: 0; height: 100%; }
+.notebook-topbar .book-title-header-row { display: flex; align-items: center; gap: .35rem; min-width: 0; margin: 0; padding: 0; }
+.notebook-topbar .book-title-header-row h1 { font-size: .95rem; font-weight: 600; max-width: 45ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.15; margin: 0; padding: 0; color: var(--ink); }
 
-.topbar-right { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
-.change-cover-btn { display: inline-flex; align-items: center; gap: .3rem; height: 1.8rem; padding: 0 .65rem; border: 1px solid var(--line); border-radius: .25rem; background: var(--paper); color: var(--ink); font-size: .74rem; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background-color .15s ease, border-color .15s ease; box-sizing: border-box; }
-.change-cover-btn:hover { background: var(--surface-warm); border-color: var(--terracotta); }
+.notebook-topbar .title-editor { max-width: none; margin: 0; padding: 0; position: relative; display: inline-flex; align-items: center; }
+.notebook-topbar .title-editor summary { padding: 0; margin: 0; font-size: .75rem; line-height: 1; list-style: none; cursor: pointer; }
+.notebook-topbar .title-editor summary::-webkit-details-marker { display: none; }
+.notebook-topbar .title-editor form { position: absolute; top: 1.8rem; left: 0; z-index: 100; width: 22rem; margin: 0; padding: 1rem; border: 1px solid var(--line); background: var(--surface); box-shadow: 0 4px 14px rgba(0, 0, 0, .18); border-radius: .3rem; }
+
+.notebook-topbar .book-author { font-size: .74rem; color: var(--muted); margin: 0; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.15; }
+
+.notebook-topbar .topbar-right { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; margin: 0; padding: 0; }
+.notebook-topbar .change-cover-btn { display: inline-flex; align-items: center; gap: .3rem; height: 1.8rem; padding: 0 .65rem; border: 1px solid var(--line); border-radius: .25rem; background: var(--paper); color: var(--ink); font-size: .74rem; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background-color .15s ease, border-color .15s ease; box-sizing: border-box; margin: 0; }
+.notebook-topbar .change-cover-btn:hover { background: var(--surface-warm); border-color: var(--terracotta); }
 
 /* 3-Column Grid Placement */
 .notebook-workspace { display: grid; grid-template-columns: 20rem minmax(0, 1fr) 20rem; gap: 1rem; margin-top: .75rem; align-items: start; transition: grid-template-columns .25s ease; }
