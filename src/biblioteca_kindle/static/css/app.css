@@ -637,6 +637,184 @@ input[type="search"], select, textarea, input[type="text"] { min-height: 2.75rem
 
 .settings-heading, .cover-setup > header { padding: 1.5rem 0 2rem; }
 .settings-heading h1, .cover-setup h1 { font-size: clamp(2.4rem, 4vw, 3.8rem); }
+
+/* Proveedor de IA: Banner de activo y cuadrícula de tarjetas de selección */
+.active-provider-banner {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  padding: 1.15rem 1.4rem;
+  margin-bottom: 1.75rem;
+  border: 1px solid var(--green);
+  border-radius: .45rem;
+  background: color-mix(in srgb, var(--green) 8%, var(--surface));
+  box-shadow: 0 4px 16px -8px rgb(54 89 67 / 15%);
+}
+
+.active-provider-banner.is-draft {
+  border-color: var(--line);
+  background: var(--surface-warm);
+  box-shadow: none;
+}
+
+.banner-status-icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.active-provider-banner.is-draft .banner-status-icon {
+  background: var(--muted);
+}
+
+.banner-details {
+  display: grid;
+  gap: .15rem;
+}
+
+.banner-label {
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--green);
+}
+
+.active-provider-banner.is-draft .banner-label {
+  color: var(--muted);
+}
+
+.banner-details strong {
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  color: var(--ink);
+}
+
+.banner-subtext {
+  font-size: .76rem;
+  color: var(--muted);
+}
+
+.provider-selection-section {
+  margin-bottom: 1.75rem;
+}
+
+.provider-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr));
+  gap: .85rem;
+  margin-top: .6rem;
+}
+
+.provider-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1rem 1.15rem;
+  border: 1.5px solid var(--line);
+  border-radius: .4rem;
+  background: var(--surface);
+  cursor: pointer;
+  transition: all .15s ease;
+  position: relative;
+  min-height: 5.5rem;
+}
+
+.provider-card:hover, .provider-card:focus-visible {
+  border-color: var(--terracotta);
+  box-shadow: 0 4px 14px -4px rgb(35 32 29 / 12%);
+  transform: translateY(-1px);
+}
+
+.provider-card.is-active-system {
+  border-color: var(--green);
+  background: color-mix(in srgb, var(--green) 5%, var(--surface));
+}
+
+.provider-card.is-selected-form {
+  box-shadow: 0 0 0 2px var(--terracotta);
+}
+
+.provider-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: .5rem;
+}
+
+.provider-card-name {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0;
+}
+
+.provider-card-badge {
+  font-size: .62rem;
+  font-weight: 700;
+  padding: .2rem .5rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  flex-shrink: 0;
+}
+
+.provider-card-badge.badge-active-system {
+  background: var(--green);
+  color: #fff;
+}
+
+.provider-card-badge.badge-draft-system {
+  background: var(--muted);
+  color: #fff;
+}
+
+.provider-card-subtext {
+  font-size: .72rem;
+  color: var(--muted);
+  margin-top: .4rem;
+}
+
+.provider-edit-notice {
+  display: flex;
+  gap: .85rem;
+  align-items: flex-start;
+  padding: .9rem 1.15rem;
+  margin-bottom: 1.25rem;
+  border-radius: .4rem;
+  font-size: .82rem;
+  line-height: 1.45;
+}
+
+.provider-edit-notice.notice-warning {
+  border: 1px solid #e0ad52;
+  background: #fdf9ee;
+  color: #7a5410;
+}
+
+.provider-edit-notice.notice-active {
+  border: 1px solid #c8dec2;
+  background: #edf6ef;
+  color: #264a32;
+}
+
+.provider-edit-notice strong {
+  display: block;
+  font-weight: 700;
+  margin-bottom: .15rem;
+}
+
+.provider-edit-notice p {
+  margin: 0;
+}
 .profile-card { align-items: flex-start; border-radius: .35rem; box-shadow: 0 4px 20px -12px rgb(35 32 29 / 12%); }
 .profile-card h2 { font-size: 1.55rem; }
 .profile-form { position: sticky; top: 5.5rem; align-self: start; border-radius: .35rem; box-shadow: 0 4px 20px -8px rgb(35 32 29 / 10%); }

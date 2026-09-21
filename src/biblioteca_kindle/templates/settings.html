@@ -64,9 +64,36 @@
             <div id="ai-status-badge" class="status-badge badge-draft">Draft (Borrador)</div>
           </header>
 
+          <!-- Banner destacado del proveedor actualmente activo -->
+          <div id="active-provider-banner" class="active-provider-banner">
+            <div class="banner-status-icon" id="banner-status-icon">✓</div>
+            <div class="banner-details">
+              <span class="banner-label" id="banner-label">Proveedor activo en todo el sistema</span>
+              <strong id="active-provider-name-display">Cargando...</strong>
+              <span id="active-provider-subtext-display" class="banner-subtext">Consultando configuración actual...</span>
+            </div>
+          </div>
+
+          <!-- Selector visual por tarjetas de proveedor -->
+          <div class="provider-selection-section">
+            <p class="eyebrow" style="margin-bottom: 0.6rem;">Elegí un proveedor para configurar o activar</p>
+            <div id="provider-cards-grid" class="provider-cards-grid">
+              <!-- Tarjetas renderizadas con JS -->
+            </div>
+          </div>
+
           <form id="ai-config-form" class="ai-config-form">
+            <!-- Aviso visual explícito al seleccionar/editar -->
+            <div id="provider-edit-notice" class="provider-edit-notice notice-active" hidden>
+              <span class="notice-icon" id="notice-icon">ℹ️</span>
+              <div>
+                <strong id="notice-title">Proveedor seleccionado</strong>
+                <p id="notice-desc">Comprobá los datos y hacé clic en activar para aplicar a todo el sistema.</p>
+              </div>
+            </div>
+
             <div class="provider-select-bar">
-              <label for="provider-select" class="select-label">Proveedor de IA activo</label>
+              <label for="provider-select" class="select-label">Proveedor en edición / configuración</label>
               <div class="select-with-button">
                 <select id="provider-select" class="provider-dropdown">
                   <option value="draft">Draft (Borrador / Desconectado)</option>
@@ -123,7 +150,7 @@
             </div>
 
             <div class="form-actions">
-              <button type="submit" class="primary-button" id="save-ai-config">Guardar y Activar Proveedor</button>
+              <button type="submit" class="primary-button" id="save-ai-config">⚡ Guardar y Activar Proveedor</button>
             </div>
             <p class="form-feedback" id="ai-config-feedback" role="status" aria-live="polite"></p>
           </form>
