@@ -532,6 +532,7 @@ function revealAssistantResponse(pendingCard, answer, librarySources = []) {
     content.innerHTML = renderMarkdown(text, librarySources);
     card.removeAttribute("aria-busy");
     content.removeAttribute("aria-live");
+    scrollConversationToBottom({force: true});
     if (responseAnimation === state) responseAnimation = null;
     if (resolveAnimation) resolveAnimation();
   };
@@ -547,6 +548,7 @@ function revealAssistantResponse(pendingCard, answer, librarySources = []) {
       if (position >= text.length) {
         card.removeAttribute("aria-busy");
         content.removeAttribute("aria-live");
+        scrollConversationToBottom({force: true});
         if (responseAnimation === state) responseAnimation = null;
         return resolve();
       }
