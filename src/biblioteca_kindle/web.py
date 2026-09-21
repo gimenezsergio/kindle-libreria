@@ -443,6 +443,8 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
         finally:
             connection.close()
     app = Flask(__name__)
+    app.config["TEMPLATES_AUTO_RELOAD"] = True
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
     app.config["DATABASE"] = database_path
     app.config["MAX_CONTENT_LENGTH"] = int(
         os.environ.get("BIBLIOTECA_SYNC_MAX_BYTES", str(32 * 1024 * 1024))
@@ -451,6 +453,14 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
     openclaw_token = os.environ.get("BIBLIOTECA_OPENCLAW_TOKEN", "")
     provider = ai_provider or provider_from_environment()
     app.register_blueprint(create_openclaw_blueprint(database_path, openclaw_token))
+
+    @app.after_request
+    def disable_client_caching(response):
+        if request.path.startswith("/static/") or request.path.endswith(".html") or request.endpoint == "book":
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
 
     @app.route("/static/covers/<path:filename>")
     def serve_cover(filename: str):
