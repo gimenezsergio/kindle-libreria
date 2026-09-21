@@ -1310,65 +1310,59 @@ document.querySelector("#annotation-filters").addEventListener("input", () => { 
 document.querySelector("#annotation-previous").addEventListener("click", () => { if (annotationPage > 1) { annotationPage -= 1; loadAnnotations(); } });
 document.querySelector("#annotation-next").addEventListener("click", () => { if (annotationPage < annotationPages) { annotationPage += 1; loadAnnotations(); } });
 
-function setSidebarCollapsed(collapsed) {
-  const workspace = document.querySelector("#book-workspace");
-  const toggleBtn = document.querySelector("#toggle-sidebar");
-  const toggleLabel = document.querySelector("#toggle-sidebar-label");
-  const floatingBtn = document.querySelector("#floating-open-sidebar");
-
-  if (workspace) workspace.classList.toggle("is-sidebar-collapsed", collapsed);
-  if (toggleBtn) {
-    toggleBtn.setAttribute("aria-expanded", String(!collapsed));
-    if (toggleLabel) toggleLabel.textContent = collapsed ? "📌 Abrir Notas y Cuaderno" : "Ocultar panel lateral";
-  }
-  if (floatingBtn) {
-    floatingBtn.hidden = !collapsed;
-  }
-  try { localStorage.setItem("book-sidebar-collapsed", String(collapsed)); } catch (e) {}
+function setLeftSidebarCollapsed(collapsed) {
+  const workspace = document.querySelector("#notebook-workspace");
+  const toggleBtn = document.querySelector("#toggle-left-sidebar");
+  const floatingBtn = document.querySelector("#floating-open-left");
+  if (workspace) workspace.classList.toggle("is-left-collapsed", collapsed);
+  if (toggleBtn) toggleBtn.setAttribute("aria-expanded", String(!collapsed));
+  if (floatingBtn) floatingBtn.hidden = !collapsed;
+  try { localStorage.setItem("notebook-left-collapsed", String(collapsed)); } catch (e) {}
 }
 
-document.querySelector("#floating-open-sidebar")?.addEventListener("click", () => {
-  setSidebarCollapsed(false);
-});
-
-function selectSidebarTab(tabName) {
-  setSidebarCollapsed(false);
-  document.querySelectorAll("[data-sidebar-tab]").forEach((tab) => {
-    const isTarget = tab.dataset.sidebarTab === tabName;
-    tab.setAttribute("aria-selected", String(isTarget));
-    tab.classList.toggle("is-active", isTarget);
-  });
-  document.querySelectorAll(".sidebar-panel").forEach((panel) => {
-    const isTarget = panel.dataset.bookPanel === tabName;
-    panel.hidden = !isTarget;
-    panel.classList.toggle("is-active", isTarget);
-  });
-  history.replaceState(null, "", `#panel-${tabName}`);
+function setRightSidebarCollapsed(collapsed) {
+  const workspace = document.querySelector("#notebook-workspace");
+  const toggleBtn = document.querySelector("#toggle-right-sidebar");
+  const floatingBtn = document.querySelector("#floating-open-right");
+  if (workspace) workspace.classList.toggle("is-right-collapsed", collapsed);
+  if (toggleBtn) toggleBtn.setAttribute("aria-expanded", String(!collapsed));
+  if (floatingBtn) floatingBtn.hidden = !collapsed;
+  try { localStorage.setItem("notebook-right-collapsed", String(collapsed)); } catch (e) {}
 }
 
-document.querySelector("#toggle-sidebar")?.addEventListener("click", () => {
-  const workspace = document.querySelector("#book-workspace");
-  const isCollapsed = workspace?.classList.contains("is-sidebar-collapsed");
-  setSidebarCollapsed(!isCollapsed);
+document.querySelector("#toggle-left-sidebar")?.addEventListener("click", () => {
+  const workspace = document.querySelector("#notebook-workspace");
+  const isCollapsed = workspace?.classList.contains("is-left-collapsed");
+  setLeftSidebarCollapsed(!isCollapsed);
 });
 
-document.querySelector("#close-sidebar")?.addEventListener("click", () => {
-  setSidebarCollapsed(true);
+document.querySelector("#close-left-sidebar")?.addEventListener("click", () => {
+  setLeftSidebarCollapsed(true);
 });
 
-document.querySelectorAll("[data-sidebar-tab]").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    selectSidebarTab(tab.dataset.sidebarTab);
-  });
+document.querySelector("#floating-open-left")?.addEventListener("click", () => {
+  setLeftSidebarCollapsed(false);
 });
 
-const savedCollapsed = localStorage.getItem("book-sidebar-collapsed") === "true";
-if (savedCollapsed) setSidebarCollapsed(true);
+document.querySelector("#toggle-right-sidebar")?.addEventListener("click", () => {
+  const workspace = document.querySelector("#notebook-workspace");
+  const isCollapsed = workspace?.classList.contains("is-right-collapsed");
+  setRightSidebarCollapsed(!isCollapsed);
+});
 
-const requestedPanel = location.hash.replace("#panel-", "");
-if (requestedPanel && ["memory", "notebook"].includes(requestedPanel)) {
-  selectSidebarTab(requestedPanel);
-}
+document.querySelector("#close-right-sidebar")?.addEventListener("click", () => {
+  setRightSidebarCollapsed(true);
+});
+
+document.querySelector("#floating-open-right")?.addEventListener("click", () => {
+  setRightSidebarCollapsed(false);
+});
+
+const savedLeftCollapsed = localStorage.getItem("notebook-left-collapsed") === "true";
+if (savedLeftCollapsed) setLeftSidebarCollapsed(true);
+
+const savedRightCollapsed = localStorage.getItem("notebook-right-collapsed") === "true";
+if (savedRightCollapsed) setRightSidebarCollapsed(true);
 
 const emptyForm = document.querySelector("#empty-conversation-form");
 if (emptyForm) {

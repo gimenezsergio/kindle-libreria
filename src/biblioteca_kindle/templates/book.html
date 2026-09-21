@@ -7,62 +7,118 @@
     <script>window.WORK_ID = {{ work_id|tojson }};</script>
     <script src="{{ url_for('static', filename='js/book.js') }}" defer></script>
   </head>
-  <body>
+  <body class="notebooklm-body">
     <header class="site-header">
       <a class="brand" href="/library" aria-label="Inicio de Biblioteca personal"><span class="brand-mark" aria-hidden="true">B</span><span><strong>Biblioteca Kindle</strong><small>Cuadernito y kindle</small></span></a>
       <nav aria-label="Navegación principal"><a class="nav-link is-active" href="/library">Biblioteca</a><a class="nav-link" href="/settings">Ajustes</a></nav>
     </header>
-    <main><article class="book-page">
-      <header class="book-header book-header-compact">
-        <div class="book-header-cover-col">
-          <div class="book-header-cover" id="book-header-cover"><img id="book-cover-image" alt="" hidden><span id="book-cover-placeholder" aria-hidden="true">—</span></div>
-          <button type="button" class="change-cover-btn" id="open-cover-dialog" aria-haspopup="dialog" aria-controls="book-cover-dialog">📷 Portada</button>
-        </div>
-        <div class="book-header-identity">
-          <p class="sr-only" id="identity-state">Ficha de lectura</p>
-          <div class="book-title-header-row">
-            <a class="back-link-inline" href="/library" title="Volver a la biblioteca">← Volver</a>
-            <h1 id="book-title">Consultando…</h1>
-            <details class="title-editor">
-              <summary title="Editar título mostrado">✏️</summary>
-              <form id="title-form">
-                <label>Título para la aplicación<input id="display-title-input" type="text" required></label>
-                <div class="title-editor-actions">
-                  <button type="submit">Guardar</button>
-                  <button class="secondary-button" id="reset-title" type="button">Restaurar original</button>
-                </div>
-                <p>Original del Kindle: <span id="original-title"></span></p>
-              </form>
-            </details>
-          </div>
-          <p class="book-author" id="book-author"></p>
-          <p class="book-summary">
-            <span id="book-presence">—</span>
-            <span><strong id="book-annotation-total">—</strong> anotaciones</span>
-            <span id="book-language">Idioma no disponible</span>
-            <span id="book-activity">Seguimiento no disponible</span>
-          </p>
-        </div>
-        <div class="book-header-actions">
-          <button type="button" class="sidebar-toggle-btn" id="toggle-sidebar" aria-expanded="true" title="Mostrar/ocultar panel lateral">
-            <span class="sidebar-toggle-icon" aria-hidden="true">◧</span>
-            <span id="toggle-sidebar-label">Ocultar panel lateral</span>
+    <main class="notebooklm-main"><article class="book-page notebooklm-page">
+      
+      <!-- Top Slim Header -->
+      <header class="book-header book-header-compact notebook-topbar">
+        <div class="topbar-left">
+          <a class="back-link-inline" href="/library" title="Volver a la biblioteca">← Biblioteca</a>
+          <button type="button" class="sidebar-toggle-btn" id="toggle-left-sidebar" aria-expanded="true" title="Mostrar/ocultar fuentes y subrayados">
+            <span class="sidebar-toggle-icon">📚</span>
+            <span>Fuentes</span>
           </button>
         </div>
+
+        <div class="book-header-identity">
+          <p class="sr-only" id="identity-state">Ficha de lectura</p>
+          <div class="book-header-cover" id="book-header-cover"><img id="book-cover-image" alt="" hidden><span id="book-cover-placeholder" aria-hidden="true">—</span></div>
+          <div class="book-header-info">
+            <div class="book-title-header-row">
+              <h1 id="book-title">Consultando…</h1>
+              <details class="title-editor">
+                <summary title="Editar título mostrado">✏️</summary>
+                <form id="title-form">
+                  <label>Título para la aplicación<input id="display-title-input" type="text" required></label>
+                  <div class="title-editor-actions">
+                    <button type="submit">Guardar</button>
+                    <button class="secondary-button" id="reset-title" type="button">Restaurar original</button>
+                  </div>
+                  <p>Original del Kindle: <span id="original-title"></span></p>
+                </form>
+              </details>
+            </div>
+            <p class="book-author" id="book-author"></p>
+            <p class="book-summary">
+              <span id="book-presence">—</span>
+              <span><strong id="book-annotation-total">—</strong> anotaciones</span>
+              <span id="book-language">Idioma no disponible</span>
+              <span id="book-activity">Seguimiento no disponible</span>
+            </p>
+          </div>
+          <button type="button" class="change-cover-btn" id="open-cover-dialog" aria-haspopup="dialog" aria-controls="book-cover-dialog">📷 Portada</button>
+        </div>
+
+        <div class="topbar-right">
+          <button type="button" class="sidebar-toggle-btn" id="toggle-right-sidebar" aria-expanded="true" title="Mostrar/ocultar cuaderno propio">
+            <span class="sidebar-toggle-icon">📝</span>
+            <span>Cuaderno</span>
+          </button>
+        </div>
+
         <div hidden>
           <span id="edition-count"></span><p id="edition-detail"></p>
           <span id="progress-position"></span><p id="progress-detail"></p>
           <span id="personal-count"></span><p id="personal-detail"></p>
         </div>
       </header>
+
       <p class="book-load-feedback" id="book-load-feedback" role="alert" hidden></p>
 
-      <button type="button" class="floating-sidebar-btn" id="floating-open-sidebar" title="Abrir panel de Subrayados y Cuaderno" hidden>
-        <span>📌 Subrayados y Cuaderno</span> ◀
+      <!-- Edge Floating Open Buttons when Sidebars are Collapsed -->
+      <button type="button" class="floating-sidebar-btn floating-left" id="floating-open-left" title="Abrir fuentes y subrayados" hidden>
+        📚 Fuentes ◀
+      </button>
+      <button type="button" class="floating-sidebar-btn floating-right" id="floating-open-right" title="Abrir cuaderno propio" hidden>
+        ▶ 📝 Cuaderno
       </button>
 
-      <div class="book-workspace" id="book-workspace">
-        <main class="workspace-main">
+      <!-- 3-Column Workspace -->
+      <div class="notebook-workspace" id="notebook-workspace">
+        
+        <!-- LEFT COLUMN: Fuentes & Subrayados -->
+        <aside class="notebook-sidebar sidebar-left" id="sidebar-left">
+          <div class="sidebar-header-bar">
+            <h3>📚 Fuentes & Subrayados</h3>
+            <button type="button" class="sidebar-close-btn" id="close-left-sidebar" title="Ocultar fuentes">✕</button>
+          </div>
+          <div class="sidebar-content">
+            <section class="book-annotations" id="panel-memory" data-book-panel="memory" aria-labelledby="annotations-title">
+              <div class="section-heading">
+                <div><h2 id="annotations-title">Subrayados y notas</h2></div>
+                <span id="annotation-result-count">Consultando…</span>
+              </div>
+              <form class="annotation-filters" id="annotation-filters">
+                <label>Tipo<select id="kind"><option value="all">Todos</option><option value="highlight">Subrayados</option><option value="note">Notas</option><option value="bookmark">Marcadores</option></select></label>
+                <label>Fuente<select id="source"><option value="all">Todas</option><option value="clippings">My Clippings</option><option value="krds">KRDS</option><option value="han">HAN</option></select></label>
+              </form>
+              <div class="annotation-list" id="annotation-list"></div>
+              <div class="empty-state" id="annotation-empty" hidden><strong>No hay anotaciones para estos filtros</strong><span>Probá con otro tipo o fuente.</span></div>
+              <nav class="pagination" aria-label="Páginas de anotaciones"><button id="annotation-previous" type="button">← Anterior</button><span id="annotation-page"></span><button id="annotation-next" type="button">Siguiente →</button></nav>
+            </section>
+
+            <!-- Context Search Scope Panel -->
+            <section class="context-scope-panel">
+              <details class="library-search" open>
+                <summary><span>Buscar conexiones en mi biblioteca</span><input id="library-search-enabled" type="checkbox" aria-label="Consultar la biblioteca al enviar"></summary>
+                <div class="library-search-controls">
+                  <label>Alcance<select id="library-search-scope"><option value="library">Toda la biblioteca</option><option value="current">Solo este libro</option><option value="selected">Libros elegidos</option></select></label>
+                  <label id="library-search-works-label" hidden>Libros<select id="library-search-works" multiple size="4"></select></label>
+                  <button class="secondary-button" id="preview-library-search" type="button">Ver contexto sugerido</button>
+                </div>
+                <div class="library-search-results" id="library-search-results"><p>Escribí tu mensaje para revisar las fuentes.</p></div>
+                <button class="text-button" id="pin-library-context" type="button" hidden>Fijar seleccionados</button>
+              </details>
+            </section>
+          </div>
+        </aside>
+
+        <!-- CENTER COLUMN: Chat / Acompañante Principal -->
+        <main class="notebook-center">
           <section class="reading-companion book-panel" id="panel-companion" data-book-panel="companion" aria-labelledby="conversation-title">
             <span id="focus-book-context" hidden></span>
             <span id="focus-conversation-context" hidden></span>
@@ -83,6 +139,7 @@
                 </details>
               </div>
             </div>
+
             <div class="companion-layout companion-workbench">
               <div class="conversation-panel">
                 <div class="conversation-empty" id="conversation-empty">
@@ -128,23 +185,13 @@
                       <p class="form-feedback" id="conversation-feedback" role="status" aria-live="polite"></p>
                     </div>
                   </section>
+
                   <aside class="material-column" aria-label="Material para la conversación">
                     <button class="mobile-material-toggle" id="mobile-material-toggle" type="button" aria-controls="material-column-content" aria-expanded="false">Material para conversar <span id="mobile-material-count">0 adjuntos</span></button>
                     <div class="material-column-content" id="material-column-content">
                       <header><div><p class="eyebrow">Contexto adjunto</p><h3>Material para conversar</h3></div><span id="material-summary-count">0 adjuntos</span></header>
                       <div class="attached-material" id="attached-material"><p>La ficha del libro se incluye siempre.</p></div>
                       <button class="add-material-button" id="open-context-picker" type="button">+ Agregar material</button>
-                      <details class="library-search">
-                          <summary><span>Buscar conexiones en mi biblioteca</span><input id="library-search-enabled" type="checkbox" aria-label="Consultar la biblioteca al enviar"></summary>
-                          <div class="library-search-controls">
-                            <label>Alcance<select id="library-search-scope"><option value="library">Toda la biblioteca</option><option value="current">Solo este libro</option><option value="selected">Libros elegidos</option></select></label>
-                            <label id="library-search-works-label" hidden>Libros<select id="library-search-works" multiple size="5"></select></label>
-                            <button class="secondary-button" id="preview-library-search" type="button">Ver contexto sugerido</button>
-                          </div>
-                          <p class="library-search-help">Busca en títulos, autoría, categorías, relaciones, notas y subrayados. No contiene el texto completo.</p>
-                          <div class="library-search-results" id="library-search-results"><p>Escribí tu mensaje y pedí una vista previa para revisar las fuentes.</p></div>
-                          <button class="text-button" id="pin-library-context" type="button" hidden>Fijar seleccionados</button>
-                      </details>
                       <section class="prompt-preview" aria-live="polite"><button class="secondary-button" id="review-context" type="button">Revisar contexto</button><p id="prompt-preview-summary">Antes de enviar, podés revisar qué perfil, material y fuentes recibirá el proveedor.</p><details id="prompt-preview-details" hidden><summary>Detalle técnico</summary><pre id="prompt-preview-content"></pre></details></section>
                     </div>
                   </aside>
@@ -154,32 +201,15 @@
           </section>
         </main>
 
-        <aside class="workspace-sidebar" id="workspace-sidebar">
+        <!-- RIGHT COLUMN: Cuaderno Propio -->
+        <aside class="notebook-sidebar sidebar-right" id="sidebar-right">
           <div class="sidebar-header-bar">
-            <nav class="sidebar-tabs" role="tablist" aria-label="Notas y cuaderno">
-              <button type="button" role="tab" aria-selected="true" class="sidebar-tab is-active" id="tab-memory" data-sidebar-tab="memory" data-book-tab="memory" aria-controls="panel-memory">📌 Subrayados</button>
-              <button type="button" role="tab" aria-selected="false" class="sidebar-tab" id="tab-notebook" data-sidebar-tab="notebook" data-book-tab="notebook" aria-controls="panel-notebook">📝 Cuaderno</button>
-            </nav>
-            <button type="button" class="sidebar-close-btn" id="close-sidebar" title="Ocultar panel lateral" aria-label="Ocultar panel lateral">✕</button>
+            <h3>📝 Cuaderno Propio</h3>
+            <button type="button" class="sidebar-close-btn" id="close-right-sidebar" title="Ocultar cuaderno">✕</button>
           </div>
-
           <div class="sidebar-content">
-            <section class="book-annotations sidebar-panel is-active" id="panel-memory" data-book-panel="memory" aria-labelledby="annotations-title">
-              <div class="section-heading">
-                <div><h2 id="annotations-title">Subrayados y notas</h2></div>
-                <span id="annotation-result-count">Consultando…</span>
-              </div>
-              <form class="annotation-filters" id="annotation-filters">
-                <label>Tipo<select id="kind"><option value="all">Todos</option><option value="highlight">Subrayados</option><option value="note">Notas</option><option value="bookmark">Marcadores</option></select></label>
-                <label>Fuente<select id="source"><option value="all">Todas</option><option value="clippings">My Clippings</option><option value="krds">KRDS</option><option value="han">HAN</option></select></label>
-              </form>
-              <div class="annotation-list" id="annotation-list"></div>
-              <div class="empty-state" id="annotation-empty" hidden><strong>No hay anotaciones para estos filtros</strong><span>Probá con otro tipo o fuente.</span></div>
-              <nav class="pagination" aria-label="Páginas de anotaciones"><button id="annotation-previous" type="button">← Anterior</button><span id="annotation-page"></span><button id="annotation-next" type="button">Siguiente →</button></nav>
-            </section>
-
-            <section class="personal-workspace sidebar-panel" id="panel-notebook" data-book-panel="notebook" aria-labelledby="personal-title" hidden>
-              <div class="section-heading">
+            <section class="personal-workspace" id="panel-notebook" data-book-panel="notebook" aria-labelledby="personal-title">
+              <div class="section-heading sr-only">
                 <div><h2 id="personal-title">Pensar esta lectura</h2></div>
               </div>
               <div class="personal-grid">
@@ -210,8 +240,10 @@
             </section>
           </div>
         </aside>
+
       </div>
 
+      <!-- Dialogs preserved -->
       <dialog class="context-dialog" id="context-dialog" aria-labelledby="context-dialog-title">
         <form method="dialog" class="dialog-heading"><div><p class="eyebrow">Contexto de la conversación</p><h2 id="context-dialog-title">Agregar material</h2></div><button class="dialog-close" value="cancel" aria-label="Cerrar selector">×</button></form>
         <form id="context-form">
@@ -222,6 +254,7 @@
           <footer class="dialog-actions"><span id="context-count">0 seleccionadas</span><button class="secondary-button" id="cancel-context-picker" type="button">Cancelar</button><button type="submit">Guardar selección</button></footer>
         </form>
       </dialog>
+
       <dialog class="context-dialog new-conversation-dialog" id="new-conversation-dialog" aria-labelledby="new-conversation-dialog-title">
         <form method="dialog" class="dialog-heading"><div><p class="eyebrow">Acompañante de lectura</p><h2 id="new-conversation-dialog-title">Nueva conversación</h2><p>Elegí con quién querés conversar. El título es opcional.</p></div><button class="dialog-close" value="cancel" aria-label="Cerrar nueva conversación">×</button></form>
         <form id="new-conversation-form" class="new-conversation-form">
@@ -231,6 +264,7 @@
           <footer class="dialog-actions"><button class="secondary-button" id="cancel-new-conversation" type="button">Cancelar</button><button id="new-conversation" type="submit" disabled>Crear conversación</button></footer>
         </form>
       </dialog>
+
       <dialog class="companion-actions-dialog" id="companion-actions-dialog" aria-labelledby="companion-actions-dialog-title" aria-describedby="companion-action-scope">
         <form method="dialog" class="dialog-heading"><div><p class="eyebrow">Acompañante de lectura</p><h2 id="companion-actions-dialog-title">Explorar esta lectura</h2><p class="companion-action-profile">Responderá: <strong id="companion-action-profile">Elegí una conversación</strong></p></div><button class="dialog-close" value="cancel" aria-label="Cerrar acciones de lectura">×</button></form>
         <div class="companion-actions-dialog-body">
@@ -242,6 +276,7 @@
           <p class="companion-action-help">Elegí una acción para preparar un mensaje editable; no se envía todavía.</p>
         </div>
       </dialog>
+
       <dialog class="context-dialog book-cover-dialog" id="book-cover-dialog" aria-labelledby="book-cover-dialog-title">
         <form method="dialog" class="dialog-heading">
           <div>
@@ -262,6 +297,7 @@
           </footer>
         </div>
       </dialog>
+
     </article></main>
     <footer><span>Biblioteca Kindle</span><span>Local · privada · independiente</span></footer>
     <nav class="mobile-nav" aria-label="Navegación móvil"><a href="/library">Biblioteca</a><a class="is-active" href="#panel-memory">Lectura</a><a href="/settings">Ajustes</a></nav>
