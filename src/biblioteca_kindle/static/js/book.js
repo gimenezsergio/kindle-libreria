@@ -1119,12 +1119,26 @@ document.querySelector("#relation-form").addEventListener("submit", (event) => s
 })));
 document.querySelector("#title-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  try { await saveDisplayTitle(document.querySelector("#display-title-input").value); }
-  catch (error) { feedback(error.message, true); }
+  try {
+    await saveDisplayTitle(document.querySelector("#display-title-input").value);
+    document.querySelector("#title-form")?.closest("details")?.removeAttribute("open");
+  } catch (error) { feedback(error.message, true); }
 });
 document.querySelector("#reset-title").addEventListener("click", async () => {
-  try { await saveDisplayTitle(null); }
-  catch (error) { feedback(error.message, true); }
+  try {
+    await saveDisplayTitle(null);
+    document.querySelector("#title-form")?.closest("details")?.removeAttribute("open");
+  } catch (error) { feedback(error.message, true); }
+});
+document.querySelector("#cancel-title")?.addEventListener("click", () => {
+  document.querySelector("#title-form")?.closest("details")?.removeAttribute("open");
+});
+
+document.addEventListener("click", (event) => {
+  const titleEditor = document.querySelector(".title-editor");
+  if (titleEditor?.open && !titleEditor.contains(event.target)) {
+    titleEditor.open = false;
+  }
 });
 document.querySelector("#open-new-conversation").addEventListener("click", openNewConversationDialog);
 document.querySelector("#exit-companion-focus")?.addEventListener("click", exitCompanionFocus);
