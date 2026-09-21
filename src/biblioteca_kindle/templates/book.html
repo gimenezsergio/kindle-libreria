@@ -135,17 +135,34 @@
             <h2 id="conversation-title" class="sr-only">Conversar sobre esta lectura</h2>
 
             <div class="chat-topbar">
-              <div class="chat-topbar-select">
-                <select id="conversation-list" aria-label="Conversaciones de este libro">
-                  <option>Cargando…</option>
-                </select>
+              <div class="chat-topbar-left">
+                <div class="chat-topbar-select">
+                  <select id="conversation-list" aria-label="Conversaciones de este libro">
+                    <option>Cargando…</option>
+                  </select>
+                </div>
+                <details class="conversation-title-editor">
+                  <summary title="Editar título del chat">✏️</summary>
+                  <form id="conversation-title-form">
+                    <label for="active-conversation-title-input">Título de la conversación</label>
+                    <div>
+                      <input id="active-conversation-title-input" type="text" maxlength="120" required>
+                      <button type="submit">Guardar</button>
+                    </div>
+                  </form>
+                </details>
+              </div>
+              <div class="chat-topbar-center">
+                <span class="profile-badge" id="active-conversation-profile" title="Perfil de lectura activo"></span>
+                <span class="attached-count" id="attached-count">Sin material adjunto</span>
+                <span id="active-conversation-title" hidden></span>
               </div>
               <div class="chat-topbar-actions">
-                <button id="open-new-conversation" type="button" disabled>+ Nueva conversación</button>
                 <details class="provider-status">
                   <summary id="provider-notice">Consultando IA…</summary>
                   <p id="provider-description"></p>
                 </details>
+                <button id="open-new-conversation" type="button" disabled>+ Nueva</button>
               </div>
             </div>
 
@@ -167,23 +184,6 @@
                 </div>
                 <div class="conversation-active" id="conversation-active" hidden>
                   <section class="chat-column" aria-label="Conversación">
-                    <header class="active-conversation-header">
-                      <div>
-                        <p class="eyebrow" id="active-conversation-profile"></p>
-                        <h3 id="active-conversation-title"></h3>
-                        <details class="conversation-title-editor">
-                          <summary>Editar título</summary>
-                          <form id="conversation-title-form">
-                            <label for="active-conversation-title-input">Título de la conversación</label>
-                            <div>
-                              <input id="active-conversation-title-input" type="text" maxlength="120" required>
-                              <button type="submit">Guardar</button>
-                            </div>
-                          </form>
-                        </details>
-                      </div>
-                      <span class="attached-count" id="attached-count">Sin material adjunto</span>
-                    </header>
                     <div class="conversation-messages" id="conversation-messages" aria-live="polite"></div>
                     <div class="chat-composer">
                       <div class="composer-tools">
