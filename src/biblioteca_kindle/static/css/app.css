@@ -1057,11 +1057,8 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 
 .chat-topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem 1rem; padding: .55rem .85rem; border: 1px solid var(--line); border-radius: .35rem; background: var(--surface); margin-bottom: .75rem; }
 .chat-topbar-left { display: flex; align-items: center; gap: .45rem; min-width: 0; flex: 1 1 auto; }
-.chat-topbar-select { flex: 1 1 auto; min-width: 0; max-width: 22rem; }
+.chat-topbar-select { flex: 1 1 auto; min-width: 0; max-width: 36rem; }
 .chat-topbar-select select { width: 100%; padding: .4rem .65rem; border: 1px solid var(--line); border-radius: .25rem; background: var(--paper); color: var(--ink); font-weight: 600; font-size: .83rem; text-overflow: ellipsis; }
-.chat-topbar-center { display: flex; align-items: center; gap: .5rem; flex: 0 0 auto; }
-.profile-badge { display: inline-flex; align-items: center; padding: .25rem .55rem; border: 1px solid color-mix(in srgb, var(--terracotta) 40%, var(--line)); border-radius: 999px; background: color-mix(in srgb, var(--terracotta) 8%, var(--surface)); color: var(--terracotta); font-size: .7rem; font-weight: 600; }
-.profile-badge:empty { display: none; }
 .chat-topbar-actions { display: flex; align-items: center; gap: .6rem; flex: 0 0 auto; }
 .chat-topbar-actions button { padding: .4rem .7rem; border: 0; border-radius: .25rem; background: var(--terracotta); color: var(--surface); font-size: .76rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .chat-topbar-actions button:disabled { opacity: .45; cursor: default; }
