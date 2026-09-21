@@ -621,6 +621,7 @@ function appendTransientExchange(content) {
   const pending = pendingMessageCard(document.querySelector("#active-conversation-profile").textContent);
   user.classList.add("conversation-message-transient");
   pending.classList.add("conversation-message-transient");
+  pending._userCard = user;
   container.append(user, pending);
   scrollConversationToBottom({force: true});
   return pending;
@@ -1308,6 +1309,9 @@ document.querySelector("#conversation-form").addEventListener("submit", async (e
     document.querySelector("#companion-action-draft").hidden = true;
     invalidateContextReview();
     document.querySelector("#conversation-feedback").textContent = result.mode === "draft" ? "Mensaje guardado. No se envió a una IA porque está activo el modo borrador." : "El acompañante respondió.";
+    if (pendingCard._userCard) {
+      pendingCard._userCard.classList.remove("conversation-message-transient");
+    }
     if (result.answer) {
       revealAssistantResponse(pendingCard, result.answer, result.library_sources);
       await refreshConversationOptions(activeConversationId);
