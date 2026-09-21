@@ -1067,10 +1067,24 @@ async function loadConversations(preferredId = activeConversationId) {
   await openConversation(next);
 }
 
+function formatConversationOptionLabel(conversation) {
+  const profile = (conversation.profile_name_snapshot || "").trim();
+  const title = conversationDisplayTitle(conversation).trim();
+  const countStr = `${conversation.message_count || 0} msgs`;
+
+  if (profile && title.toLowerCase().includes(profile.toLowerCase())) {
+    return `${title} (${countStr})`;
+  }
+  if (profile && title && title !== "Conversación sobre la lectura") {
+    return `${title} — ${profile} (${countStr})`;
+  }
+  return `${title} (${profile || "General"}) · ${countStr}`;
+}
+
 function renderConversationOptions(items, preferredId) {
   const list = document.querySelector("#conversation-list");
   const options = items.map((conversation) => new Option(
-    `${conversation.profile_name_snapshot || "Perfil no disponible"} · ${conversationDisplayTitle(conversation)} · ${conversation.message_count} mensajes`, conversation.id,
+    formatConversationOptionLabel(conversation), conversation.id,
   ));
   list.replaceChildren(...options);
   list.disabled = !options.length;
