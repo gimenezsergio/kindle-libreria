@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ficha del libro · Biblioteca personal</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=rail4">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=rail5">
     <script>window.WORK_ID = {{ work_id|tojson }};</script>
-    <script src="{{ url_for('static', filename='js/book.js') }}?v=rail4" defer></script>
+    <script src="{{ url_for('static', filename='js/book.js') }}?v=rail5" defer></script>
   </head>
   <body class="notebooklm-body">
     <header class="site-header">
@@ -43,11 +43,8 @@
         </div>
 
         <div class="topbar-right">
-          <div class="header-annotation-badge">
-            <span id="book-annotation-total">—</span> anotaciones
-          </div>
           <button type="button" class="change-cover-btn" id="open-cover-dialog" aria-haspopup="dialog" aria-controls="book-cover-dialog">
-            📷 Cambiar portada
+            📷 Portada
           </button>
         </div>
 
@@ -55,6 +52,7 @@
         <div hidden>
           <p id="identity-state">Ficha de lectura</p>
           <span id="book-presence"></span>
+          <span id="book-annotation-total"></span>
           <span id="book-language"></span>
           <span id="book-activity"></span>
           <span id="edition-count"></span><p id="edition-detail"></p>
