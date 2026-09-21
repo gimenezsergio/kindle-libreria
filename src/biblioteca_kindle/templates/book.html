@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ficha del libro · Biblioteca personal</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=rail3">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=rail4">
     <script>window.WORK_ID = {{ work_id|tojson }};</script>
-    <script src="{{ url_for('static', filename='js/book.js') }}?v=rail3" defer></script>
+    <script src="{{ url_for('static', filename='js/book.js') }}?v=rail4" defer></script>
   </head>
   <body class="notebooklm-body">
     <header class="site-header">
@@ -14,8 +14,8 @@
     </header>
     <main class="notebooklm-main"><article class="book-page notebooklm-page">
       
-      <!-- Top Slim Header (NotebookLM Single-Row Header) -->
-      <header class="book-header book-header-compact notebook-topbar">
+      <!-- Top Ultra-Slim Header (NotebookLM 44px Topbar) -->
+      <header class="notebook-topbar">
         <div class="topbar-left">
           <a class="back-link-inline" href="/library" title="Volver a la biblioteca">← Biblioteca</a>
           <span class="topbar-divider" aria-hidden="true">/</span>

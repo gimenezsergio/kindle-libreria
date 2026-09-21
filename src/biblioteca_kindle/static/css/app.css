@@ -901,26 +901,26 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 .notebooklm-body { overflow-x: hidden; }
 .notebooklm-page { width: min(98vw, 130rem); max-width: 130rem; padding-top: .75rem; }
 
-.notebook-topbar { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; min-height: 3.6rem; padding: .4rem 1rem; border: 1px solid var(--line); background: var(--surface); border-radius: .35rem; }
-.topbar-left { display: flex; align-items: center; gap: .85rem; min-width: 0; flex: 1; }
-.back-link-inline { color: var(--terracotta); font-size: .85rem; font-weight: 600; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+.notebook-topbar { display: flex; align-items: center; justify-content: space-between; gap: .85rem; height: 2.75rem; min-height: 2.75rem; padding: 0 .85rem; border: 1px solid var(--line); background: var(--surface); border-radius: .3rem; box-shadow: 0 1px 3px rgba(0, 0, 0, .04); box-sizing: border-box; }
+.topbar-left { display: flex; align-items: center; gap: .65rem; min-width: 0; flex: 1; height: 100%; }
+.back-link-inline { color: var(--terracotta); font-size: .8rem; font-weight: 600; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
 .back-link-inline:hover { text-decoration: underline; }
-.topbar-divider { color: var(--line); font-size: 1.1rem; font-weight: 300; user-select: none; flex-shrink: 0; }
+.topbar-divider { color: var(--line); font-size: .95rem; font-weight: 300; user-select: none; flex-shrink: 0; }
 
-.book-header-cover { width: 2.1rem; height: 3rem; flex-shrink: 0; border-radius: .25rem; overflow: hidden; box-shadow: 0 2px 6px rgba(0, 0, 0, .14); background: #d9d1c5; cursor: pointer; position: relative; transition: transform .15s ease, box-shadow .15s ease; }
-.book-header-cover:hover { transform: scale(1.06); box-shadow: 0 4px 10px rgba(0, 0, 0, .22); }
+.book-header-cover { width: 1.6rem; height: 2.1rem; flex-shrink: 0; border-radius: .2rem; overflow: hidden; box-shadow: 0 1px 4px rgba(0, 0, 0, .15); background: #d9d1c5; cursor: pointer; position: relative; transition: transform .15s ease; }
+.book-header-cover:hover { transform: scale(1.08); }
 .book-header-cover img { width: 100%; height: 100%; object-fit: cover; }
-.book-header-cover span { display: grid; place-items: center; height: 100%; font-family: var(--serif); font-size: 1rem; background: var(--paper); color: var(--muted); }
+.book-header-cover span { display: grid; place-items: center; height: 100%; font-family: var(--serif); font-size: .8rem; background: var(--paper); color: var(--muted); }
 
 .book-header-info { min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-.book-title-header-row { display: flex; align-items: center; gap: .4rem; min-width: 0; }
-.book-title-header-row h1 { font-size: 1.15rem; font-weight: 600; max-width: 45ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.25; margin: 0; color: var(--ink); }
-.book-author { font-size: .8rem; color: var(--muted); margin: .1rem 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.book-title-header-row { display: flex; align-items: center; gap: .35rem; min-width: 0; }
+.book-title-header-row h1 { font-size: .95rem; font-weight: 600; max-width: 45ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.15; margin: 0; color: var(--ink); }
+.book-author { font-size: .72rem; color: var(--muted); margin: .05rem 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.1; }
 
-.topbar-right { display: flex; align-items: center; gap: .85rem; flex-shrink: 0; }
-.header-annotation-badge { display: inline-flex; align-items: center; gap: .35rem; padding: .35rem .75rem; background: var(--paper); border: 1px solid var(--line); border-radius: 1rem; font-size: .78rem; color: var(--ink); white-space: nowrap; }
+.topbar-right { display: flex; align-items: center; gap: .6rem; flex-shrink: 0; }
+.header-annotation-badge { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .55rem; background: var(--paper); border: 1px solid var(--line); border-radius: .8rem; font-size: .72rem; color: var(--ink); white-space: nowrap; }
 .header-annotation-badge span { font-weight: 700; color: var(--terracotta); }
-.change-cover-btn { padding: .4rem .75rem; border: 1px solid var(--line); border-radius: .3rem; background: var(--surface); color: var(--ink); font-size: .78rem; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background-color .15s ease, border-color .15s ease; }
+.change-cover-btn { padding: .25rem .6rem; border: 1px solid var(--line); border-radius: .25rem; background: var(--surface); color: var(--ink); font-size: .72rem; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background-color .15s ease, border-color .15s ease; }
 .change-cover-btn:hover { background: var(--surface-warm); border-color: var(--terracotta); }
 
 /* 3-Column Grid Placement */
