@@ -724,6 +724,17 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
         if api_key:
             updates["BIBLIOTECA_AI_API_KEY"] = api_key
             updates[f"{provider_id.upper()}_API_KEY"] = api_key
+        else:
+            env_map = {
+                "openai": "OPENAI_API_KEY",
+                "deepseek": "DEEPSEEK_API_KEY",
+                "gemini": "GEMINI_API_KEY",
+                "openrouter": "OPENROUTER_API_KEY",
+            }
+            target_key_name = env_map.get(provider_id, f"{provider_id.upper()}_API_KEY")
+            existing_key = os.getenv(target_key_name, "")
+            if existing_key:
+                updates["BIBLIOTECA_AI_API_KEY"] = existing_key
 
         env_path = database_path.parent / ".env"
         save_environment_config(env_path, updates)

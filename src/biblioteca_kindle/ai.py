@@ -286,16 +286,19 @@ def resolve_provider_for_profile(provider_id: str | None = None, model_override:
     default_model = model_override or preset.get("model", "")
     default_protocol = preset.get("protocol", "chat_completions")
 
-    key = os.getenv("BIBLIOTECA_AI_API_KEY", "")
-    if not key or kind != os.getenv("BIBLIOTECA_AI_PROVIDER", "draft").strip().lower():
-        env_key_map = {
-            "openai": "OPENAI_API_KEY",
-            "deepseek": "DEEPSEEK_API_KEY",
-            "gemini": "GEMINI_API_KEY",
-            "openrouter": "OPENROUTER_API_KEY",
-        }
-        if kind in env_key_map:
-            key = os.getenv(env_key_map[kind], "") or key
+    env_key_map = {
+        "openai": "OPENAI_API_KEY",
+        "deepseek": "DEEPSEEK_API_KEY",
+        "gemini": "GEMINI_API_KEY",
+        "openrouter": "OPENROUTER_API_KEY",
+    }
+    key = ""
+    if kind in env_key_map:
+        key = os.getenv(env_key_map[kind], "")
+    if not key:
+        key = os.getenv(f"{kind.upper()}_API_KEY", "")
+    if not key:
+        key = os.getenv("BIBLIOTECA_AI_API_KEY", "")
 
     url = preset.get("base_url", default_url)
     if kind == os.getenv("BIBLIOTECA_AI_PROVIDER", "draft").strip().lower():
@@ -325,16 +328,19 @@ def provider_from_environment() -> AIProvider:
     default_model = preset.get("model", "")
     default_protocol = preset.get("protocol", "chat_completions")
 
-    key = os.getenv("BIBLIOTECA_AI_API_KEY", "")
+    env_key_map = {
+        "openai": "OPENAI_API_KEY",
+        "deepseek": "DEEPSEEK_API_KEY",
+        "gemini": "GEMINI_API_KEY",
+        "openrouter": "OPENROUTER_API_KEY",
+    }
+    key = ""
+    if kind in env_key_map:
+        key = os.getenv(env_key_map[kind], "")
     if not key:
-        env_key_map = {
-            "openai": "OPENAI_API_KEY",
-            "deepseek": "DEEPSEEK_API_KEY",
-            "gemini": "GEMINI_API_KEY",
-            "openrouter": "OPENROUTER_API_KEY",
-        }
-        if kind in env_key_map:
-            key = os.getenv(env_key_map[kind], "")
+        key = os.getenv(f"{kind.upper()}_API_KEY", "")
+    if not key:
+        key = os.getenv("BIBLIOTECA_AI_API_KEY", "")
 
     url = os.getenv("BIBLIOTECA_AI_BASE_URL", default_url)
     model = os.getenv("BIBLIOTECA_AI_MODEL", default_model)
@@ -350,4 +356,5 @@ def provider_from_environment() -> AIProvider:
         )
     except AIError:
         return DraftProvider()
+
 
