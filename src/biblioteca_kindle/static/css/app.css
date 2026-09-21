@@ -1076,10 +1076,12 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 .sidebar-toggle-btn { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem .85rem; border: 1px solid var(--line); border-radius: .25rem; background: var(--surface); color: var(--ink); font-size: .82rem; font-weight: 600; cursor: pointer; transition: all .15s ease; }
 .sidebar-toggle-btn:hover { background: var(--surface-warm); border-color: var(--terracotta); color: var(--terracotta); }
 /* NotebookLM 3-Column Architecture */
-.notebooklm-body { overflow-x: hidden; }
-.notebooklm-page { width: min(98vw, 130rem); max-width: 130rem; padding-top: .75rem; }
+/* NotebookLM 3-Column Architecture */
+.notebooklm-body { overflow: hidden; height: 100vh; height: 100dvh; }
+.notebooklm-main { height: calc(100vh - 4.25rem); height: calc(100dvh - 4.25rem); overflow: hidden; padding: 0; display: flex; flex-direction: column; }
+.notebooklm-page { width: min(98vw, 130rem); max-width: 130rem; height: 100%; display: flex; flex-direction: column; padding: .6rem 0; box-sizing: border-box; }
 
-.notebook-topbar { display: flex; align-items: center; justify-content: space-between; gap: .85rem; height: 3.2rem; min-height: 3.2rem; padding: 0 .85rem; border: 1px solid var(--line); background: var(--surface); border-radius: .35rem; box-shadow: 0 1px 3px rgba(0, 0, 0, .04); box-sizing: border-box; }
+.notebook-topbar { display: flex; align-items: center; justify-content: space-between; gap: .85rem; height: 3.2rem; min-height: 3.2rem; padding: 0 .85rem; border: 1px solid var(--line); background: var(--surface); border-radius: .35rem; box-shadow: 0 1px 3px rgba(0, 0, 0, .04); box-sizing: border-box; flex-shrink: 0; }
 .notebook-topbar .topbar-left { display: flex; align-items: center; gap: .65rem; min-width: 0; flex: 1; height: 100%; margin: 0; padding: 0; }
 .notebook-topbar .back-link-inline { color: var(--terracotta); font-size: .8rem; font-weight: 600; text-decoration: none; white-space: nowrap; flex-shrink: 0; margin: 0; }
 .notebook-topbar .back-link-inline:hover { text-decoration: underline; }
@@ -1106,11 +1108,11 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 .notebook-topbar .change-cover-btn:hover { background: var(--surface-warm); border-color: var(--terracotta); }
 
 /* 3-Column Grid Placement */
-.notebook-workspace { display: grid; grid-template-columns: 20rem minmax(0, 1fr) 20rem; gap: 1rem; margin-top: .75rem; align-items: start; transition: grid-template-columns .25s ease; }
-.sidebar-left { grid-column: 1; }
-.notebook-center { grid-column: 2; min-width: 0; }
-.notebook-center .conversation-active { display: block; width: 100%; min-height: 0; }
-.sidebar-right { grid-column: 3; }
+.notebook-workspace { display: grid; grid-template-columns: 20rem minmax(0, 1fr) 20rem; gap: 1rem; margin-top: .6rem; flex: 1 1 auto; min-height: 0; align-items: stretch; transition: grid-template-columns .25s ease; }
+.sidebar-left { grid-column: 1; height: 100%; min-height: 0; }
+.notebook-center { grid-column: 2; min-width: 0; height: 100%; min-height: 0; display: flex; flex-direction: column; }
+.notebook-center .conversation-active { display: flex; flex-direction: column; flex: 1 1 auto; width: 100%; min-height: 0; }
+.sidebar-right { grid-column: 3; height: 100%; min-height: 0; }
 
 .notebook-workspace.is-left-collapsed { grid-template-columns: 3.5rem minmax(0, 1fr) 20rem; }
 .notebook-workspace.is-left-collapsed .sidebar-left { min-width: 3.5rem; }
@@ -1127,7 +1129,7 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 .notebook-workspace.is-left-collapsed.is-right-collapsed { grid-template-columns: 3.5rem minmax(0, 1fr) 3.5rem; }
 
 /* Sidebars Base Styling */
-.notebook-sidebar { display: flex; flex-direction: column; border: 1px solid var(--line); background: var(--surface); border-radius: .25rem; overflow: hidden; position: sticky; top: .75rem; height: calc(100vh - 6.8rem); max-height: calc(100vh - 6.8rem); }
+.notebook-sidebar { display: flex; flex-direction: column; border: 1px solid var(--line); background: var(--surface); border-radius: .25rem; overflow: hidden; height: 100%; max-height: 100%; }
 .sidebar-header-bar { display: flex; align-items: center; justify-content: space-between; padding: .55rem .85rem; border-bottom: 1px solid var(--line); background: var(--paper); }
 .sidebar-header-bar h3 { margin: 0; font-size: .92rem; font-weight: 700; color: var(--ink); }
 .sidebar-close-btn { width: 1.8rem; height: 1.8rem; border: 0; background: transparent; color: var(--muted); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: .2rem; }
