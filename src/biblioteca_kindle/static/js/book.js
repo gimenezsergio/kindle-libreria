@@ -74,10 +74,18 @@ function setupConversationScroll(container) {
 function scrollConversationToBottom({force = false} = {}) {
   const state = conversationScrollState;
   if (!state || (!force && !state.autoFollow)) return;
+  if (force) {
+    if (state.frame) {
+      window.cancelAnimationFrame(state.frame);
+      state.frame = null;
+    }
+    state.container.scrollTop = state.container.scrollHeight;
+    return;
+  }
   if (state.frame) return;
   state.frame = window.requestAnimationFrame(() => {
     state.frame = null;
-    if (force || state.autoFollow) state.container.scrollTop = state.container.scrollHeight;
+    if (state.autoFollow) state.container.scrollTop = state.container.scrollHeight;
   });
 }
 
