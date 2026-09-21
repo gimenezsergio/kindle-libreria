@@ -911,15 +911,18 @@ footer { width: min(100%, 78rem); margin: 3rem auto 0; }
 .book-author { font-size: .82rem; margin: .1rem 0 0; }
 .book-summary { margin: .15rem 0 0; font-size: .68rem; display: flex; flex-wrap: wrap; gap: .3rem .75rem; color: var(--muted); }
 
-/* 3-Column Grid */
+/* 3-Column Grid Placement */
 .notebook-workspace { display: grid; grid-template-columns: 20rem minmax(0, 1fr) 20rem; gap: 1rem; margin-top: .75rem; align-items: start; transition: grid-template-columns .25s ease; }
+.sidebar-left { grid-column: 1; }
+.notebook-center { grid-column: 2; min-width: 0; }
+.sidebar-right { grid-column: 3; }
+
 .notebook-workspace.is-left-collapsed { grid-template-columns: 0px minmax(0, 1fr) 20rem; }
 .notebook-workspace.is-left-collapsed .sidebar-left { display: none; }
 .notebook-workspace.is-right-collapsed { grid-template-columns: 20rem minmax(0, 1fr) 0px; }
 .notebook-workspace.is-right-collapsed .sidebar-right { display: none; }
 .notebook-workspace.is-left-collapsed.is-right-collapsed { grid-template-columns: minmax(0, 1fr); }
-
-.notebook-center { min-width: 0; }
+.notebook-workspace.is-left-collapsed.is-right-collapsed .notebook-center { grid-column: 1 / -1; }
 
 /* Sidebars Base Styling */
 .notebook-sidebar { display: flex; flex-direction: column; border: 1px solid var(--line); background: var(--surface); border-radius: .25rem; overflow: hidden; position: sticky; top: .75rem; max-height: calc(100vh - 5.5rem); }
