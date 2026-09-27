@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ficha del libro · Biblioteca personal</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=v24_accordion_state">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=v25_selection_note">
     <script>window.WORK_ID = {{ work_id|tojson }};</script>
-    <script src="{{ url_for('static', filename='js/book.js') }}?v=v24_accordion_state" defer></script>
+    <script src="{{ url_for('static', filename='js/book.js') }}?v=v25_selection_note" defer></script>
   </head>
   <body class="notebooklm-body">
     <header class="site-header">
@@ -353,6 +353,11 @@
         </footer>
       </div>
     </dialog>
+
+    <!-- Floating Tooltip for Text Selection in Chat Messages -->
+    <div id="text-selection-tooltip" class="selection-tooltip" hidden>
+      <button type="button" id="save-selection-note-btn" class="selection-tooltip-btn">📌 Guardar como nota</button>
+    </div>
 
     <nav class="mobile-nav" aria-label="Navegación móvil"><a href="/library">Biblioteca</a><a class="is-active" href="#panel-memory">Lectura</a><a href="/settings">Ajustes</a></nav>
   </body>

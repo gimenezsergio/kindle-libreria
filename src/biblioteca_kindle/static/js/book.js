@@ -704,6 +704,141 @@ async function saveMessageAsNote(rawContent, button) {
   }
 }
 
+let activeSelectedText = "";
+
+function hideSelectionTooltip() {
+  const tooltip = document.querySelector("#text-selection-tooltip");
+  if (tooltip) {
+    tooltip.hidden = true;
+    tooltip.classList.remove("is-visible");
+  }
+  activeSelectedText = "";
+}
+
+function showSelectionTooltip(rect, text) {
+  const tooltip = document.querySelector("#text-selection-tooltip");
+  if (!tooltip) return;
+  activeSelectedText = text;
+  tooltip.hidden = false;
+  tooltip.classList.add("is-visible");
+
+  const tooltipWidth = tooltip.offsetWidth || 170;
+  const tooltipHeight = tooltip.offsetHeight || 38;
+
+  let top = rect.top - tooltipHeight - 8;
+  if (top < 10) {
+    top = rect.bottom + 8;
+  }
+  let left = rect.left + (rect.width / 2);
+  const minLeft = (tooltipWidth / 2) + 10;
+  const maxLeft = window.innerWidth - (tooltipWidth / 2) - 10;
+  left = Math.max(minLeft, Math.min(left, maxLeft));
+
+  tooltip.style.top = `${top}px`;
+  tooltip.style.left = `${left}px`;
+}
+
+function handleTextSelection() {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) {
+    hideSelectionTooltip();
+    return;
+  }
+  const text = selection.toString().trim();
+  if (!text) {
+    hideSelectionTooltip();
+    return;
+  }
+
+  let anchorNode = selection.anchorNode;
+  let focusNode = selection.focusNode;
+  if (anchorNode && anchorNode.nodeType === Node.TEXT_NODE) anchorNode = anchorNode.parentNode;
+  if (focusNode && focusNode.nodeType === Node.TEXT_NODE) focusNode = focusNode.parentNode;
+
+  const assistantMsgAnchor = anchorNode?.closest?.(".conversation-message.assistant");
+  const assistantMsgFocus = focusNode?.closest?.(".conversation-message.assistant");
+
+  if (!assistantMsgAnchor || !assistantMsgFocus || assistantMsgAnchor !== assistantMsgFocus) {
+    hideSelectionTooltip();
+    return;
+  }
+
+  try {
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    if (!rect || (rect.width === 0 && rect.height === 0)) {
+      hideSelectionTooltip();
+      return;
+    }
+    showSelectionTooltip(rect, text);
+  } catch (err) {
+    hideSelectionTooltip();
+  }
+}
+
+async function saveSelectionAsNote() {
+  if (!activeSelectedText || !window.WORK_ID) return;
+
+  const textToSave = activeSelectedText;
+  const conversationTitleInput = document.querySelector("#active-conversation-title-input");
+  const conversationTitle = conversationTitleInput?.value?.trim() || "Conversación sobre la lectura";
+  const profileName = document.querySelector("#active-conversation-profile")?.textContent?.trim() || "Acompañante";
+
+  const originHeader = `> ✦ **De:** ${conversationTitle} · *${profileName}* (Fragmento)\n\n`;
+  const body = `${originHeader}${textToSave}`;
+
+  const tooltipBtn = document.querySelector("#save-selection-note-btn");
+  try {
+    if (tooltipBtn) {
+      tooltipBtn.disabled = true;
+      tooltipBtn.textContent = "Guardando…";
+    }
+    await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/notes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body }),
+    });
+    hideSelectionTooltip();
+    window.getSelection()?.removeAllRanges();
+    await loadPersonal();
+    showToastNotification("Fragmento guardado en tu cuaderno");
+  } catch (error) {
+    console.error("Error al guardar fragmento de nota:", error);
+    alert(`No se pudo guardar la nota: ${error.message || error}`);
+  } finally {
+    if (tooltipBtn) {
+      tooltipBtn.disabled = false;
+      tooltipBtn.textContent = "📌 Guardar como nota";
+    }
+  }
+}
+
+function initTextSelectionTooltip() {
+  const tooltipBtn = document.querySelector("#save-selection-note-btn");
+  if (tooltipBtn) {
+    tooltipBtn.addEventListener("mousedown", (e) => e.preventDefault());
+    tooltipBtn.addEventListener("click", () => saveSelectionAsNote());
+  }
+
+  document.addEventListener("mouseup", () => {
+    setTimeout(handleTextSelection, 10);
+  });
+  document.addEventListener("keyup", (e) => {
+    if (["Shift", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) {
+      setTimeout(handleTextSelection, 10);
+    }
+  });
+  document.addEventListener("selectionchange", () => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) {
+      hideSelectionTooltip();
+    }
+  });
+  window.addEventListener("scroll", hideSelectionTooltip, { passive: true });
+  window.addEventListener("resize", hideSelectionTooltip, { passive: true });
+}
+
+
 function messageCard(message) {
   const article = document.createElement("article");
   article.className = `conversation-message ${message.role}`;
@@ -2009,3 +2144,5 @@ loadOptions();
 loadConversations();
 loadProviderStatus();
 loadCompanionActions();
+initTextSelectionTooltip();
+
