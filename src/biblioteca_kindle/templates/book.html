@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ficha del libro · Biblioteca personal</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=v23_cuadernito">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=v24_accordion_state">
     <script>window.WORK_ID = {{ work_id|tojson }};</script>
-    <script src="{{ url_for('static', filename='js/book.js') }}?v=v23_cuadernito" defer></script>
+    <script src="{{ url_for('static', filename='js/book.js') }}?v=v24_accordion_state" defer></script>
   </head>
   <body class="notebooklm-body">
     <header class="site-header">
@@ -264,7 +264,7 @@
                     <form id="personal-note-form"><label>Nueva nota<textarea id="personal-note-body" required rows="3" placeholder="Una interpretación, una pregunta, una conexión…"></textarea></label><button type="submit">Guardar nota</button></form>
                   </div>
                 </details>
-                <details class="personal-accordion" open>
+                <details class="personal-accordion">
                   <summary class="accordion-summary"><h3>Colecciones</h3><span class="accordion-chevron">▾</span></summary>
                   <div class="accordion-content">
                     <div class="personal-items" id="collection-items"></div>
@@ -272,7 +272,7 @@
                     <form class="inline-create" id="create-collection-form"><label>Nueva colección<input id="collection-name" type="text" required placeholder="Ej. Poder y autoridad"></label><button type="submit">Crear</button></form>
                   </div>
                 </details>
-                <details class="personal-accordion" open>
+                <details class="personal-accordion">
                   <summary class="accordion-summary"><h3>Relaciones</h3><span class="accordion-chevron">▾</span></summary>
                   <div class="accordion-content">
                     <div class="personal-items" id="relation-items"></div>
