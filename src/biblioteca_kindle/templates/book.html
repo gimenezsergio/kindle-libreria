@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ficha del libro · Biblioteca personal</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=v22_modal_fix">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=v23_cuadernito">
     <script>window.WORK_ID = {{ work_id|tojson }};</script>
-    <script src="{{ url_for('static', filename='js/book.js') }}?v=v22_modal_fix" defer></script>
+    <script src="{{ url_for('static', filename='js/book.js') }}?v=v23_cuadernito" defer></script>
   </head>
   <body class="notebooklm-body">
     <header class="site-header">
@@ -232,15 +232,15 @@
         <aside class="notebook-sidebar sidebar-right" id="sidebar-right">
           <!-- Thin Railbar when collapsed -->
           <div class="sidebar-rail" id="sidebar-right-rail">
-            <button type="button" class="rail-btn rail-expand-btn" id="expand-right-sidebar" title="Expandir Cuaderno propio" aria-label="Expandir Cuaderno">
+            <button type="button" class="rail-btn rail-expand-btn" id="expand-right-sidebar" title="Expandir Cuadernito" aria-label="Expandir Cuadernito">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg>
             </button>
             <div class="rail-divider"></div>
+            <button type="button" class="rail-btn" id="rail-btn-notes" title="Notas" aria-label="Ir a Notas">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            </button>
             <button type="button" class="rail-btn" id="rail-btn-collections" title="Colecciones" aria-label="Ir a Colecciones">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-            </button>
-            <button type="button" class="rail-btn" id="rail-btn-notes" title="Notas propias" aria-label="Ir a Notas propias">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
             </button>
             <button type="button" class="rail-btn" id="rail-btn-relations" title="Relaciones" aria-label="Ir a Relaciones">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
@@ -248,7 +248,7 @@
           </div>
 
           <div class="sidebar-header-bar">
-            <h3>📝 Cuaderno Propio</h3>
+            <h3>📝 Cuadernito</h3>
             <button type="button" class="sidebar-close-btn" id="close-right-sidebar" title="Ocultar cuaderno">✕</button>
           </div>
           <div class="sidebar-content">
@@ -258,18 +258,18 @@
               </div>
               <div class="personal-grid">
                 <details class="personal-accordion" open>
+                  <summary class="accordion-summary"><h3>Notas</h3><span class="accordion-chevron">▾</span></summary>
+                  <div class="accordion-content">
+                    <div class="personal-items" id="personal-note-items"></div>
+                    <form id="personal-note-form"><label>Nueva nota<textarea id="personal-note-body" required rows="3" placeholder="Una interpretación, una pregunta, una conexión…"></textarea></label><button type="submit">Guardar nota</button></form>
+                  </div>
+                </details>
+                <details class="personal-accordion" open>
                   <summary class="accordion-summary"><h3>Colecciones</h3><span class="accordion-chevron">▾</span></summary>
                   <div class="accordion-content">
                     <div class="personal-items" id="collection-items"></div>
                     <form id="assign-collection-form"><label>Colección<select id="collection-select" required></select></label><label>Comentario<input id="collection-note" type="text" placeholder="Por qué pertenece aquí"></label><button type="submit">Asignar colección</button></form>
                     <form class="inline-create" id="create-collection-form"><label>Nueva colección<input id="collection-name" type="text" required placeholder="Ej. Poder y autoridad"></label><button type="submit">Crear</button></form>
-                  </div>
-                </details>
-                <details class="personal-accordion" open>
-                  <summary class="accordion-summary"><h3>Notas propias</h3><span class="accordion-chevron">▾</span></summary>
-                  <div class="accordion-content">
-                    <div class="personal-items" id="personal-note-items"></div>
-                    <form id="personal-note-form"><label>Nueva nota<textarea id="personal-note-body" required rows="3" placeholder="Una interpretación, una pregunta, una conexión…"></textarea></label><button type="submit">Guardar nota</button></form>
                   </div>
                 </details>
                 <details class="personal-accordion" open>

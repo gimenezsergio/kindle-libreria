@@ -410,7 +410,7 @@ async function loadPersonal() {
   document.querySelector("#collection-items").replaceChildren(...collections);
   document.querySelector("#personal-note-items").replaceChildren(...notes);
   document.querySelector("#relation-items").replaceChildren(...relations);
-  for (const [selector, count, label] of [["#collection-items", collections.length, "colecciones"], ["#personal-note-items", notes.length, "notas propias"], ["#relation-items", relations.length, "relaciones"]]) {
+  for (const [selector, count, label] of [["#collection-items", collections.length, "colecciones"], ["#personal-note-items", notes.length, "notas"], ["#relation-items", relations.length, "relaciones"]]) {
     const container = document.querySelector(selector);
     if (!count) container.append(personalItem(`Sin ${label}`));
   }
