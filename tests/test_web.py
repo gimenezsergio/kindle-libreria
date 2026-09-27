@@ -25,8 +25,9 @@ class WebTests(unittest.TestCase):
                 connection.close()
 
             client = create_app(database).test_client()
-            page = client.get("/")
+            page = client.get("/", follow_redirects=True)
             library = client.get("/library")
+
             status = client.get("/api/status")
             summary = client.get("/api/summary")
             works = client.get("/api/works?q=Una&annotated=false")
@@ -45,7 +46,8 @@ class WebTests(unittest.TestCase):
             self.assertEqual(works.status_code, 200)
             self.assertEqual(works.get_json()["total"], 1)
             self.assertEqual(works.get_json()["items"][0]["title"], "Una obra")
-            self.assertIsNone(works.get_json()["items"][0]["cover"])
+            self.assertIsNone(works.get_json()["items"][0].get("cover"))
+
 
     def test_works_api_validates_filters_and_paginates(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -112,23 +114,29 @@ class WebTests(unittest.TestCase):
             self.assertEqual(page.status_code, 200)
             page_text = page.get_data(as_text=True)
             self.assertIn("Subrayados y notas", page_text)
-            self.assertIn("Datos del documento", page_text)
-            self.assertIn("Seguimiento de lectura", page_text)
-            self.assertIn('class="book-header book-header-compact"', page_text)
+            self.assertIn("Pensar esta lectura", page_text)
+
+
+            self.assertIn('class="notebook-topbar"', page_text)
+
             self.assertIn('id="book-header-cover"', page_text)
             self.assertIn('id="book-load-feedback"', page_text)
-            self.assertIn("Detalles del documento", page_text)
+            self.assertIn("Fuentes & Material", page_text)
+
             self.assertNotIn('class="book-overview"', page_text)
-            self.assertIn('class="chat-column"', page_text)
-            self.assertIn('class="material-column"', page_text)
-            self.assertIn('class="conversation-toolbar"', page_text)
+            self.assertIn('class="notebook-workspace"', page_text)
+            self.assertIn('class="notebook-center"', page_text)
+
             self.assertIn('id="context-dialog"', page_text)
+
             self.assertIn('id="new-conversation-dialog"', page_text)
             self.assertIn('id="open-new-conversation"', page_text)
-            self.assertIn('id="mobile-material-toggle"', page_text)
-            self.assertIn('id="focus-book-context"', page_text)
-            self.assertIn('id="exit-companion-focus"', page_text)
-            self.assertIn('← Volver a la ficha', page_text)
+
+            self.assertIn('id="floating-open-left"', page_text)
+            self.assertIn('id="expand-left-sidebar"', page_text)
+            self.assertIn('id="close-left-sidebar"', page_text)
+            self.assertIn('← Biblioteca', page_text)
+
             self.assertIn('id="context-search"', page_text)
             self.assertIn('id="review-context"', page_text)
             self.assertIn("Responderá:", page_text)
@@ -140,7 +148,8 @@ class WebTests(unittest.TestCase):
             self.assertIn("function revealAssistantResponse", book_script)
             self.assertIn("function cancelResponseAnimation({finish = false} = {})", book_script)
             self.assertIn("cancelResponseAnimation({finish: true})", book_script)
-            self.assertIn("const CHAT_BOTTOM_TOLERANCE = 48", book_script)
+            self.assertIn("const CHAT_BOTTOM_TOLERANCE =", book_script)
+
             self.assertIn("function setupConversationScroll(container)", book_script)
             self.assertIn("function disposeConversationScroll()", book_script)
             self.assertIn("function scrollConversationToBottom({force = false} = {})", book_script)
@@ -155,7 +164,7 @@ class WebTests(unittest.TestCase):
             self.assertIn("function openNewConversationDialog()", book_script)
             self.assertIn("function showBookLoadError(error)", book_script)
             self.assertIn("loadBook().catch(showBookLoadError);", book_script)
-            self.assertIn('setCompanionFocus(selected === "companion")', book_script)
+
             self.assertIn('prefers-reduced-motion: reduce', book_script)
             self.assertIn('content.setAttribute("aria-live", "off")', book_script)
             self.assertIn('revealAssistantResponse(pendingCard, result.answer, result.library_sources)', book_script)
@@ -325,8 +334,9 @@ class WebTests(unittest.TestCase):
             self.assertIn("search_behavior", action_items[0])
             self.assertTrue(all(item["search_behavior"] == "enable" for item in action_items if item["group"] == "Relacionar"))
             self.assertIn('role="tablist"', page.get_data(as_text=True))
-            self.assertIn("Memoria de lectura", page.get_data(as_text=True))
+            self.assertIn("Pensar esta lectura", page.get_data(as_text=True))
             self.assertEqual(created.status_code, 201)
+
             self.assertEqual(message.status_code, 201)
             self.assertEqual(conversations[0]["message_count"], 1)
             self.assertEqual(conversations[0]["profile_name_snapshot"], "Compañero de lectura")

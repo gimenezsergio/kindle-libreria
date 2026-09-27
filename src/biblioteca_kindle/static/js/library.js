@@ -67,7 +67,43 @@ function bookRow(book) {
   text(presence, book.presence === "present" ? "En el Kindle" : "Ausente");
   const annotations = document.createElement("span");
   text(annotations, `${formatNumber.format(book.annotation_count)} anotaciones`);
-  metadata.append(presence, annotations);
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "button";
+  deleteBtn.className = "book-delete-btn";
+  deleteBtn.title = "Borrar libro";
+  deleteBtn.setAttribute("aria-label", `Borrar ${book.title}`);
+  deleteBtn.style.padding = "0.2rem 0.4rem";
+  deleteBtn.style.border = "none";
+  deleteBtn.style.background = "transparent";
+  deleteBtn.style.cursor = "pointer";
+  deleteBtn.style.fontSize = "0.85rem";
+  deleteBtn.style.opacity = "0.7";
+  text(deleteBtn, "🗑️");
+
+  deleteBtn.addEventListener("mouseenter", () => { deleteBtn.style.opacity = "1"; });
+  deleteBtn.addEventListener("mouseleave", () => { deleteBtn.style.opacity = "0.7"; });
+
+  deleteBtn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (confirm(`¿Estás seguro de que querés borrar "${book.title}" de tu biblioteca?`)) {
+      try {
+        const res = await fetch(`/api/works/${encodeURIComponent(book.id)}`, { method: "DELETE" });
+        if (!res.ok) {
+          const err = await res.json();
+          alert(`Error: ${err.error || "No se pudo borrar el libro"}`);
+          return;
+        }
+        await loadCollections();
+        loadBooks();
+      } catch {
+        alert("Error de conexión al borrar el libro.");
+      }
+    }
+  });
+
+  metadata.append(presence, annotations, deleteBtn);
   article.append(cover, identity, metadata);
   return article;
 }
@@ -459,4 +495,272 @@ savePickerBtn?.addEventListener("click", async () => {
 applyView();
 loadCollections();
 loadBooks();
+
+// Alta de obras (Manual y Buscador Externo)
+const openAddWorkBtn = document.querySelector("#open-add-work-btn");
+const addWorkDialog = document.querySelector("#add-work-dialog");
+const closeAddWorkBtn = document.querySelector("#close-add-work-btn");
+const tabExternalBtn = document.querySelector("#tab-external-btn");
+const tabManualBtn = document.querySelector("#tab-manual-btn");
+const tabExternalContent = document.querySelector("#tab-external-content");
+const manualWorkForm = document.querySelector("#manual-work-form");
+const externalSearchForm = document.querySelector("#external-search-form");
+const externalSearchInput = document.querySelector("#external-search-input");
+const externalSearchResults = document.querySelector("#external-search-results");
+const externalSearchBtn = document.querySelector("#external-search-btn");
+const manualTitleInput = document.querySelector("#manual-title-input");
+const manualAuthorInput = document.querySelector("#manual-author-input");
+const manualDisplayTitleInput = document.querySelector("#manual-display-title-input");
+const cancelManualBtn = document.querySelector("#cancel-manual-btn");
+
+function switchTab(tab) {
+  if (tab === "external") {
+    tabExternalContent.hidden = false;
+    manualWorkForm.hidden = true;
+    tabExternalBtn.style.fontWeight = "bold";
+    tabExternalBtn.style.background = "var(--bg-hover, #eef2ff)";
+    tabManualBtn.style.fontWeight = "normal";
+    tabManualBtn.style.background = "transparent";
+  } else {
+    tabExternalContent.hidden = true;
+    manualWorkForm.hidden = false;
+    tabManualBtn.style.fontWeight = "bold";
+    tabManualBtn.style.background = "var(--bg-hover, #eef2ff)";
+    tabExternalBtn.style.fontWeight = "normal";
+    tabExternalBtn.style.background = "transparent";
+  }
+}
+
+function openAddWorkModal() {
+  if (!addWorkDialog) return;
+  switchTab("external");
+  externalSearchInput.value = "";
+  externalSearchResults.replaceChildren();
+  const initMsg = document.createElement("p");
+  initMsg.className = "picker-loading";
+  initMsg.style.textAlign = "center";
+  initMsg.style.margin = "1rem 0";
+  initMsg.style.color = "var(--text-muted, #666)";
+  text(initMsg, "Escribí el nombre de un libro o autor para buscar en OpenLibrary.");
+  externalSearchResults.append(initMsg);
+
+  manualTitleInput.value = "";
+  manualAuthorInput.value = "";
+  manualDisplayTitleInput.value = "";
+
+  if (addWorkDialog.showModal) addWorkDialog.showModal(); else addWorkDialog.setAttribute("open", "");
+}
+
+function closeAddWorkModal() {
+  if (!addWorkDialog) return;
+  if (addWorkDialog.close) addWorkDialog.close(); else addWorkDialog.removeAttribute("open");
+}
+
+openAddWorkBtn?.addEventListener("click", openAddWorkModal);
+closeAddWorkBtn?.addEventListener("click", closeAddWorkModal);
+cancelManualBtn?.addEventListener("click", closeAddWorkModal);
+
+tabExternalBtn?.addEventListener("click", () => switchTab("external"));
+tabManualBtn?.addEventListener("click", () => switchTab("manual"));
+
+externalSearchForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const query = externalSearchInput.value.trim();
+  if (!query) return;
+
+  externalSearchBtn.disabled = true;
+  text(externalSearchBtn, "Buscando…");
+  externalSearchResults.replaceChildren();
+  const loadingP = document.createElement("p");
+  loadingP.className = "picker-loading";
+  loadingP.style.textAlign = "center";
+  loadingP.style.margin = "1rem 0";
+  text(loadingP, "Buscando en OpenLibrary…");
+  externalSearchResults.append(loadingP);
+
+  try {
+    const res = await fetch(`/api/external-works/search?q=${encodeURIComponent(query)}`);
+    if (!res.ok) throw new Error("Error en el buscador");
+    const data = await res.json();
+    const results = data.results || [];
+
+    if (results.length === 0) {
+      externalSearchResults.replaceChildren();
+      const wrap = document.createElement("div");
+      wrap.style.textAlign = "center";
+      wrap.style.margin = "1.5rem 0";
+
+      const noRes = document.createElement("p");
+      noRes.className = "picker-empty";
+      text(noRes, `No se encontró en OpenLibrary. Podés crearlo manualmente.`);
+      
+      const createManualBtn = document.createElement("button");
+      createManualBtn.type = "button";
+      createManualBtn.className = "btn-subtle btn-accent";
+      createManualBtn.style.marginTop = "0.75rem";
+      text(createManualBtn, `✍️ Cargar "${query}" en Ficha Manual`);
+      createManualBtn.addEventListener("click", () => {
+        switchTab("manual");
+        if (!manualTitleInput.value) {
+          manualTitleInput.value = query;
+        }
+      });
+
+      wrap.append(noRes, createManualBtn);
+      externalSearchResults.append(wrap);
+      return;
+    }
+
+    const items = results.map((book) => {
+      const card = document.createElement("div");
+      card.style.display = "flex";
+      card.style.alignItems = "center";
+      card.style.gap = "0.75rem";
+      card.style.padding = "0.6rem";
+      card.style.border = "1px solid var(--border-color, #e5e7eb)";
+      card.style.borderRadius = "8px";
+      card.style.background = "var(--bg-surface, #fff)";
+
+      if (book.cover_url) {
+        const img = document.createElement("img");
+        img.src = book.cover_url;
+        img.alt = `Portada de ${book.title}`;
+        img.style.width = "40px";
+        img.style.height = "56px";
+        img.style.objectFit = "cover";
+        img.style.borderRadius = "4px";
+        card.append(img);
+      } else {
+        const placeholder = document.createElement("div");
+        placeholder.style.width = "40px";
+        placeholder.style.height = "56px";
+        placeholder.style.background = "var(--bg-muted, #f3f4f6)";
+        placeholder.style.borderRadius = "4px";
+        placeholder.style.display = "flex";
+        placeholder.style.alignItems = "center";
+        placeholder.style.justifyContent = "center";
+        placeholder.style.fontSize = "0.8rem";
+        placeholder.style.color = "var(--text-muted, #9ca3af)";
+        text(placeholder, "Sin foto");
+        card.append(placeholder);
+      }
+
+      const info = document.createElement("div");
+      info.style.flex = "1";
+      info.style.minWidth = "0";
+
+      const titleEl = document.createElement("strong");
+      titleEl.style.display = "block";
+      titleEl.style.fontSize = "0.95rem";
+      titleEl.style.whiteSpace = "nowrap";
+      titleEl.style.overflow = "hidden";
+      titleEl.style.textOverflow = "ellipsis";
+      text(titleEl, book.title);
+
+      const authorEl = document.createElement("span");
+      authorEl.style.display = "block";
+      authorEl.style.fontSize = "0.85rem";
+      authorEl.style.color = "var(--text-muted, #666)";
+      const authorText = (book.authors || []).join(", ") || "Autor desconocido";
+      const yearText = book.first_publish_year ? ` (${book.first_publish_year})` : "";
+      text(authorEl, `${authorText}${yearText}`);
+
+      info.append(titleEl, authorEl);
+
+      const addBtn = document.createElement("button");
+      addBtn.type = "button";
+      addBtn.className = "btn-subtle btn-accent";
+      addBtn.style.fontSize = "0.85rem";
+      addBtn.style.whiteSpace = "nowrap";
+      text(addBtn, "➕ Añadir");
+
+      addBtn.addEventListener("click", async () => {
+        addBtn.disabled = true;
+        text(addBtn, "Guardando…");
+        try {
+          const importRes = await fetch("/api/works", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: book.title,
+              author: authorText !== "Autor desconocido" ? authorText : "",
+              publish_year: book.first_publish_year,
+              cover_i: book.cover_i,
+            }),
+          });
+          if (!importRes.ok) {
+            const err = await importRes.json();
+            alert(`Error: ${err.error || "No se pudo añadir el libro"}`);
+            addBtn.disabled = false;
+            text(addBtn, "➕ Añadir");
+            return;
+          }
+          closeAddWorkModal();
+          await loadCollections();
+          loadBooks();
+        } catch {
+          alert("Error de conexión al añadir el libro.");
+          addBtn.disabled = false;
+          text(addBtn, "➕ Añadir");
+        }
+      });
+
+      card.append(info, addBtn);
+      return card;
+    });
+
+    externalSearchResults.replaceChildren(...items);
+  } catch {
+    externalSearchResults.replaceChildren();
+    const errP = document.createElement("p");
+    errP.className = "picker-error";
+    errP.style.textAlign = "center";
+    errP.style.margin = "1rem 0";
+    text(errP, "No se pudo conectar con el buscador externo.");
+    externalSearchResults.append(errP);
+  } finally {
+    externalSearchBtn.disabled = false;
+    text(externalSearchBtn, "Buscar");
+  }
+});
+
+manualWorkForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const title = manualTitleInput.value.trim();
+  const author = manualAuthorInput.value.trim();
+  const display_title = manualDisplayTitleInput.value.trim() || null;
+
+  if (!title) return;
+
+  const saveBtn = document.querySelector("#save-manual-btn");
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    text(saveBtn, "Guardando…");
+  }
+
+  try {
+    const res = await fetch("/api/works", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, author, display_title }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert(`Error: ${err.error || "No se pudo crear el libro"}`);
+      return;
+    }
+
+    closeAddWorkModal();
+    await loadCollections();
+    loadBooks();
+  } catch {
+    alert("Error de conexión al crear el libro.");
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      text(saveBtn, "Guardar libro");
+    }
+  }
+});
 

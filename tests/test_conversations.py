@@ -270,8 +270,8 @@ class ConversationTests(unittest.TestCase):
             provider = provider_from_environment()
         self.assertIsInstance(provider, ResponsesProvider)
         self.assertEqual(provider.name, "deepseek")
-        self.assertEqual(provider.url, "https://api.deepseek.com/responses")
-        self.assertEqual(provider.model, "deepseek-v4-flash")
+        self.assertEqual(provider.url, "https://api.deepseek.com/chat/completions")
+        self.assertEqual(provider.model, "deepseek-chat")
         with patch.dict("os.environ", {"BIBLIOTECA_AI_PROVIDER": "deepseek"}, clear=True):
             self.assertIsInstance(provider_from_environment(), DraftProvider)
 

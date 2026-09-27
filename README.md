@@ -297,9 +297,7 @@ técnicos permanecen internos y no aparecen en el diálogo. Los resultados se ca
 aplicación; cambiar `BIBLIOTECA_AI_PROVIDER=deepseek` por `openclaw` no cambia la
 búsqueda ni su trazabilidad.
 
-La búsqueda semántica y la indexación opcional de textos completos quedan como
-mejoras futuras. La búsqueda actual nunca presupone que un modelo conoce o puede
-consultar el contenido íntegro de una obra.
+La búsqueda semántica, la indexación de textos completos y la verificación fáctica mediante RAG (Retrieval-Augmented Generation) quedan como mejoras futuras a largo plazo. Esta arquitectura permitirá segmentar los libros completos en vectores (*embeddings*) en la base local para que el acompañante pueda consultar y verificar pasajes o atribuciones específicas en tiempo real antes de responder, previniendo alucinaciones sobre personajes o autoría de citas. La búsqueda actual se limita al catálogo, subrayados y notas existentes, y nunca presupone que un modelo conoce o puede consultar el contenido íntegro de una obra sin evidencia recuperada.
 
 Los **accesos directos de estudio** ya permiten iniciar acciones como explicar
 una selección, detectar temas, explorar símbolos, proponer preguntas o

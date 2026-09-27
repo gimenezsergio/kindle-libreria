@@ -10,7 +10,7 @@ let activeConversationId = null;
 let librarySearchResults = [];
 let previewSearchQuery = "";
 let responseAnimation = null;
-const CHAT_BOTTOM_TOLERANCE = 48;
+const CHAT_BOTTOM_TOLERANCE = 16;
 let conversationScrollState = null;
 let currentBookTitle = "este libro";
 let companionActions = [];
@@ -50,8 +50,11 @@ function openNewConversationDialog() {
 
 function disposeConversationScroll() {
   if (!conversationScrollState) return;
-  const {container, onScroll, frame} = conversationScrollState;
+  const {container, onScroll, onWheel, onTouchStart, onTouchMove, frame} = conversationScrollState;
   container.removeEventListener("scroll", onScroll);
+  if (onWheel) container.removeEventListener("wheel", onWheel);
+  if (onTouchStart) container.removeEventListener("touchstart", onTouchStart);
+  if (onTouchMove) container.removeEventListener("touchmove", onTouchMove);
   if (frame) window.cancelAnimationFrame(frame);
   conversationScrollState = null;
 }
@@ -62,11 +65,43 @@ function isConversationNearBottom(container) {
 
 function setupConversationScroll(container) {
   disposeConversationScroll();
+  let lastScrollTop = container.scrollTop;
+  let touchStartY = 0;
   const state = {container, autoFollow: true, frame: null};
+
   state.onScroll = () => {
-    state.autoFollow = isConversationNearBottom(container);
+    const currentScrollTop = container.scrollTop;
+    const isScrollingUp = currentScrollTop < lastScrollTop - 2;
+    lastScrollTop = currentScrollTop;
+    if (isScrollingUp) {
+      state.autoFollow = false;
+    } else {
+      state.autoFollow = isConversationNearBottom(container);
+    }
   };
+
+  state.onWheel = (event) => {
+    if (event.deltaY < 0) {
+      state.autoFollow = false;
+    }
+  };
+
+  state.onTouchStart = (event) => {
+    touchStartY = event.touches[0]?.clientY || 0;
+  };
+
+  state.onTouchMove = (event) => {
+    const touchY = event.touches[0]?.clientY || 0;
+    if (touchY > touchStartY + 5) {
+      state.autoFollow = false;
+    }
+  };
+
   container.addEventListener("scroll", state.onScroll, {passive: true});
+  container.addEventListener("wheel", state.onWheel, {passive: true});
+  container.addEventListener("touchstart", state.onTouchStart, {passive: true});
+  container.addEventListener("touchmove", state.onTouchMove, {passive: true});
+
   conversationScrollState = state;
   return state;
 }
@@ -243,10 +278,134 @@ function personalItem(title, detail = "") {
   return item;
 }
 
+function openNoteViewerModal(note) {
+  const dialog = document.querySelector("#note-viewer-dialog");
+  if (!dialog) return;
+
+  const bodyText = String(note.body || "");
+  const isFromAI = bodyText.includes("✦ **De:**");
+
+  const badgeEl = document.querySelector("#note-viewer-badge");
+  const titleEl = document.querySelector("#note-viewer-dialog-title");
+  const contentEl = document.querySelector("#note-viewer-content");
+  const copyBtn = document.querySelector("#note-viewer-copy");
+  const deleteBtn = document.querySelector("#note-viewer-delete");
+  const closeBtn = document.querySelector("#close-note-viewer");
+
+  if (badgeEl) badgeEl.textContent = isFromAI ? "✦ Guardado del Acompañante" : "📝 Nota personal";
+  if (titleEl) titleEl.textContent = isFromAI ? "Nota de lectura" : "Nota propia";
+  if (contentEl) contentEl.innerHTML = renderMarkdown(bodyText);
+
+  if (copyBtn) {
+    const newCopyBtn = copyBtn.cloneNode(true);
+    copyBtn.parentNode.replaceChild(newCopyBtn, copyBtn);
+    newCopyBtn.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(bodyText);
+      newCopyBtn.textContent = "Copiado";
+      setTimeout(() => { newCopyBtn.textContent = "Copiar texto"; }, 1500);
+    });
+  }
+
+  if (deleteBtn) {
+    const newDeleteBtn = deleteBtn.cloneNode(true);
+    deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+    newDeleteBtn.addEventListener("click", async () => {
+      if (!confirm("¿Eliminar esta nota de tu cuaderno?")) return;
+      try {
+        await jsonRequest(`/api/personal/notes/${encodeURIComponent(note.id)}`, { method: "DELETE" });
+        dialog.close();
+        await loadPersonal();
+        showToastNotification("Nota eliminada");
+      } catch (err) {
+        alert(`No se pudo eliminar la nota: ${err.message || err}`);
+      }
+    });
+  }
+
+  if (closeBtn) {
+    closeBtn.onclick = () => dialog.close();
+  }
+
+  dialog.showModal();
+}
+
+function personalNoteCard(note) {
+  const item = document.createElement("article");
+  item.className = "personal-item personal-note-card is-compact";
+  item.dataset.noteId = note.id;
+
+  const header = document.createElement("header");
+  header.className = "personal-note-header";
+
+  const title = document.createElement("div");
+  title.className = "personal-note-title-badge";
+  const bodyText = String(note.body || "");
+  const isFromAI = bodyText.includes("✦ **De:**");
+  if (isFromAI) {
+    title.innerHTML = `<span class="note-badge-ai">✦ Acompañante</span>`;
+  } else {
+    title.innerHTML = `<span class="note-badge-user">📝 Nota personal</span>`;
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "note-item-actions";
+
+  const readBtn = document.createElement("button");
+  readBtn.type = "button";
+  readBtn.className = "note-action-btn read-btn";
+  readBtn.textContent = "🔍 Leer";
+  readBtn.title = "Abrir nota completa";
+  readBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openNoteViewerModal(note);
+  });
+
+  const copyBtn = document.createElement("button");
+  copyBtn.type = "button";
+  copyBtn.className = "note-action-btn copy-btn";
+  copyBtn.textContent = "Copiar";
+  copyBtn.title = "Copiar texto de la nota";
+  copyBtn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    await navigator.clipboard.writeText(bodyText);
+    copyBtn.textContent = "Copiado";
+    setTimeout(() => { copyBtn.textContent = "Copiar"; }, 1500);
+  });
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "button";
+  deleteBtn.className = "note-action-btn delete-btn";
+  deleteBtn.innerHTML = "🗑️";
+  deleteBtn.title = "Eliminar esta nota";
+  deleteBtn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    if (!confirm("¿Eliminar esta nota de tu cuaderno?")) return;
+    try {
+      await jsonRequest(`/api/personal/notes/${encodeURIComponent(note.id)}`, { method: "DELETE" });
+      await loadPersonal();
+      showToastNotification("Nota eliminada");
+    } catch (err) {
+      alert(`No se pudo eliminar la nota: ${err.message || err}`);
+    }
+  });
+
+  actions.append(readBtn, copyBtn, deleteBtn);
+  header.append(title, actions);
+
+  const plainText = bodyText.replace(/^>\s*✦\s*\*\*De:\*\*.*?\n+/i, "").replace(/[#*`_>~]/g, " ").replace(/\s+/g, " ").trim();
+  const preview = document.createElement("p");
+  preview.className = "personal-note-preview";
+  preview.textContent = plainText || "Nota vacía";
+
+  item.append(header, preview);
+  item.addEventListener("click", () => openNoteViewerModal(note));
+  return item;
+}
+
 async function loadPersonal() {
   const data = await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/personal`);
   const collections = data.collections.map((item) => personalItem(item.name, item.note || ""));
-  const notes = data.notes.map((item) => personalItem("Nota personal", item.body));
+  const notes = data.notes.map((item) => personalNoteCard(item));
   const relations = data.relations.map((item) => personalItem(item.label || item.relation_type, `${item.other_title}${item.explanation ? ` · ${item.explanation}` : ""}`));
   document.querySelector("#collection-items").replaceChildren(...collections);
   document.querySelector("#personal-note-items").replaceChildren(...notes);
@@ -489,6 +648,62 @@ function renderMarkdown(rawText, librarySources = []) {
   return finalHtml;
 }
 
+function showToastNotification(text) {
+  let toast = document.querySelector("#global-toast-notification");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "global-toast-notification";
+    toast.className = "toast-notification";
+    document.body.append(toast);
+  }
+  toast.textContent = text;
+  toast.classList.add("is-visible");
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    toast.classList.remove("is-visible");
+  }, 2500);
+}
+
+async function saveMessageAsNote(rawContent, button) {
+  if (!rawContent || !window.WORK_ID) return;
+  const conversationTitleInput = document.querySelector("#active-conversation-title-input");
+  const conversationTitle = conversationTitleInput?.value?.trim() || "Conversación sobre la lectura";
+  const profileName = document.querySelector("#active-conversation-profile")?.textContent?.trim() || "Acompañante";
+
+  const originHeader = `> ✦ **De:** ${conversationTitle} · *${profileName}*\n\n`;
+  const body = `${originHeader}${rawContent}`;
+
+  try {
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Guardando…";
+    }
+    await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/notes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body }),
+    });
+    if (button) {
+      button.textContent = "✓ Guardada en tu cuaderno";
+      button.classList.add("is-saved");
+      setTimeout(() => {
+        button.disabled = false;
+        button.textContent = "📌 Guardar como nota";
+        button.classList.remove("is-saved");
+      }, 3000);
+    }
+    await loadPersonal();
+    showToastNotification("Nota guardada en tu cuaderno");
+  } catch (error) {
+    console.error("Error al guardar la nota:", error);
+    if (button) {
+      button.disabled = false;
+      button.textContent = "📌 Guardar como nota";
+    }
+    alert(`No se pudo guardar la nota: ${error.message || error}`);
+  }
+}
+
 function messageCard(message) {
   const article = document.createElement("article");
   article.className = `conversation-message ${message.role}`;
@@ -520,6 +735,18 @@ function messageCard(message) {
       item.append(heading, excerpt); list.append(item);
     });
     details.append(summary, list); article.append(details);
+  }
+  if (message.role === "assistant" && message.content) {
+    const actions = document.createElement("div");
+    actions.className = "message-actions";
+    const saveNoteBtn = document.createElement("button");
+    saveNoteBtn.type = "button";
+    saveNoteBtn.className = "save-as-note-btn";
+    saveNoteBtn.textContent = "📌 Guardar como nota";
+    saveNoteBtn.title = "Guardar esta respuesta directamente en tu cuaderno personal";
+    saveNoteBtn.addEventListener("click", () => saveMessageAsNote(message.content, saveNoteBtn));
+    actions.append(saveNoteBtn);
+    article.append(actions);
   }
   return article;
 }
@@ -1421,6 +1648,12 @@ document.querySelector("#library-search-works").addEventListener("change", () =>
 });
 document.querySelector("#library-search-results").addEventListener("change", invalidateContextReview);
 document.querySelector("#conversation-message").addEventListener("input", invalidateContextReview);
+document.querySelector("#conversation-message").addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    document.querySelector("#conversation-form")?.requestSubmit();
+  }
+});
 document.querySelector("#review-context").addEventListener("click", async (event) => {
   const button = event.currentTarget;
   button.disabled = true;
@@ -1742,7 +1975,24 @@ document.querySelector("#open-cover-dialog")?.addEventListener("click", () => {
 document.querySelector("#close-cover-dialog")?.addEventListener("click", () => {
   document.querySelector("#book-cover-dialog")?.close();
 });
-document.querySelector("#search-online-cover")?.addEventListener("click", searchOnlineCoverForBook);
+document.querySelector("#delete-work-btn")?.addEventListener("click", async () => {
+  const title = currentBookTitle || "este libro";
+  if (!confirm(`¿Estás seguro de que querés borrar "${title}" de tu biblioteca?\nEsta acción eliminará la obra y sus notas asociadas.`)) {
+    return;
+  }
+  try {
+    const res = await fetch(`/api/works/${encodeURIComponent(window.WORK_ID)}`, { method: "DELETE" });
+    if (!res.ok) {
+      const err = await res.json();
+      alert(`Error: ${err.error || "No se pudo borrar el libro"}`);
+      return;
+    }
+    window.location.href = "/library";
+  } catch {
+    alert("Error de conexión al intentar borrar el libro.");
+  }
+});
+
 document.querySelector("#remove-cover")?.addEventListener("click", removeCoverForBook);
 document.querySelector("#upload-cover-input")?.addEventListener("change", (event) => {
   const file = event.target.files?.[0];

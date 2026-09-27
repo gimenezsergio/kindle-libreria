@@ -18,6 +18,7 @@
       <section class="catalog" aria-labelledby="catalog-title">
         <div class="page-heading catalog-heading">
           <div><p class="eyebrow">Registro maestro · Anaquel digital</p><h1 id="catalog-title">Catálogo de lecturas</h1></div>
+          <button type="button" id="open-add-work-btn" class="btn-primary">➕ Agregar libro</button>
         </div>
 
         <div class="collection-section">
@@ -85,7 +86,56 @@
             </footer>
           </div>
         </dialog>
+
+        <dialog id="add-work-dialog" class="modal-dialog picker-dialog">
+          <div class="modal-content">
+            <header class="dialog-heading">
+              <div>
+                <p class="eyebrow">Añadir obra</p>
+                <h3>Agregar libro a la biblioteca</h3>
+              </div>
+              <button class="dialog-close" id="close-add-work-btn" type="button" aria-label="Cerrar">×</button>
+            </header>
+
+            <div class="tab-nav" style="display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border-color, #e0e0e0); margin-bottom: 1rem; padding-bottom: 0.5rem;">
+              <button type="button" id="tab-external-btn" class="btn-subtle is-active" style="font-weight: bold; background: var(--bg-hover, #eef2ff); border-radius: 6px; padding: 0.4rem 0.8rem;">🔍 Buscar en internet</button>
+              <button type="button" id="tab-manual-btn" class="btn-subtle" style="padding: 0.4rem 0.8rem; border-radius: 6px;">✍️ Carga manual</button>
+            </div>
+
+            <!-- Tab 1: Buscar en internet -->
+            <div id="tab-external-content">
+              <form id="external-search-form" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                <input type="search" id="external-search-input" placeholder="Buscar por título, autor o ISBN..." autocomplete="off" style="flex: 1; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color, #ccc);">
+                <button type="submit" class="btn-primary" id="external-search-btn">Buscar</button>
+              </form>
+              <div id="external-search-results" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem;">
+                <p class="picker-loading" style="color: var(--text-muted, #666); margin: 1rem 0; text-align: center;">Escribí el nombre de un libro o autor para buscar en OpenLibrary.</p>
+              </div>
+            </div>
+
+            <!-- Tab 2: Carga manual -->
+            <form id="manual-work-form" hidden style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <label class="modal-field">
+                <span>Título de la obra <strong style="color: #ef4444;">*</strong></span>
+                <input type="text" id="manual-title-input" required autocomplete="off" placeholder="Ej. Don Quijote de la Mancha">
+              </label>
+              <label class="modal-field">
+                <span>Autor / Contribuidor</span>
+                <input type="text" id="manual-author-input" autocomplete="off" placeholder="Ej. Miguel de Cervantes">
+              </label>
+              <label class="modal-field">
+                <span>Título mostrado (opcional)</span>
+                <input type="text" id="manual-display-title-input" autocomplete="off" placeholder="Título personalizado en la biblioteca">
+              </label>
+              <div class="modal-actions" style="margin-top: 1rem;">
+                <button type="button" id="cancel-manual-btn" class="btn-subtle">Cancelar</button>
+                <button type="submit" class="btn-primary" id="save-manual-btn">Guardar libro</button>
+              </div>
+            </form>
+          </div>
+        </dialog>
       </section>
+
     </main>
     <footer><span>Biblioteca Kindle</span><span>Local · privada · independiente</span></footer>
     <nav class="mobile-nav" aria-label="Navegación móvil"><a class="is-active" href="/library">Biblioteca</a><a href="/settings">Ajustes</a></nav>

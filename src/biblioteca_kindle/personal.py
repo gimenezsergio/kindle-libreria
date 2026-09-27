@@ -219,6 +219,20 @@ def add_work_note(database: Path | str, work_id: str, body: str) -> str:
         connection.close()
 
 
+def delete_personal_note(database: Path | str, note_id: str) -> None:
+    connection = _open_database(database)
+    try:
+        with connection:
+            cursor = connection.execute(
+                "DELETE FROM personal_notes WHERE id = ?",
+                (note_id,),
+            )
+            if cursor.rowcount == 0:
+                raise PersonalDataError(f"No existe la nota: {note_id}")
+    finally:
+        connection.close()
+
+
 def set_work_display_title(
     database: Path | str, work_id: str, title: str | None
 ) -> str | None:

@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ficha del libro · Biblioteca personal</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=rail19">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=v22_modal_fix">
     <script>window.WORK_ID = {{ work_id|tojson }};</script>
-    <script src="{{ url_for('static', filename='js/book.js') }}?v=rail20" defer></script>
+    <script src="{{ url_for('static', filename='js/book.js') }}?v=v22_modal_fix" defer></script>
   </head>
   <body class="notebooklm-body">
     <header class="site-header">
@@ -46,6 +46,9 @@
         <div class="topbar-right">
           <button type="button" class="change-cover-btn" id="open-cover-dialog" aria-haspopup="dialog" aria-controls="book-cover-dialog">
             📷 Portada
+          </button>
+          <button type="button" class="change-cover-btn danger-btn" id="delete-work-btn" title="Eliminar este libro de la biblioteca" style="color: var(--terracotta); border-color: color-mix(in srgb, var(--terracotta) 40%, transparent);">
+            🗑️ Borrar
           </button>
         </div>
 
@@ -327,19 +330,30 @@
           </div>
           <button class="dialog-close" value="cancel" aria-label="Cerrar diálogo de portada">×</button>
         </form>
-        <div class="cover-dialog-body">
-          <div class="cover-candidates-grid" id="cover-candidates-grid"></div>
-          <p class="form-feedback cover-feedback" id="cover-dialog-feedback" role="status" aria-live="polite"></p>
-          <footer class="dialog-actions">
-            <label class="secondary-button upload-cover-label">📁 Subir desde mi PC<input type="file" id="upload-cover-input" accept="image/*" hidden></label>
-            <button class="secondary-button cover-search-button" id="search-online-cover" type="button">🔎 Buscar en internet</button>
-            <button class="secondary-button danger-button" id="remove-cover" type="button">Quitar portada</button>
-            <button class="secondary-button" id="close-cover-dialog" type="button">Cerrar</button>
-          </footer>
         </div>
       </dialog>
 
     </article></main>
+
+    <dialog class="context-dialog note-viewer-dialog" id="note-viewer-dialog" aria-labelledby="note-viewer-dialog-title">
+      <form method="dialog" class="dialog-heading">
+        <div>
+          <p class="eyebrow" id="note-viewer-badge">Nota personal</p>
+          <h2 id="note-viewer-dialog-title">Detalle de la nota</h2>
+        </div>
+        <button class="dialog-close" value="cancel" aria-label="Cerrar vista de nota">×</button>
+      </form>
+      <div class="note-viewer-body">
+        <div class="note-viewer-content conversation-message-content" id="note-viewer-content"></div>
+        <footer class="dialog-actions">
+          <span id="note-viewer-meta"></span>
+          <button class="secondary-button" id="note-viewer-copy" type="button">Copiar texto</button>
+          <button class="secondary-button danger-button" id="note-viewer-delete" type="button">🗑️ Eliminar</button>
+          <button class="secondary-button" id="close-note-viewer" type="button">Cerrar</button>
+        </footer>
+      </div>
+    </dialog>
+
     <nav class="mobile-nav" aria-label="Navegación móvil"><a href="/library">Biblioteca</a><a class="is-active" href="#panel-memory">Lectura</a><a href="/settings">Ajustes</a></nav>
   </body>
 </html>

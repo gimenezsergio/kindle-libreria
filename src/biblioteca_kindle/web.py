@@ -20,6 +20,7 @@ from .personal import (
     bulk_assign_works_to_collection,
     create_collection,
     delete_collection,
+    delete_personal_note,
     set_work_display_title,
     update_collection,
 )
@@ -46,6 +47,7 @@ from .retrieval import requested_library_sources as retrieve_library_sources
 from .openclaw_api import create_openclaw_blueprint
 from .remote_sync import SyncPackageError
 from .sync_receiver import apply_sync_package
+from .manual_works import ManualWorkError, create_manual_work, delete_work, search_external_books
 
 
 DISPLAY_TITLE_SQL = (
@@ -171,9 +173,17 @@ def _works_page(connection, *, query: str, presence: str, annotated: bool,
             conditions.append("w.id IN (SELECT work_id FROM work_collections WHERE collection_id = ?)")
             parameters.append(collection)
     if query:
-        conditions.append(f"({DISPLAY_TITLE_SQL} LIKE ? OR w.preferred_title LIKE ? OR COALESCE(c.authors, '') LIKE ?)")
-        pattern = f"%{query}%"
-        parameters.extend((pattern, pattern, pattern))
+        stop_words = {"el", "la", "los", "las", "un", "una", "unos", "unas", "de", "del", "en", "y", "o", "a", "the", "of", "and", "in", "to"}
+        words = query.strip().split()
+        if len(words) > 1:
+            filtered = [w for w in words if w.lower() not in stop_words]
+            search_terms = filtered if filtered else words
+        else:
+            search_terms = words
+        for term in search_terms:
+            conditions.append(f"({DISPLAY_TITLE_SQL} LIKE ? OR w.preferred_title LIKE ? OR COALESCE(c.authors, '') LIKE ?)")
+            pattern = f"%{term}%"
+            parameters.extend((pattern, pattern, pattern))
     if presence in {"present", "absent"}:
         conditions.append("COALESCE(d.presence, 'absent') = ?")
         parameters.append(presence)
@@ -1083,7 +1093,38 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
         finally:
             connection.close()
 
+    @app.get("/api/external-works/search")
+    def api_search_external_works():
+        query = request.args.get("q", "")
+        try:
+            results = search_external_books(query)
+            return jsonify({"results": results})
+        except ManualWorkError as error:
+            return jsonify({"error": str(error)}), 400
+
+    @app.post("/api/works")
+    def api_create_work():
+        if not request.is_json:
+            return jsonify({"error": "La petición debe ser JSON"}), 415
+        payload = request.get_json(silent=True) or {}
+        try:
+            work = create_manual_work(
+                database_path,
+                title=payload.get("title"),
+                author=payload.get("author", ""),
+                display_title=payload.get("display_title"),
+                publish_year=payload.get("publish_year"),
+                cover_i=payload.get("cover_i"),
+                covers_dir=database_path.parent / "covers",
+            )
+            return jsonify(work), 201
+        except ManualWorkError as error:
+            return jsonify({"error": str(error)}), 400
+        except Exception as error:
+            return jsonify({"error": f"Error al crear el libro: {error}"}), 500
+
     @app.get("/api/works")
+
     def works():
         if not database_path.is_file():
             return jsonify(database_available=False), 404
@@ -1122,6 +1163,16 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
             return jsonify(detail)
         finally:
             connection.close()
+
+    @app.delete("/api/works/<work_id>")
+    def api_delete_work(work_id: str):
+        try:
+            delete_work(database_path, work_id)
+            return jsonify(success=True)
+        except ManualWorkError as error:
+            return jsonify(error=str(error)), 400
+        except Exception as error:
+            return jsonify(error=f"Error al eliminar la obra: {error}"), 500
 
     @app.patch("/api/works/<work_id>/display-title")
     def work_display_title_update(work_id: str):
@@ -1295,6 +1346,14 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
             payload = _json_body()
             identifier = add_work_note(database_path, work_id, str(payload.get("body", "")))
             return jsonify(id=identifier), 201
+        except PersonalDataError as error:
+            return jsonify(error=str(error)), 400
+
+    @app.delete("/api/personal/notes/<note_id>")
+    def personal_note_delete(note_id: str):
+        try:
+            delete_personal_note(database_path, note_id)
+            return jsonify(success=True)
         except PersonalDataError as error:
             return jsonify(error=str(error)), 400
 

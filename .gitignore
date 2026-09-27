@@ -13,3 +13,7 @@ __pycache__/
 .pytest_cache/
 .gemini/
 
+# Portadas temporales de pruebas
+src/biblioteca_kindle/static/covers/user_*
+
+

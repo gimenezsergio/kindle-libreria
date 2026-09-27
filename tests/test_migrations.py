@@ -33,8 +33,12 @@ class MigrationTests(unittest.TestCase):
                     "0016_conversation_message_actions.sql",
                     "0017_update_companion_profile_prompt.sql",
                     "0018_profile_provider_override.sql",
+                    "0019_update_lectores_muermos_prompt.sql",
+                    "0020_update_marta_profile_prompt.sql",
+                    "0021_conversational_dynamic_profiles.sql",
                 ],
             )
+
 
             connection = connect_database(database)
             try:
@@ -85,7 +89,8 @@ class MigrationTests(unittest.TestCase):
                 ).fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(count, 18)
+            self.assertEqual(count, 21)
+
 
     def test_action_columns_are_nullable_for_existing_messages(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
