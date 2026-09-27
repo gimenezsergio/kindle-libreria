@@ -78,8 +78,11 @@ rollback.
   personalizables, resultados persistentes y recuperación semántica.
 - **Búsqueda y verificación sobre el texto completo con RAG (Retrieval-Augmented Generation)**:
   Evolución a largo plazo para segmentar e indexar los textos completos de las obras en la base local (utilizando *embeddings* y tablas vectoriales/FTS en SQLite). Permitirá realizar verificación fáctica en tiempo real (*fact-checking*) sobre atribuciones de citas, diálogos de personajes y pasajes del libro antes de que la IA responda, eliminando alucinaciones por ambigüedad o falta de contexto. La selección recuperada deberá seguir siendo pequeña, visible, editable y trazable mediante el tipo de fuente, obra y posición. La IA conversacional no deberá acceder indiscriminadamente a toda la biblioteca ni reemplazar el algoritmo de recuperación. Antes de implementarlo habrá que decidir el modelo de embeddings, dónde se ejecuta, cómo se actualiza incrementalmente y qué datos privados pueden salir del servidor.
+- **Sistema de Fichas (Notecard System estilo Robert Greene) y Proyectos Multilibro**:
+  Evolución a futuro para integrar un flujo de trabajo de estudio e investigación basado en fichas de trabajo y proyectos transversales. Permitirá crear espacios de trabajo ("Proyectos") que reúnan libros, categorías y notas de distintas fuentes de la biblioteca personal, incorporando un chat de IA dedicado cuyo alcance abarque múltiples obras a la vez y una vista de tablero visual/canvas para ordenar y estructurar fichas antes de redactar o investigar.
 - Interfaz visual para iniciar y revisar sincronizaciones.
 - Ejecución automática al conectar el Kindle.
+
 - Transporte incremental real; el primer paquete actual contiene toda la
   información derivada.
 - Administración y rotación del token de sincronización.

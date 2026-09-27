@@ -98,6 +98,8 @@ anotaciones ni las ideas asociadas.
 - Relaciones manuales entre dos libros por tema, símbolo, conflicto, contraste u
   otro criterio.
 - Explicación y dirección de cada relación.
+- Hoja de ruta planificada para Sistema de Fichas (Notecard System estilo Robert Greene) y Proyectos Multilibro.
+
 
 ### Interfaz
 
