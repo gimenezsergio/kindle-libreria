@@ -42,7 +42,9 @@ class CompanionActionsTests(unittest.TestCase):
     def test_lookup_is_exact_and_rejects_unknown_actions(self) -> None:
         self.assertIsNone(get_companion_action(None))
         self.assertEqual(get_companion_action("explore-symbols").label, "Explorar símbolos")
+        self.assertEqual(get_companion_action("analyze-philosophical-themes").label, "Temas filosóficos")
         with self.assertRaisesRegex(ValueError, "acción"):
+
             get_companion_action("inventada")
         with self.assertRaisesRegex(ValueError, "acción"):
             get_companion_action(3)

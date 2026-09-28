@@ -202,6 +202,23 @@ COMPANION_ACTIONS: tuple[CompanionAction, ...] = (
         group="Interpretar", is_primary=False, search_behavior="preserve",
     ),
     CompanionAction(
+        id="analyze-philosophical-themes",
+        label="Temas filosóficos",
+        description="Desglosá escuelas, problemas centrales y conceptos técnicos precisos.",
+        message_template=(
+            "Realizá un análisis filosófico estructurado de esta lectura. Organizá "
+            "tu respuesta siguiendo este esquema estricto:\n\n"
+            "1. **Escuelas y Corrientes Filosóficas:** Identificá las tradiciones o movimientos de pensamiento presentes.\n"
+            "2. **Problemas Filosóficos Centrales:** Explicá las preguntas fundamentales abordadas (metafísica, epistemología, ética, política, cosmología o lógica).\n"
+            "3. **Conceptos y Términos Técnicos Clave:** Extraé y definí con precisión los conceptos teóricos y terminología técnica (ej.: arché, ataraxia, epojé, cogito, tabula rasa, imperativo categórico, etc.).\n"
+            "4. **Tensiones y Diálogo:** Señalá los contrastes, críticas o discusiones que plantea respecto de otros autores o tesis.\n\n"
+            "Si hay fragmentos o subrayados adjuntos, usalos como foco prioritario."
+        ),
+        requirements={"material": "opcional", "library_search": "respetar la configuración actual"},
+        group="Interpretar", is_primary=False, search_behavior="preserve",
+    ),
+
+    CompanionAction(
         id="challenge-interpretation",
         label="Contradecir mi interpretación",
         description="Probá una lectura que ponga en tensión la intuición inicial.",
