@@ -15,37 +15,59 @@
     </header>
 
     <main>
-      <section class="catalog" aria-labelledby="catalog-title">
-        <div class="page-heading catalog-heading">
-          <div><p class="eyebrow">Registro maestro · Anaquel digital</p><h1 id="catalog-title">Catálogo de lecturas</h1></div>
-          <button type="button" id="open-add-work-btn" class="btn-primary">➕ Agregar libro</button>
-        </div>
+      <section class="catalog catalog-layout" aria-labelledby="catalog-title">
+        <h1 id="catalog-title" class="sr-only">Catálogo de lecturas</h1>
 
-        <div class="collection-section">
-          <div class="collection-chips-bar">
-            <div class="collection-chips" id="collection-chips"></div>
-          </div>
-          <div class="collection-toolbar" id="collection-toolbar" hidden>
-            <span class="collection-selected-label">Categoría activa: <strong id="selected-collection-name"></strong></span>
-            <div class="collection-actions">
-              <button type="button" id="organize-collection-btn" class="btn-subtle btn-accent">➕ Organizar libros</button>
-              <button type="button" id="edit-collection-btn" class="btn-subtle">✏️ Renombrar</button>
-              <button type="button" id="delete-collection-btn" class="btn-subtle btn-danger">🗑️ Eliminar</button>
+        <!-- Columna Izquierda: Sidebar -->
+        <aside class="catalog-sidebar">
+          <button type="button" id="open-add-work-btn" class="btn-primary btn-sidebar-add">➕ Agregar libro</button>
+
+          <form class="catalog-controls-sidebar" id="catalog-form" role="search">
+            <div class="sidebar-block">
+              <span class="sidebar-block-title">Búsqueda</span>
+              <label class="search-field"><span class="sr-only">Buscar por título o autor</span><input id="query" type="search" placeholder="Buscar título o autor…" autocomplete="off"><span aria-hidden="true">⌕</span></label>
+            </div>
+
+            <div class="sidebar-block">
+              <span class="sidebar-block-title">Filtros</span>
+              <label>Presencia<select id="presence"><option value="all">Todos</option><option value="present">En el Kindle</option><option value="absent">Ausentes</option></select></label>
+              <label>Orden<select id="sort"><option value="title">Título</option><option value="annotations">Más anotados</option></select></label>
+              <label class="check-field"><input id="annotated" type="checkbox"><span>Con anotaciones</span></label>
+            </div>
+          </form>
+
+          <div class="sidebar-block collection-section">
+            <div class="sidebar-block-header">
+              <span class="sidebar-block-title">Categorías</span>
+            </div>
+            <div class="collection-chips-bar">
+              <div class="collection-chips" id="collection-chips"></div>
+            </div>
+            <div class="collection-toolbar" id="collection-toolbar" hidden>
+              <span class="collection-selected-label">Categoría activa: <strong id="selected-collection-name"></strong></span>
+              <div class="collection-actions">
+                <button type="button" id="organize-collection-btn" class="btn-subtle btn-accent">➕ Organizar libros</button>
+                <button type="button" id="edit-collection-btn" class="btn-subtle">✏️ Renombrar</button>
+                <button type="button" id="delete-collection-btn" class="btn-subtle btn-danger">🗑️ Eliminar</button>
+              </div>
             </div>
           </div>
+        </aside>
+
+        <!-- Columna Derecha: Contenedor Principal -->
+        <div class="catalog-main">
+          <div class="recent-section" id="recent-section" hidden>
+            <div class="recent-heading">
+              <span class="recent-title">📖 Últimos abiertos</span>
+            </div>
+            <div class="recent-grid" id="recent-grid"></div>
+          </div>
+
+          <div class="catalog-meta" aria-live="polite"><div><strong id="result-count">Consultando…</strong><span id="page-status"></span></div><div class="view-switch" aria-label="Vista de la biblioteca"><button id="grid-view" type="button" aria-pressed="true">Portadas</button><button id="list-view" type="button" aria-pressed="false">Lista</button></div></div>
+          <div class="book-list" id="book-list"></div>
+          <div class="empty-state" id="empty-state" hidden><strong>No encontramos obras</strong><span>Probá quitando algún filtro o usando otra búsqueda.</span></div>
+          <nav class="pagination" aria-label="Páginas de resultados"><button id="previous" type="button">← Anterior</button><span id="pagination-status"></span><button id="next" type="button">Siguiente →</button></nav>
         </div>
-
-        <form class="catalog-controls" id="catalog-form" role="search">
-          <label class="search-field"><span class="sr-only">Buscar por título o autor</span><input id="query" type="search" placeholder="Buscar por título o autor…" autocomplete="off"><span aria-hidden="true">⌕</span></label>
-          <label>Presencia<select id="presence"><option value="all">Todos</option><option value="present">En el Kindle</option><option value="absent">Ausentes</option></select></label>
-          <label>Orden<select id="sort"><option value="title">Título</option><option value="annotations">Más anotados</option></select></label>
-          <label class="check-field"><input id="annotated" type="checkbox"><span>Con anotaciones</span></label>
-        </form>
-
-        <div class="catalog-meta" aria-live="polite"><div><strong id="result-count">Consultando…</strong><span id="page-status"></span></div><div class="view-switch" aria-label="Vista de la biblioteca"><button id="grid-view" type="button" aria-pressed="true">Portadas</button><button id="list-view" type="button" aria-pressed="false">Lista</button></div></div>
-        <div class="book-list" id="book-list"></div>
-        <div class="empty-state" id="empty-state" hidden><strong>No encontramos obras</strong><span>Probá quitando algún filtro o usando otra búsqueda.</span></div>
-        <nav class="pagination" aria-label="Páginas de resultados"><button id="previous" type="button">← Anterior</button><span id="pagination-status"></span><button id="next" type="button">Siguiente →</button></nav>
 
         <dialog id="collection-modal" class="modal-dialog">
           <form id="collection-form" method="dialog">

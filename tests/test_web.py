@@ -762,6 +762,49 @@ class WebTests(unittest.TestCase):
             self.assertEqual(len(detail["candidates"]), 1)
             self.assertEqual(detail["candidates"][0]["source"], "Subida local")
 
+    def test_recently_opened_works_and_dismiss(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            with connection:
+                connection.execute("INSERT INTO works(id, preferred_title) VALUES ('work1', 'Primer Libro')")
+                connection.execute("INSERT INTO works(id, preferred_title) VALUES ('work2', 'Segundo Libro')")
+            connection.close()
+
+            client = create_app(database).test_client()
+            initial = client.get("/api/recently-opened").get_json()["items"]
+            self.assertEqual(len(initial), 0)
+
+            detail1 = client.get("/api/works/work1")
+            self.assertEqual(detail1.status_code, 200)
+
+            opened1 = client.get("/api/recently-opened").get_json()["items"]
+            self.assertEqual(len(opened1), 1)
+            self.assertEqual(opened1[0]["id"], "work1")
+
+            client.get("/api/works/work2")
+            opened2 = client.get("/api/recently-opened").get_json()["items"]
+            self.assertEqual(len(opened2), 2)
+            self.assertEqual(opened2[0]["id"], "work2")
+            self.assertEqual(opened2[1]["id"], "work1")
+
+            dismiss_res = client.delete("/api/recently-opened/work2")
+            self.assertEqual(dismiss_res.status_code, 200)
+
+            opened3 = client.get("/api/recently-opened").get_json()["items"]
+            self.assertEqual(len(opened3), 1)
+            self.assertEqual(opened3[0]["id"], "work1")
+
+            client.get("/api/works/work2")
+            opened4 = client.get("/api/recently-opened").get_json()["items"]
+            self.assertEqual(len(opened4), 2)
+            self.assertEqual(opened4[0]["id"], "work2")
+
+
+if __name__ == "__main__":
+    unittest.main()
+
 
 
 

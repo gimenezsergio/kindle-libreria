@@ -264,6 +264,80 @@ def _works_page(connection, *, query: str, presence: str, annotated: bool,
     }
 
 
+def _record_work_opened(connection, work_id: str) -> None:
+    with connection:
+        connection.execute(
+            """
+            INSERT INTO recently_opened_works (work_id, opened_at, dismissed)
+            VALUES (?, strftime('%Y-%m-%d %H:%M:%S.%f', 'now'), 0)
+            ON CONFLICT(work_id) DO UPDATE SET
+                opened_at = strftime('%Y-%m-%d %H:%M:%S.%f', 'now'),
+                dismissed = 0
+            """,
+            (work_id,),
+        )
+
+
+def _recently_opened_works(connection, limit: int = 5) -> list[dict]:
+    rows = connection.execute(
+        f"""
+        WITH a AS (
+            SELECT e.work_id, COUNT(an.id) AS annotation_count
+            FROM editions e LEFT JOIN annotations an ON an.edition_id = e.id
+            GROUP BY e.work_id
+        ), d AS (
+            SELECT e.work_id,
+                   CASE WHEN MAX(kd.presence = 'present') = 1 THEN 'present' ELSE 'absent' END AS presence
+            FROM editions e LEFT JOIN kindle_deliveries kd ON kd.edition_id = e.id
+            GROUP BY e.work_id
+        ), c AS (
+            SELECT e.work_id, GROUP_CONCAT(DISTINCT co.display_name) AS authors
+            FROM editions e
+            JOIN edition_contributors ec ON ec.edition_id = e.id
+            JOIN contributors co ON co.id = ec.contributor_id
+            WHERE ec.role = 'author'
+            GROUP BY e.work_id
+        )
+        SELECT w.id, {DISPLAY_TITLE_SQL} AS title,
+               w.preferred_title AS original_title, w.display_title, w.merge_status,
+               COALESCE(c.authors, '') AS authors,
+               COALESCE(a.annotation_count, 0) AS annotation_count,
+               COALESCE(d.presence, 'absent') AS presence,
+               r.opened_at
+        FROM recently_opened_works r
+        JOIN works w ON w.id = r.work_id
+        LEFT JOIN a ON a.work_id = w.id
+        LEFT JOIN d ON d.work_id = w.id
+        LEFT JOIN c ON c.work_id = w.id
+        WHERE r.dismissed = 0
+        ORDER BY r.opened_at DESC, w.id
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    items = []
+    for row in rows:
+        item = dict(row)
+        preference = connection.execute(
+            "SELECT selected_path, review_status FROM work_cover_preferences WHERE work_id = ?",
+            (item["id"],),
+        ).fetchone()
+        if preference is not None:
+            if preference["review_status"] == "none":
+                item["cover"] = None
+            elif preference["selected_path"]:
+                item["cover"] = {"path": preference["selected_path"], "source": "Elegida por vos"}
+        else:
+            candidate = connection.execute(
+                "SELECT local_path, source_label FROM cover_candidates WHERE work_id = ? AND status = 'available' ORDER BY display_order LIMIT 1",
+                (item["id"],),
+            ).fetchone()
+            if candidate is not None:
+                item["cover"] = {"path": candidate["local_path"], "source": candidate["source_label"]}
+        items.append(item)
+    return items
+
+
 def _work_detail(connection, work_id: str) -> dict | None:
     work = connection.execute(
         f"""
@@ -280,6 +354,7 @@ def _work_detail(connection, work_id: str) -> dict | None:
     ).fetchone()
     if work is None:
         return None
+    _record_work_opened(connection, work_id)
     editions = [
         dict(row) for row in connection.execute(
             """
@@ -1148,6 +1223,32 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
                 connection, query=query, presence=presence, annotated=annotated,
                 collection=collection, sort=sort, page=page, page_size=page_size,
             ))
+        finally:
+            connection.close()
+
+    @app.get("/api/recently-opened")
+    def recently_opened():
+        if not database_path.is_file():
+            return jsonify(database_available=False), 404
+        connection = connect_database(database_path)
+        try:
+            return jsonify(items=_recently_opened_works(connection, limit=5))
+        finally:
+            connection.close()
+
+    @app.delete("/api/recently-opened/<work_id>")
+    @app.post("/api/recently-opened/<work_id>/dismiss")
+    def dismiss_recently_opened(work_id: str):
+        if not database_path.is_file():
+            return jsonify(database_available=False), 404
+        connection = connect_database(database_path)
+        try:
+            with connection:
+                connection.execute(
+                    "UPDATE recently_opened_works SET dismissed = 1 WHERE work_id = ?",
+                    (work_id,),
+                )
+            return jsonify(message="Libro removido de recientes")
         finally:
             connection.close()
 

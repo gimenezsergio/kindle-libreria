@@ -36,9 +36,9 @@ class MigrationTests(unittest.TestCase):
                     "0019_update_lectores_muermos_prompt.sql",
                     "0020_update_marta_profile_prompt.sql",
                     "0021_conversational_dynamic_profiles.sql",
+                    "0022_recently_opened_works.sql",
                 ],
             )
-
 
             connection = connect_database(database)
             try:
@@ -73,6 +73,7 @@ class MigrationTests(unittest.TestCase):
                     "conversation_message_sources",
                     "remote_sync_packages",
                     "external_conversation_turns",
+                    "recently_opened_works",
                 }.issubset(tables)
             )
 
@@ -89,7 +90,7 @@ class MigrationTests(unittest.TestCase):
                 ).fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(count, 21)
+            self.assertEqual(count, 22)
 
 
     def test_action_columns_are_nullable_for_existing_messages(self) -> None:

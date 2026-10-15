@@ -492,9 +492,100 @@ savePickerBtn?.addEventListener("click", async () => {
   }
 });
 
+const recentSection = document.querySelector("#recent-section");
+const recentGrid = document.querySelector("#recent-grid");
+
+function recentCard(book) {
+  const card = document.createElement("div");
+  card.className = "recent-card";
+  card.tabIndex = 0;
+  card.setAttribute("role", "link");
+  card.setAttribute("aria-label", `Abrir ${book.title}`);
+
+  const open = () => { window.location.href = `/library/${encodeURIComponent(book.id)}`; };
+  card.addEventListener("click", open);
+  card.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      open();
+    }
+  });
+
+  const cover = document.createElement("div");
+  cover.className = "recent-cover";
+  if (book.cover) {
+    const img = document.createElement("img");
+    img.src = `/static/covers/${encodeURIComponent(book.cover.path)}`;
+    img.alt = `Portada de ${book.title}`;
+    img.loading = "lazy";
+    cover.append(img);
+  } else {
+    cover.classList.add("recent-cover-placeholder");
+    const initials = book.title.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("");
+    const mark = document.createElement("span");
+    text(mark, initials || "B");
+    cover.append(mark);
+  }
+
+  const info = document.createElement("div");
+  info.className = "recent-info";
+
+  const title = document.createElement("strong");
+  title.className = "recent-book-title";
+  text(title, book.title);
+
+  const author = document.createElement("span");
+  author.className = "recent-book-author";
+  text(author, book.authors || "Autor no disponible");
+
+  info.append(title, author);
+
+  const dismissBtn = document.createElement("button");
+  dismissBtn.type = "button";
+  dismissBtn.className = "recent-dismiss-btn";
+  dismissBtn.title = "Quitar de últimos abiertos";
+  dismissBtn.setAttribute("aria-label", `Quitar ${book.title} de últimos abiertos`);
+  text(dismissBtn, "×");
+
+  dismissBtn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    try {
+      const res = await fetch(`/api/recently-opened/${encodeURIComponent(book.id)}`, { method: "DELETE" });
+      if (res.ok) {
+        loadRecentlyOpened();
+      }
+    } catch {
+      // Ignorar errores temporales
+    }
+  });
+
+  card.append(cover, info, dismissBtn);
+  return card;
+}
+
+async function loadRecentlyOpened() {
+  if (!recentSection || !recentGrid) return;
+  try {
+    const res = await fetch("/api/recently-opened");
+    if (!res.ok) return;
+    const data = await res.json();
+    const items = data.items || [];
+    if (items.length === 0) {
+      recentSection.hidden = true;
+    } else {
+      recentGrid.replaceChildren(...items.map(recentCard));
+      recentSection.hidden = false;
+    }
+  } catch (err) {
+    console.error("Error al cargar últimos abiertos:", err);
+  }
+}
+
 applyView();
 loadCollections();
 loadBooks();
+loadRecentlyOpened();
 
 // Alta de obras (Manual y Buscador Externo)
 const openAddWorkBtn = document.querySelector("#open-add-work-btn");
