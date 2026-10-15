@@ -48,6 +48,16 @@ from .openclaw_api import create_openclaw_blueprint
 from .remote_sync import SyncPackageError
 from .sync_receiver import apply_sync_package
 from .manual_works import ManualWorkError, create_manual_work, delete_work, search_external_books
+from .laboratorio import (
+    LaboratorioError,
+    create_inquiry,
+    get_inquiry,
+    list_work_inquiries,
+    add_inquiry_message,
+    generate_tutor_response,
+    generate_synthesis_outline,
+    save_final_reflection,
+)
 
 
 DISPLAY_TITLE_SQL = (
@@ -414,7 +424,29 @@ def _work_detail(connection, work_id: str) -> dict | None:
             "notes": _count(connection, "SELECT COUNT(*) FROM personal_notes WHERE target_type = 'work' AND target_id = ?", (work_id,)),
             "relations": _count(connection, "SELECT COUNT(*) FROM work_relations WHERE source_work_id = ? OR target_work_id = ?", (work_id, work_id)),
         },
+        "reflections": [
+            r for r in list_work_inquiries(connection, work_id)
+            if r["status"] == "completed"
+        ],
     }
+
+
+def _list_work_annotations_for_laboratorio(connection, work_id: str) -> list[dict]:
+    rows = connection.execute(
+        """
+        SELECT a.id, a.kind, a.text, a.note_text, a.start_position_native,
+               e.title AS edition_title,
+               ac.chapter_title, ac.surrounding_before, ac.surrounding_after
+        FROM annotations a
+        JOIN editions e ON e.id = a.edition_id
+        LEFT JOIN annotation_contexts ac ON ac.annotation_id = a.id
+        WHERE e.work_id = ? AND a.kind IN ('highlight', 'note') AND a.text IS NOT NULL AND TRIM(a.text) != ''
+        ORDER BY a.start_position_native ASC, a.created_at ASC
+        """,
+        (work_id,),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
 
 
 def _annotation_page(connection, work_id: str, *, kind: str, source: str,
@@ -681,6 +713,11 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
     @app.get("/library/<work_id>")
     def book(work_id: str) -> str:
         return render_template("book.html", work_id=work_id)
+
+    @app.get("/library/<work_id>/laboratorio")
+    def work_laboratorio(work_id: str) -> str:
+        return render_template("laboratorio.html", work_id=work_id)
+
 
     @app.get("/settings")
     @app.get("/settings/ai-profiles")
@@ -1141,7 +1178,153 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
         except (ConversationError, PersonalDataError) as error:
             return jsonify(error=str(error)), 400
 
+    # ==========================================
+    # Laboratorio Filosófico API
+    # ==========================================
+
+    @app.get("/api/works/<work_id>/laboratorio/init")
+    def api_laboratorio_init(work_id: str):
+        connection = connect_database(database_path)
+        try:
+            detail = _work_detail(connection, work_id)
+            if detail is None:
+                return jsonify(error="Obra no encontrada"), 404
+            annotations = _list_work_annotations_for_laboratorio(connection, work_id)
+            inquiries = list_work_inquiries(connection, work_id)
+            return jsonify({
+                "work": detail,
+                "annotations": annotations,
+                "inquiries": inquiries,
+                "ai_status": {"provider": provider.name, "ready": provider.ready},
+            })
+        finally:
+            connection.close()
+
+    @app.get("/api/works/<work_id>/laboratorio/inquiries")
+    def api_laboratorio_list_inquiries(work_id: str):
+        try:
+            return jsonify(inquiries=list_work_inquiries(database_path, work_id))
+        except LaboratorioError as error:
+            return jsonify(error=str(error)), 400
+
+    @app.post("/api/works/<work_id>/laboratorio/inquiries")
+    def api_laboratorio_create_inquiry(work_id: str):
+        try:
+            payload = _json_body()
+            inquiry = create_inquiry(
+                database_path,
+                work_id=work_id,
+                dilemma_question=payload.get("dilemma_question", ""),
+                chapter_or_section=payload.get("chapter_or_section"),
+                annotation_ids=payload.get("annotation_ids", []),
+                parent_inquiry_id=payload.get("parent_inquiry_id"),
+            )
+            return jsonify(ok=True, inquiry=inquiry), 201
+        except LaboratorioError as error:
+            return jsonify(error=str(error)), 400
+
+    @app.get("/api/laboratorio/inquiries/<inquiry_id>")
+    def api_laboratorio_get_inquiry(inquiry_id: str):
+        try:
+            return jsonify(ok=True, inquiry=get_inquiry(database_path, inquiry_id))
+        except LaboratorioError as error:
+            return jsonify(error=str(error)), 404
+
+    @app.post("/api/laboratorio/inquiries/<inquiry_id>/messages")
+    def api_laboratorio_send_message(inquiry_id: str):
+        try:
+            payload = _json_body()
+            content = payload.get("content", "").strip()
+            if not content:
+                return jsonify(error="El mensaje no puede estar vacío"), 400
+
+            user_msg = add_inquiry_message(
+                database_path, inquiry_id=inquiry_id, role="user", content=content
+            )
+
+            conn = connect_database(database_path)
+            try:
+                row = conn.execute(
+                    f"SELECT {DISPLAY_TITLE_SQL} AS title FROM works w JOIN philosophical_inquiries pi ON pi.work_id = w.id WHERE pi.id = ?",
+                    (inquiry_id,),
+                ).fetchone()
+                work_title = row["title"] if row else None
+            finally:
+                conn.close()
+
+            if not provider.ready:
+                tutor_msg = add_inquiry_message(
+                    database_path,
+                    inquiry_id=inquiry_id,
+                    role="tutor",
+                    content="[Modo borrador: El tutor de IA no está configurado o está en modo desconectado. Configura tu API key en Ajustes.]",
+                )
+            else:
+                tutor_msg = generate_tutor_response(
+                    database_path,
+                    inquiry_id=inquiry_id,
+                    provider=provider,
+                    work_title=work_title,
+                )
+
+            return jsonify(
+                ok=True,
+                user_message=user_msg,
+                tutor_message=tutor_msg,
+                inquiry=get_inquiry(database_path, inquiry_id),
+            )
+        except (LaboratorioError, AIError) as error:
+            return jsonify(error=str(error)), 400
+
+    @app.post("/api/laboratorio/inquiries/<inquiry_id>/outline")
+    def api_laboratorio_generate_outline(inquiry_id: str):
+        try:
+            if not provider.ready:
+                outline = {
+                    "outline_thesis": "Tesis provisional planteada en el debate.",
+                    "outline_objection": "Objeción o caso límite considerado.",
+                    "outline_counterargument": "Defensa razonada del argumento.",
+                }
+                conn = connect_database(database_path)
+                try:
+                    with conn:
+                        conn.execute(
+                            "UPDATE philosophical_inquiries SET outline_thesis = ?, outline_objection = ?, outline_counterargument = ?, status = 'ready_to_write' WHERE id = ?",
+                            (outline["outline_thesis"], outline["outline_objection"], outline["outline_counterargument"], inquiry_id),
+                        )
+                finally:
+                    conn.close()
+            else:
+                outline = generate_synthesis_outline(
+                    database_path, inquiry_id=inquiry_id, provider=provider
+                )
+
+            return jsonify(
+                ok=True,
+                outline=outline,
+                inquiry=get_inquiry(database_path, inquiry_id),
+            )
+        except (LaboratorioError, AIError) as error:
+            return jsonify(error=str(error)), 400
+
+    @app.post("/api/laboratorio/inquiries/<inquiry_id>/complete")
+    def api_laboratorio_complete_inquiry(inquiry_id: str):
+        try:
+            payload = _json_body()
+            final_text = payload.get("final_text", "")
+            tags = payload.get("tags", [])
+            inquiry = save_final_reflection(
+                database_path,
+                inquiry_id=inquiry_id,
+                final_text=final_text,
+                tags=tags,
+            )
+            return jsonify(ok=True, inquiry=inquiry)
+        except LaboratorioError as error:
+            return jsonify(error=str(error)), 400
+
     @app.get("/api/status")
+
     def status():
         if not database_path.is_file():
             return jsonify(database_available=False, works=0)

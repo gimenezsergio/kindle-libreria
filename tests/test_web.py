@@ -801,13 +801,84 @@ class WebTests(unittest.TestCase):
             self.assertEqual(len(opened4), 2)
             self.assertEqual(opened4[0]["id"], "work2")
 
+    def test_laboratorio_api_flow(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            try:
+                with connection:
+                    connection.execute("INSERT INTO works(id, preferred_title) VALUES ('w1', 'La Odisea')")
+                    connection.execute("INSERT INTO editions(id, work_id, title) VALUES ('e1', 'w1', 'La Odisea')")
+                    connection.execute("INSERT INTO annotations(id, edition_id, kind, text, status) VALUES ('a1', 'e1', 'highlight', 'Todo forastero viene de Zeus', 'active')")
+            finally:
+                connection.close()
+
+            client = create_app(database).test_client()
+
+            # 1. Init
+            init_res = client.get("/api/works/w1/laboratorio/init")
+            self.assertEqual(init_res.status_code, 200)
+            data = init_res.get_json()
+            self.assertEqual(data["work"]["id"], "w1")
+            self.assertEqual(len(data["annotations"]), 1)
+            self.assertEqual(len(data["inquiries"]), 0)
+
+            # 2. Create inquiry
+            create_res = client.post(
+                "/api/works/w1/laboratorio/inquiries",
+                json={
+                    "dilemma_question": "¿Es la hospitalidad un deber?",
+                    "chapter_or_section": "Canto XIV",
+                    "annotation_ids": ["a1"],
+                },
+            )
+            self.assertEqual(create_res.status_code, 201)
+            inquiry = create_res.get_json()["inquiry"]
+            inquiry_id = inquiry["id"]
+            self.assertEqual(inquiry["status"], "sparring")
+
+            # 3. Get inquiry
+            get_res = client.get(f"/api/laboratorio/inquiries/{inquiry_id}")
+            self.assertEqual(get_res.status_code, 200)
+            self.assertEqual(get_res.get_json()["inquiry"]["dilemma_question"], "¿Es la hospitalidad un deber?")
+
+            # 4. Send message in sparring (draft provider)
+            msg_res = client.post(
+                f"/api/laboratorio/inquiries/{inquiry_id}/messages",
+                json={"content": "Sostengo que es un deber sagrado."},
+            )
+            self.assertEqual(msg_res.status_code, 200)
+            msg_data = msg_res.get_json()
+            self.assertEqual(msg_data["user_message"]["content"], "Sostengo que es un deber sagrado.")
+            self.assertIn("Modo borrador", msg_data["tutor_message"]["content"])
+
+            # 5. Outline
+            outline_res = client.post(f"/api/laboratorio/inquiries/{inquiry_id}/outline")
+            self.assertEqual(outline_res.status_code, 200)
+            self.assertEqual(outline_res.get_json()["inquiry"]["status"], "ready_to_write")
+
+            # 6. Complete
+            complete_res = client.post(
+                f"/api/laboratorio/inquiries/{inquiry_id}/complete",
+                json={
+                    "final_text": "La hospitalidad en Homero instituye la comunidad moral más allá de las fronteras tribales.",
+                    "tags": ["Hospitalidad", "Comunidad"],
+                },
+            )
+            self.assertEqual(complete_res.status_code, 200)
+            completed_inquiry = complete_res.get_json()["inquiry"]
+            self.assertEqual(completed_inquiry["status"], "completed")
+            self.assertEqual(completed_inquiry["tags"], ["Comunidad", "Hospitalidad"])
+
+            # 7. Check reflections in work detail
+            work_res = client.get("/api/works/w1")
+            self.assertEqual(work_res.status_code, 200)
+            work_data = work_res.get_json()
+            self.assertEqual(len(work_data["reflections"]), 1)
+            self.assertEqual(work_data["reflections"][0]["id"], inquiry_id)
+
 
 if __name__ == "__main__":
     unittest.main()
 
-
-
-
-
-if __name__ == "__main__":
-    unittest.main()
