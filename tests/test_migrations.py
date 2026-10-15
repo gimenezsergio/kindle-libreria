@@ -37,6 +37,7 @@ class MigrationTests(unittest.TestCase):
                     "0020_update_marta_profile_prompt.sql",
                     "0021_conversational_dynamic_profiles.sql",
                     "0022_recently_opened_works.sql",
+                    "0023_philosophical_inquiries.sql",
                 ],
             )
 
@@ -74,6 +75,11 @@ class MigrationTests(unittest.TestCase):
                     "remote_sync_packages",
                     "external_conversation_turns",
                     "recently_opened_works",
+                    "philosophical_inquiries",
+                    "inquiry_annotations",
+                    "inquiry_messages",
+                    "inquiry_tags",
+                    "annotation_contexts",
                 }.issubset(tables)
             )
 
@@ -90,7 +96,8 @@ class MigrationTests(unittest.TestCase):
                 ).fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(count, 22)
+            self.assertEqual(count, 23)
+
 
 
     def test_action_columns_are_nullable_for_existing_messages(self) -> None:
