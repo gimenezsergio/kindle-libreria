@@ -44,6 +44,9 @@
         </div>
 
         <div class="topbar-right">
+          <a class="change-cover-btn primary-btn" href="/library/{{ work_id }}/laboratorio" title="Abrir Laboratorio Filosófico" style="text-decoration:none; display:inline-flex; align-items:center; gap:0.35rem; color: var(--green); border-color: var(--green); font-weight: 600;">
+            🧠 Laboratorio
+          </a>
           <button type="button" class="change-cover-btn" id="open-cover-dialog" aria-haspopup="dialog" aria-controls="book-cover-dialog">
             📷 Portada
           </button>
@@ -51,6 +54,7 @@
             🗑️ Borrar
           </button>
         </div>
+
 
         <!-- Hidden container for JS DOM compatibility -->
         <div hidden>
@@ -264,6 +268,18 @@
                     <form id="personal-note-form"><label>Nueva nota<textarea id="personal-note-body" required rows="3" placeholder="Una interpretación, una pregunta, una conexión…"></textarea></label><button type="submit">Guardar nota</button></form>
                   </div>
                 </details>
+                <details class="personal-accordion" open>
+                  <summary class="accordion-summary"><h3>Reflexiones Filosóficas</h3><span class="accordion-chevron">▾</span></summary>
+                  <div class="accordion-content">
+                    <div class="personal-items" id="laboratorio-reflections-items">
+                      <p class="empty-hint">Sin reflexiones cerradas todavía.</p>
+                    </div>
+                    <a href="/library/{{ work_id }}/laboratorio" class="secondary-button" style="display:block; text-align:center; text-decoration:none; margin-top:0.5rem; font-weight:600; padding:0.5rem;">
+                      ✦ Abrir en el Laboratorio
+                    </a>
+                  </div>
+                </details>
+
                 <details class="personal-accordion">
                   <summary class="accordion-summary"><h3>Colecciones</h3><span class="accordion-chevron">▾</span></summary>
                   <div class="accordion-content">

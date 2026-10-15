@@ -403,7 +403,10 @@ function personalNoteCard(note) {
 }
 
 async function loadPersonal() {
-  const data = await jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/personal`);
+  const [data, labData] = await Promise.all([
+    jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/personal`),
+    jsonRequest(`/api/works/${encodeURIComponent(window.WORK_ID)}/laboratorio/inquiries`).catch(() => ({ inquiries: [] })),
+  ]);
   const collections = data.collections.map((item) => personalItem(item.name, item.note || ""));
   const notes = data.notes.map((item) => personalNoteCard(item));
   const relations = data.relations.map((item) => personalItem(item.label || item.relation_type, `${item.other_title}${item.explanation ? ` · ${item.explanation}` : ""}`));
@@ -414,7 +417,33 @@ async function loadPersonal() {
     const container = document.querySelector(selector);
     if (!count) container.append(personalItem(`Sin ${label}`));
   }
+
+  const reflectionsContainer = document.querySelector("#laboratorio-reflections-items");
+  if (reflectionsContainer) {
+    const completed = (labData.inquiries || []).filter((i) => i.status === "completed");
+    if (completed.length === 0) {
+      reflectionsContainer.innerHTML = `<p class="empty-hint" style="font-size:0.85rem; color:var(--muted); margin:0.35rem 0;">Sin reflexiones registradas todavía.</p>`;
+    } else {
+      reflectionsContainer.replaceChildren(
+        ...completed.map((r) => {
+          const card = document.createElement("a");
+          card.href = `/library/${encodeURIComponent(window.WORK_ID)}/laboratorio`;
+          card.className = "personal-item personal-note-card";
+          card.style.display = "block";
+          card.style.textDecoration = "none";
+          card.style.cursor = "pointer";
+          const tagsStr = (r.tags || []).map(t => `#${t}`).join(" ");
+          card.innerHTML = `
+            <div style="font-weight:600; font-size:0.85rem; color:var(--ink);">${escapeHtml(r.dilemma_question)}</div>
+            <div style="font-size:0.75rem; color:var(--muted); margin-top:0.25rem;">${r.word_count || 0} palabras ${tagsStr ? `· ${tagsStr}` : ""}</div>
+          `;
+          return card;
+        })
+      );
+    }
+  }
 }
+
 
 async function loadOptions() {
   const [collections, works, profiles] = await Promise.all([

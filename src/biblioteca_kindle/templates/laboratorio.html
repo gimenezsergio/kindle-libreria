@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Laboratorio Filosófico · Biblioteca Kindle</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=v26_laboratorio">
+    <script>window.WORK_ID = {{ work_id|tojson }};</script>
+    <script src="{{ url_for('static', filename='js/laboratorio.js') }}?v=v26_laboratorio" defer></script>
+  </head>
+  <body class="notebooklm-body lab-body">
+    <!-- Header de navegación superior -->
+    <header class="lab-topbar">
+      <div class="lab-topbar-left">
+        <a class="back-link-inline" href="/library/{{ work_id }}" id="lab-back-link">← Volver al libro</a>
+        <span class="topbar-divider" aria-hidden="true">/</span>
+        <div class="lab-title-group">
+          <span class="lab-badge">🧠 Laboratorio Filosófico</span>
+          <h1 class="lab-book-title" id="lab-work-title">Cargando obra…</h1>
+        </div>
+      </div>
+      <div class="lab-topbar-right">
+        <span class="lab-provider-pill" id="lab-provider-pill">IA: Borrador</span>
+        <button type="button" class="change-cover-btn" id="lab-new-inquiry-btn" title="Iniciar nueva reflexión">
+          + Nueva indagación
+        </button>
+      </div>
+    </header>
+
+    <!-- Notificaciones / Feedback -->
+    <div id="lab-notification" class="lab-notification" role="status" hidden></div>
+
+    <!-- Contenedor principal de dos paneles -->
+    <main class="lab-workspace">
+      
+      <!-- ========================================== -->
+      <!-- PANEL IZQUIERDO: Referencia y Citas       -->
+      <!-- ========================================== -->
+      <aside class="lab-sidebar" id="lab-sidebar">
+        <!-- Esquema síntesis (se muestra cuando está disponible) -->
+        <div class="lab-outline-card" id="lab-outline-card" hidden>
+          <div class="lab-card-header">
+            <h4>💡 Esquema Síntesis</h4>
+            <span class="lab-card-tag">Andamiaje</span>
+          </div>
+          <div class="lab-outline-item">
+            <strong>Tesis:</strong> <span id="outline-thesis-val">—</span>
+          </div>
+          <div class="lab-outline-item">
+            <strong>Objeción:</strong> <span id="outline-objection-val">—</span>
+          </div>
+          <div class="lab-outline-item">
+            <strong>Contra-argumento:</strong> <span id="outline-counter-val">—</span>
+          </div>
+        </div>
+
+        <div class="lab-sidebar-header">
+          <h3>📚 Citas & Contexto</h3>
+          <span class="lab-counter" id="lab-quote-counter">0 citas</span>
+        </div>
+        <p class="lab-sidebar-hint">
+          Tildá los pasajes que disparan o sustentan tu reflexión. Podés desplegar el contexto narrativo de cada escena.
+        </p>
+
+        <!-- Lista de citas del libro -->
+        <div class="lab-quotes-list" id="lab-quotes-list">
+          <p class="lab-empty-state">Cargando citas de la obra…</p>
+        </div>
+
+        <!-- Historial de reflexiones anteriores de este libro -->
+        <div class="lab-past-reflections" id="lab-past-reflections-box" hidden>
+          <h4>Reflexiones previas en este libro</h4>
+          <div class="lab-past-items" id="lab-past-items"></div>
+        </div>
+      </aside>
+
+      <!-- ========================================== -->
+      <!-- PANEL CENTRAL: Acción Activa              -->
+      <!-- ========================================== -->
+      <section class="lab-main-stage" id="lab-main-stage">
+        
+        <!-- FASE 1: Formular la Tensión / Dilema -->
+        <div class="lab-phase-card" id="phase-tension" hidden>
+          <div class="phase-header">
+            <span class="phase-step">Paso 1 de 3</span>
+            <h2>Definir la pregunta o tensión central</h2>
+            <p>A partir de los pasajes seleccionados a la izquierda, ¿qué conflicto moral, político o existencial te interpela?</p>
+          </div>
+
+          <div class="selected-quotes-preview" id="selected-quotes-preview">
+            <em>No seleccionaste ninguna cita todavía (podés tildarlas a la izquierda o continuar con una inquietud general).</em>
+          </div>
+
+          <form id="tension-form" class="lab-form">
+            <div class="form-row">
+              <label for="tension-chapter">Capítulo o Canto (opcional)</label>
+              <input type="text" id="tension-chapter" placeholder="Ej. Capítulo 4 o Canto XIV">
+            </div>
+            <div class="form-row">
+              <label for="tension-question">Pregunta o dilema filosófico</label>
+              <textarea id="tension-question" rows="3" required placeholder="Ej. ¿Existe una obligación moral incondicional de acoger al extranjero, o la comunidad tiene derecho a establecer límites de supervivencia?"></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="primary-btn">
+                Comenzar debate con el Colega Exigente →
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- FASE 2: Sparring / Debate Dialéctico -->
+        <div class="lab-phase-card" id="phase-sparring" hidden>
+          <div class="phase-header sparring-header">
+            <div>
+              <span class="phase-step">Paso 2 de 3 · Sparring Dialéctico</span>
+              <h2 id="sparring-question-title">Dilema central</h2>
+            </div>
+            <button type="button" class="ready-to-write-btn" id="btn-request-outline">
+              ✍️ Listo para escribir →
+            </button>
+          </div>
+
+          <!-- Mensajes del debate -->
+          <div class="lab-chat-messages" id="lab-chat-messages">
+            <!-- Mensajes inyectados dinámicamente -->
+          </div>
+
+          <!-- Compositor de respuesta -->
+          <form id="sparring-composer-form" class="lab-composer">
+            <textarea id="sparring-input" rows="2" required placeholder="Defendé tu postura, respondé a la objeción o introducí una distinción…"></textarea>
+            <button type="submit" id="btn-send-sparring" class="primary-btn">
+              Enviar
+            </button>
+          </form>
+          <p class="composer-hint">
+            El tutor interviene con objeciones breves. Cuando sientas que tu postura está clara, pulsá <strong>«Listo para escribir»</strong> para pasar al texto de cierre.
+          </p>
+        </div>
+
+        <!-- FASE 3: Redacción del Texto de Cierre -->
+        <div class="lab-phase-card" id="phase-writing" hidden>
+          <div class="phase-header">
+            <div class="phase-header-row">
+              <div>
+                <span class="phase-step">Paso 3 de 3 · Redacción</span>
+                <h2>Tu texto de cierre</h2>
+              </div>
+              <div class="word-counter-box" id="word-counter-box">
+                <span id="current-word-count">0</span> / 300–600 palabras
+              </div>
+            </div>
+            <p class="writing-prompt-hint">
+              Redactá con tus propias palabras tu toma de posición razonada a partir del andamiaje acordado en el debate.
+            </p>
+          </div>
+
+          <form id="writing-form" class="lab-form">
+            <div class="form-row">
+              <textarea id="essay-text" rows="14" required placeholder="Escribí aquí tu reflexión de 300 a 600 palabras..."></textarea>
+            </div>
+            <div class="form-row">
+              <label for="essay-tags">Ejes conceptuales (separados por coma)</label>
+              <input type="text" id="essay-tags" placeholder="Ej. Hospitalidad, Deber moral, Comunidad">
+            </div>
+            <div class="form-actions space-between">
+              <button type="button" class="secondary-button" id="btn-back-to-sparring">
+                ← Volver al debate
+              </button>
+              <button type="submit" class="primary-btn" id="btn-save-essay">
+                Guardar y registrar reflexión
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- VISTA DE REFLEXIÓN COMPLETADA -->
+        <div class="lab-phase-card" id="phase-completed" hidden>
+          <div class="completed-badge">✓ Reflexión Registrada</div>
+          <h2 id="completed-question">Pregunta</h2>
+          <div class="completed-meta" id="completed-meta"></div>
+
+          <div class="completed-essay-body" id="completed-essay-body"></div>
+
+          <div class="completed-tags" id="completed-tags"></div>
+
+          <div class="completed-actions">
+            <button type="button" class="primary-btn" id="btn-new-from-completed">
+              ✦ Iniciar otra reflexión sobre esta obra
+            </button>
+            <a href="/library/{{ work_id }}" class="secondary-button">
+              Volver a la ficha del libro
+            </a>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </body>
+</html>
