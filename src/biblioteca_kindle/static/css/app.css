@@ -1794,20 +1794,66 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
   margin-top: .5rem;
 }
 
-.btn-primary {
-  padding: .45rem 1.1rem;
+.btn-primary,
+.primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  padding: .55rem 1.15rem;
   border: 0;
-  border-radius: .3rem;
+  border-radius: .25rem;
   background: var(--terracotta);
-  color: #fff;
+  color: var(--surface);
   font: inherit;
-  font-size: .88rem;
+  font-size: .85rem;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color .15s ease, opacity .15s ease;
 }
 
-.btn-primary:hover {
-  opacity: .9;
+.btn-primary:hover,
+.primary-btn:hover {
+  background: color-mix(in srgb, var(--terracotta) 88%, black);
+  color: var(--surface);
+}
+
+.btn-primary:disabled,
+.primary-btn:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  padding: .55rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: .25rem;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.secondary-button:hover {
+  background: var(--surface-warm);
+  border-color: var(--terracotta);
+  color: var(--terracotta);
+}
+
+.secondary-button:disabled {
+  opacity: .5;
+  cursor: default;
 }
 
 .btn-accent {
@@ -2464,14 +2510,15 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
 }
 
 .lab-badge {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--green) 15%, transparent);
-  color: var(--green);
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.2rem;
+  border: 1px solid var(--line);
+  background: var(--surface-warm);
+  color: var(--terracotta);
 }
 
 .lab-book-title {
@@ -2492,16 +2539,18 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
 }
 
 .lab-provider-pill {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--muted) 20%, transparent);
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.2rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
   color: var(--muted);
 }
 
 .lab-provider-pill.is-ready {
-  background: color-mix(in srgb, var(--green) 20%, transparent);
+  border-color: color-mix(in srgb, var(--green) 45%, var(--line));
   color: var(--green);
 }
 
@@ -2510,11 +2559,11 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
   top: 60px;
   right: 20px;
   padding: 0.75rem 1.25rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: 0.25rem;
+  font-size: 0.88rem;
   font-weight: 500;
   z-index: 1000;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
   animation: slideInNotification 0.25s ease-out;
 }
 
@@ -2582,12 +2631,12 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
 
 .lab-outline-card {
   background: var(--surface);
-  border: 1px solid color-mix(in srgb, var(--green) 35%, transparent);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: 0.25rem;
   padding: 0.9rem;
   font-size: 0.85rem;
   line-height: 1.4;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
 }
 
 .lab-card-header {
@@ -2599,17 +2648,21 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
 
 .lab-card-header h4 {
   margin: 0;
-  font-size: 0.9rem;
-  color: var(--green);
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  color: var(--ink);
 }
 
 .lab-card-tag {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 700;
-  background: color-mix(in srgb, var(--green) 15%, transparent);
-  color: var(--green);
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--surface-warm);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.15rem;
 }
 
 .lab-outline-item {
@@ -2629,15 +2682,15 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
 .lab-quote-card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 0.25rem;
   padding: 0.75rem;
   font-size: 0.85rem;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .lab-quote-card.is-selected {
-  border-color: var(--green);
-  box-shadow: 0 0 0 1px var(--green);
+  border-color: var(--terracotta);
+  box-shadow: 0 0 0 1px var(--terracotta);
 }
 
 .lab-quote-checkbox-row {
@@ -2649,7 +2702,7 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
 
 .quote-check {
   margin-top: 0.2rem;
-  accent-color: var(--green);
+  accent-color: var(--terracotta);
 }
 
 .quote-text {
@@ -2670,7 +2723,8 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
 .btn-toggle-context {
   background: none;
   border: none;
-  color: var(--green);
+  color: var(--terracotta);
+  font-family: var(--sans);
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0;
@@ -2685,7 +2739,7 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
   margin-top: 0.5rem;
   padding: 0.5rem;
   background: color-mix(in srgb, var(--paper) 70%, var(--surface));
-  border-radius: 4px;
+  border-radius: 0.25rem;
   font-size: 0.8rem;
   color: var(--muted);
   line-height: 1.35;
@@ -2710,7 +2764,7 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
 .past-reflection-item {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 0.25rem;
   padding: 0.5rem 0.75rem;
   margin-bottom: 0.5rem;
   cursor: pointer;
@@ -2718,7 +2772,7 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
 }
 
 .past-reflection-item:hover {
-  border-color: var(--ink);
+  border-color: var(--terracotta);
 }
 
 .past-item-q {
@@ -2766,17 +2820,17 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
 }
 
 .phase-step {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--green);
+  letter-spacing: 0.08em;
+  color: var(--terracotta);
 }
 
 .selected-quotes-preview {
   background: var(--surface);
   border: 1px dashed var(--line);
-  border-radius: 8px;
+  border-radius: 0.25rem;
   padding: 1rem;
   font-size: 0.85rem;
   color: var(--muted);
@@ -2814,7 +2868,7 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
 .form-row textarea {
   padding: 0.75rem;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 0.25rem;
   font-family: var(--sans);
   font-size: 0.95rem;
   background: var(--surface);
@@ -2846,19 +2900,24 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
 }
 
 .ready-to-write-btn {
-  background: color-mix(in srgb, var(--green) 15%, transparent);
-  color: var(--green);
-  border: 1px solid var(--green);
-  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--terracotta);
+  border-radius: 0.25rem;
+  background: var(--surface);
+  color: var(--terracotta);
+  font: inherit;
+  font-size: 0.82rem;
   font-weight: 600;
-  font-size: 0.85rem;
-  border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .ready-to-write-btn:hover {
-  background: var(--green);
+  background: var(--terracotta);
   color: var(--surface);
 }
 
@@ -2872,7 +2931,7 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
 }
 
 .lab-chat-bubble {
-  border-radius: 8px;
+  border-radius: 0.3rem;
   padding: 0.85rem 1.15rem;
   line-height: 1.5;
   font-size: 0.92rem;
@@ -2903,7 +2962,7 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
   text-align: center;
   color: var(--muted);
   background: var(--surface);
-  border-radius: 8px;
+  border-radius: 0.25rem;
   border: 1px dashed var(--line);
 }
 
@@ -2918,17 +2977,27 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
   display: flex;
   gap: 0.75rem;
   margin-top: 0.5rem;
+  align-items: stretch;
 }
 
 .lab-composer textarea {
   flex: 1;
   padding: 0.75rem;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 0.25rem;
   font-size: 0.95rem;
   font-family: var(--sans);
   background: var(--surface);
   color: var(--ink);
+  min-height: 3.2rem;
+  resize: vertical;
+}
+
+.lab-composer button {
+  min-width: 5.5rem;
+  padding: 0 1.25rem;
+  height: auto;
+  align-self: stretch;
 }
 
 .composer-hint {
@@ -2947,7 +3016,7 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
   font-size: 0.85rem;
   font-weight: 600;
   padding: 0.3rem 0.65rem;
-  border-radius: 6px;
+  border-radius: 0.25rem;
   background: var(--surface);
   border: 1px solid var(--line);
 }
@@ -2972,17 +3041,17 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
   line-height: 1.65;
   padding: 1.25rem;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0.25rem;
   background: var(--surface);
 }
 
 .completed-badge {
   display: inline-block;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   color: var(--green);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   margin-bottom: 0.5rem;
 }
 
@@ -2999,7 +3068,7 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
   color: var(--ink);
   background: var(--surface);
   padding: 2rem;
-  border-radius: 8px;
+  border-radius: 0.25rem;
   border: 1px solid var(--line);
   white-space: pre-wrap;
 }
@@ -3012,12 +3081,12 @@ body.is-companion-focused .material-column-content { min-height: 100%; overflow:
 }
 
 .lab-tag {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.25rem 0.6rem;
-  background: color-mix(in srgb, var(--paper) 70%, var(--surface));
+  padding: 0.2rem 0.5rem;
+  background: var(--surface-warm);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 0.2rem;
   color: var(--muted);
 }
 
