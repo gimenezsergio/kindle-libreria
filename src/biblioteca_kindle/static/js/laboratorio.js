@@ -41,6 +41,8 @@
   const essayTagsInput = document.getElementById("essay-tags");
   const writingFormEl = document.getElementById("writing-form");
   const btnBackToSparring = document.getElementById("btn-back-to-sparring");
+  const btnSaveDraft = document.getElementById("btn-save-draft");
+  const draftStatusMsg = document.getElementById("draft-status-msg");
 
   const completedQuestionEl = document.getElementById("completed-question");
   const completedMetaEl = document.getElementById("completed-meta");
@@ -221,13 +223,17 @@
     hideAllPhases();
     currentInquiry = inquiry;
     renderOutlineCard(inquiry);
-    if (!essayTextEl.value && inquiry.final_text) {
+    if (inquiry.final_text) {
       essayTextEl.value = inquiry.final_text;
+    }
+    if (inquiry.tags && inquiry.tags.length > 0) {
+      essayTagsInput.value = inquiry.tags.join(", ");
     }
     updateWordCounter();
     phaseWritingEl.hidden = false;
     essayTextEl.focus();
   }
+
 
   function showPhaseCompleted(inquiry) {
     hideAllPhases();
@@ -402,8 +408,57 @@
     }
   });
 
-  // Word counter listener
-  essayTextEl.addEventListener("input", updateWordCounter);
+  // Guardar borrador (manual o automático)
+  let draftDebounceTimer = null;
+  async function saveDraft(showFeedback = true) {
+    if (!currentInquiry || currentInquiry.status === "completed") return;
+    const text = essayTextEl.value.trim();
+    const rawTags = essayTagsInput.value.split(",").map((t) => t.trim()).filter(Boolean);
+
+    try {
+      const res = await fetch(`/api/laboratorio/inquiries/${currentInquiry.id}/draft`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          final_text: text,
+          tags: rawTags,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.inquiry) {
+        currentInquiry = data.inquiry;
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        if (draftStatusMsg) {
+          draftStatusMsg.textContent = `Borrador guardado (${timeStr})`;
+        }
+        if (showFeedback) {
+          notify(`Borrador guardado a las ${timeStr}`, false);
+        }
+      }
+    } catch (_) {
+      if (showFeedback) {
+        notify("No se pudo guardar el borrador", true);
+      }
+    }
+  }
+
+  if (btnSaveDraft) {
+    btnSaveDraft.addEventListener("click", () => saveDraft(true));
+  }
+
+  // Word counter y auto-guardado en input
+  essayTextEl.addEventListener("input", () => {
+    updateWordCounter();
+    if (draftStatusMsg) {
+      draftStatusMsg.textContent = "Cambios sin guardar…";
+    }
+    clearTimeout(draftDebounceTimer);
+    draftDebounceTimer = setTimeout(() => {
+      saveDraft(false);
+    }, 2500);
+  });
+
 
   // 5. Guardar texto final (Fase 3 -> Fase 4)
   writingFormEl.addEventListener("submit", async (e) => {

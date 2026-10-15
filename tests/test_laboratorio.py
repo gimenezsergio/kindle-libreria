@@ -14,8 +14,10 @@ from biblioteca_kindle.laboratorio import (
     generate_tutor_response,
     generate_synthesis_outline,
     save_final_reflection,
+    save_inquiry_draft,
     LaboratorioError,
 )
+
 
 
 class MockProvider:
@@ -198,6 +200,28 @@ class LaboratorioTests(unittest.TestCase):
         self.assertEqual(inquiries[0]["id"], inquiry["id"])
         self.assertEqual(inquiries[0]["tags"], ["Comunidad", "Hospitalidad", "Zeus"])
 
+    def test_save_inquiry_draft(self) -> None:
+        inquiry = create_inquiry(
+            self.database_path,
+            work_id="work-1",
+            dilemma_question="¿Deber de hospitalidad?",
+        )
+
+        draft_text = "Primer borrador incompleto..."
+        updated = save_inquiry_draft(
+            self.database_path,
+            inquiry_id=inquiry["id"],
+            draft_text=draft_text,
+            tags=["Borrador", "Hospitalidad"],
+        )
+
+        self.assertEqual(updated["status"], "ready_to_write")
+        self.assertEqual(updated["final_text"], draft_text)
+        self.assertEqual(updated["word_count"], 3)
+        self.assertIsNone(updated["completed_at"])
+        self.assertEqual(updated["tags"], ["Borrador", "Hospitalidad"])
+
 
 if __name__ == "__main__":
     unittest.main()
+

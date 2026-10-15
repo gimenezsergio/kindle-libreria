@@ -478,3 +478,47 @@ def save_final_reflection(
     finally:
         if should_close:
             conn.close()
+
+
+def save_inquiry_draft(
+    database: Path | str | sqlite3.Connection,
+    *,
+    inquiry_id: str,
+    draft_text: str,
+    tags: list[str] | None = None,
+) -> dict[str, Any]:
+    text = draft_text.strip()
+    words = len(text.split()) if text else 0
+
+    conn = database if isinstance(database, sqlite3.Connection) else _open_database(database)
+    should_close = not isinstance(database, sqlite3.Connection)
+
+    try:
+        with conn:
+            conn.execute(
+                """
+                UPDATE philosophical_inquiries
+                SET final_text = ?,
+                    word_count = ?,
+                    status = 'ready_to_write',
+                    updated_at = strftime('%Y-%m-%d %H:%M:%S', 'now')
+                WHERE id = ?
+                """,
+                (text, words, inquiry_id),
+            )
+
+            if tags is not None:
+                conn.execute("DELETE FROM inquiry_tags WHERE inquiry_id = ?", (inquiry_id,))
+                for raw_tag in tags:
+                    tag = raw_tag.strip()
+                    if tag:
+                        conn.execute(
+                            "INSERT OR IGNORE INTO inquiry_tags (inquiry_id, tag) VALUES (?, ?)",
+                            (inquiry_id, tag),
+                        )
+
+        return get_inquiry(conn, inquiry_id)
+    finally:
+        if should_close:
+            conn.close()
+

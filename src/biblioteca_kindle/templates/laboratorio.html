@@ -166,10 +166,17 @@
               <button type="button" class="secondary-button" id="btn-back-to-sparring">
                 ← Volver al debate
               </button>
-              <button type="submit" class="primary-btn" id="btn-save-essay">
-                Guardar y registrar reflexión
-              </button>
+              <div style="display:flex; align-items:center; gap:0.75rem;">
+                <span id="draft-status-msg" style="font-size:0.8rem; color:var(--muted);"></span>
+                <button type="button" class="secondary-button" id="btn-save-draft">
+                  💾 Guardar borrador
+                </button>
+                <button type="submit" class="primary-btn" id="btn-save-essay">
+                  Guardar y registrar reflexión
+                </button>
+              </div>
             </div>
+
           </form>
         </div>
 

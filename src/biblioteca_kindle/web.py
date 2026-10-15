@@ -57,7 +57,9 @@ from .laboratorio import (
     generate_tutor_response,
     generate_synthesis_outline,
     save_final_reflection,
+    save_inquiry_draft,
 )
+
 
 
 DISPLAY_TITLE_SQL = (
@@ -1323,7 +1325,24 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
         except LaboratorioError as error:
             return jsonify(error=str(error)), 400
 
+    @app.post("/api/laboratorio/inquiries/<inquiry_id>/draft")
+    def api_laboratorio_save_draft(inquiry_id: str):
+        try:
+            payload = _json_body()
+            final_text = payload.get("final_text", "")
+            tags = payload.get("tags")
+            inquiry = save_inquiry_draft(
+                database_path,
+                inquiry_id=inquiry_id,
+                draft_text=final_text,
+                tags=tags,
+            )
+            return jsonify(ok=True, inquiry=inquiry)
+        except LaboratorioError as error:
+            return jsonify(error=str(error)), 400
+
     @app.get("/api/status")
+
 
     def status():
         if not database_path.is_file():

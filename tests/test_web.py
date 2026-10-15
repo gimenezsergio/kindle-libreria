@@ -858,7 +858,21 @@ class WebTests(unittest.TestCase):
             self.assertEqual(outline_res.status_code, 200)
             self.assertEqual(outline_res.get_json()["inquiry"]["status"], "ready_to_write")
 
+            # 5b. Save draft
+            draft_res = client.post(
+                f"/api/laboratorio/inquiries/{inquiry_id}/draft",
+                json={
+                    "final_text": "Texto en progreso...",
+                    "tags": ["Borrador"],
+                },
+            )
+            self.assertEqual(draft_res.status_code, 200)
+            draft_inquiry = draft_res.get_json()["inquiry"]
+            self.assertEqual(draft_inquiry["final_text"], "Texto en progreso...")
+            self.assertEqual(draft_inquiry["status"], "ready_to_write")
+
             # 6. Complete
+
             complete_res = client.post(
                 f"/api/laboratorio/inquiries/{inquiry_id}/complete",
                 json={
