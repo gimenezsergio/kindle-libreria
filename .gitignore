@@ -16,4 +16,7 @@ __pycache__/
 # Portadas temporales de pruebas
 src/biblioteca_kindle/static/covers/user_*
 
+.venv/
+
+
 
