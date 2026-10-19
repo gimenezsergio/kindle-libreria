@@ -190,6 +190,7 @@
               </div>
               <div class="chat-topbar-actions">
                 <span class="attached-count" id="attached-count" title="Ver material adjunto">Sin material adjunto</span>
+                <button type="button" class="summary-btn" id="conversation-summary-btn" title="Generar o consultar la síntesis de esta conversación" hidden>🧠 Síntesis</button>
                 <details class="provider-status">
                   <summary id="provider-notice">Consultando IA…</summary>
                   <p id="provider-description"></p>
@@ -308,9 +309,14 @@
         <form method="dialog" class="dialog-heading"><div><p class="eyebrow">Contexto de la conversación</p><h2 id="context-dialog-title">Agregar material</h2></div><button class="dialog-close" value="cancel" aria-label="Cerrar selector">×</button></form>
         <form id="context-form">
           <label class="context-search">Buscar en notas y subrayados<input id="context-search" type="search" placeholder="Una palabra o frase…"></label>
-          <div class="context-tabs" role="tablist" aria-label="Tipos de material"><button type="button" role="tab" aria-selected="true" data-context-tab="annotation">Subrayados <span id="annotation-option-count"></span></button><button type="button" role="tab" aria-selected="false" data-context-tab="personal_note">Notas propias <span id="note-option-count"></span></button></div>
+          <div class="context-tabs" role="tablist" aria-label="Tipos de material">
+            <button type="button" role="tab" aria-selected="true" data-context-tab="annotation">Subrayados <span id="annotation-option-count"></span></button>
+            <button type="button" role="tab" aria-selected="false" data-context-tab="personal_note">Notas propias <span id="note-option-count"></span></button>
+            <button type="button" role="tab" aria-selected="false" data-context-tab="conversation_summary">Conversaciones <span id="summary-option-count"></span></button>
+          </div>
           <fieldset class="context-options" data-context-panel="annotation"><legend>Subrayados y notas del Kindle</legend><div id="context-annotations"></div></fieldset>
           <fieldset class="context-options" data-context-panel="personal_note" hidden><legend>Notas propias</legend><div id="context-notes"></div></fieldset>
+          <fieldset class="context-options" data-context-panel="conversation_summary" hidden><legend>Síntesis de conversaciones previas</legend><div id="context-summaries"></div></fieldset>
           <footer class="dialog-actions"><span id="context-count">0 seleccionadas</span><button class="secondary-button" id="cancel-context-picker" type="button">Cancelar</button><button type="submit">Guardar selección</button></footer>
         </form>
       </dialog>
@@ -366,6 +372,27 @@
           <button class="secondary-button" id="note-viewer-copy" type="button">Copiar texto</button>
           <button class="secondary-button danger-button" id="note-viewer-delete" type="button">🗑️ Eliminar</button>
           <button class="secondary-button" id="close-note-viewer" type="button">Cerrar</button>
+        </footer>
+      </div>
+    </dialog>
+
+    <dialog class="context-dialog summary-dialog" id="summary-dialog" aria-labelledby="summary-dialog-title">
+      <form method="dialog" class="dialog-heading">
+        <div>
+          <p class="eyebrow" id="summary-dialog-badge">Memoria y síntesis</p>
+          <h2 id="summary-dialog-title">Síntesis de la conversación</h2>
+          <p id="summary-dialog-subtitle">Condensación estructurada de tesis y conclusiones para compartir entre perfiles.</p>
+        </div>
+        <button class="dialog-close" value="cancel" aria-label="Cerrar diálogo de síntesis">×</button>
+      </form>
+      <div class="summary-dialog-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; flex: 1 1 auto; min-height: 0;">
+        <div class="summary-content conversation-message-content" id="summary-dialog-content" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.55; flex: 1 1 auto; overflow-y: auto; max-height: min(32rem, calc(100dvh - 16rem)); border: 1px solid var(--line); border-radius: 0.3rem; padding: 1rem; background: var(--paper);"></div>
+        <p class="form-feedback" id="summary-dialog-feedback" role="status" aria-live="polite"></p>
+        <footer class="dialog-actions" style="display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; margin-top: auto; padding-top: 0.75rem; border-top: 1px solid var(--line);">
+          <span id="summary-dialog-meta" style="color: var(--muted); font-size: 0.82rem; margin-right: auto;"></span>
+          <button class="secondary-button" id="summary-dialog-copy" type="button" hidden>Copiar</button>
+          <button class="primary-button" id="summary-dialog-generate" type="button">🧠 Generar síntesis</button>
+          <button class="secondary-button" id="summary-dialog-close" type="button">Cerrar</button>
         </footer>
       </div>
     </dialog>

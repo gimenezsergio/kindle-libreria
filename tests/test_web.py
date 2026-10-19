@@ -994,6 +994,12 @@ class WebTests(unittest.TestCase):
             content = last_packet.input[0]["content"]
             self.assertIn("MEMORIA PREVIA — Síntesis: Compañero de lectura · Pregunta 1", content)
 
+            # Check book page renders the UI elements
+            page = client.get("/library/w1").get_data(as_text=True)
+            self.assertIn('data-context-tab="conversation_summary"', page)
+            self.assertIn('id="conversation-summary-btn"', page)
+            self.assertIn('id="summary-dialog"', page)
+
 
 if __name__ == "__main__":
     unittest.main()

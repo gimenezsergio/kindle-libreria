@@ -1300,7 +1300,7 @@ function contextChoice(item, type, selected) {
   const nativePosition = readableStart
     ? `${item.position_type === "page" ? "Página" : "Ubicación"} ${item.start_position_native}${readableEnd && item.end_position_native !== item.start_position_native ? `–${item.end_position_native}` : ""}`
     : "";
-  const position = item.reference || nativePosition;
+  const position = item.reference || nativePosition || (item.profile_name ? `${item.profile_name} · ${item.title}` : "");
   label.dataset.searchText = `${item.content} ${position}`.toLocaleLowerCase("es");
   const input = document.createElement("input");
   input.type = "checkbox"; input.name = type; input.value = item.id; input.checked = selected.includes(item.id);
@@ -1311,10 +1311,12 @@ function contextChoice(item, type, selected) {
   return label;
 }
 
-function renderAttachedMaterial(data, selectedNotes, selectedAnnotations) {
+function renderAttachedMaterial(data, selectedNotes, selectedAnnotations, selectedSummaries = []) {
+  const summaries = data.conversation_summaries || [];
   const selectedItems = [
     ...data.notes.filter((item) => selectedNotes.includes(item.id)).map((item) => ({...item, type: "personal_note", label: "Nota propia"})),
     ...data.annotations.filter((item) => selectedAnnotations.includes(item.id)).map((item) => ({...item, type: "annotation", label: item.kind === "note" ? "Nota Kindle" : "Subrayado"})),
+    ...summaries.filter((item) => selectedSummaries.includes(item.id)).map((item) => ({...item, type: "conversation_summary", label: `Síntesis: ${item.profile_name} · ${item.title}`})),
   ];
   const container = document.querySelector("#attached-material");
   const cards = selectedItems.map((item) => {
@@ -1342,27 +1344,39 @@ async function loadContext(identifier) {
   contextOptionsData = data;
   const selectedNotes = data.selected.personal_note || [];
   const selectedAnnotations = data.selected.annotation || [];
+  const selectedSummaries = data.selected.conversation_summary || [];
+  const summaries = data.conversation_summaries || [];
   document.querySelector("#context-notes").replaceChildren(...data.notes.map((item) => contextChoice(item, "personal_note", selectedNotes)));
   document.querySelector("#context-annotations").replaceChildren(...data.annotations.map((item) => contextChoice(item, "annotation", selectedAnnotations)));
-  for (const [selector, emptyText] of [["#context-notes", "No hay notas propias"], ["#context-annotations", "No hay anotaciones recuperadas"]]) {
+  document.querySelector("#context-summaries").replaceChildren(...summaries.map((item) => contextChoice(item, "conversation_summary", selectedSummaries)));
+  for (const [selector, emptyText] of [
+    ["#context-notes", "No hay notas propias"],
+    ["#context-annotations", "No hay anotaciones recuperadas"],
+    ["#context-summaries", "No hay conversaciones previas con síntesis generada"],
+  ]) {
     const container = document.querySelector(selector);
     if (!container.children.length) { const empty = document.createElement("p"); empty.textContent = emptyText; container.append(empty); }
   }
-  const selectedCount = selectedNotes.length + selectedAnnotations.length;
+  const selectedCount = selectedNotes.length + selectedAnnotations.length + selectedSummaries.length;
   setText("context-count", `${selectedCount} ${selectedCount === 1 ? "seleccionada" : "seleccionadas"}`);
   setText("annotation-option-count", `(${data.annotations.length})`);
   setText("note-option-count", `(${data.notes.length})`);
+  setText("summary-option-count", `(${summaries.length})`);
   setText("material-summary-count", `${selectedCount} ${selectedCount === 1 ? "adjunto" : "adjuntos"}`);
   setText("mobile-material-count", `${selectedCount} ${selectedCount === 1 ? "adjunto" : "adjuntos"}`);
   setText("material-tab-count", String(selectedCount));
   setText("attached-count", selectedCount ? `${selectedCount} ${selectedCount === 1 ? "fragmento adjunto" : "fragmentos adjuntos"}` : "Sin material adjunto");
-  renderAttachedMaterial(data, selectedNotes, selectedAnnotations);
+  renderAttachedMaterial(data, selectedNotes, selectedAnnotations, selectedSummaries);
   renderCompanionActionScope();
 }
 
 function currentContextSelection() {
   const selected = (name) => [...document.querySelectorAll(`#context-form input[name="${name}"]:checked`)].map((input) => input.value);
-  return {personal_note_ids: selected("personal_note"), annotation_ids: selected("annotation")};
+  return {
+    personal_note_ids: selected("personal_note"),
+    annotation_ids: selected("annotation"),
+    conversation_summary_ids: selected("conversation_summary"),
+  };
 }
 
 function updateContextSelectionCount() {
@@ -1393,6 +1407,7 @@ function contextReviewScope(preview) {
 
 function contextMaterialLabel(item) {
   if (item.type === "personal_note") return "nota propia";
+  if (item.type === "conversation_summary") return "síntesis de conversación";
   const labels = {
     highlight: "subrayado",
     note: "nota del Kindle",
@@ -1513,6 +1528,8 @@ async function openConversation(identifier) {
   setupConversationScroll(container);
   scrollConversationToBottom({force: true});
   document.querySelector("#conversation-list").value = identifier;
+  const summaryBtn = document.querySelector("#conversation-summary-btn");
+  if (summaryBtn) summaryBtn.hidden = false;
   await loadContext(identifier);
 }
 
@@ -1522,6 +1539,8 @@ async function loadConversations(preferredId = activeConversationId) {
   if (!data.items.length) {
     document.querySelector("#conversation-empty").hidden = false;
     document.querySelector("#conversation-active").hidden = true;
+    const summaryBtn = document.querySelector("#conversation-summary-btn");
+    if (summaryBtn) summaryBtn.hidden = true;
     return;
   }
   const next = data.items.some((item) => item.id === preferredId) ? preferredId : data.items[0].id;
@@ -2164,6 +2183,79 @@ document.querySelector("#upload-cover-input")?.addEventListener("change", (event
     uploadLocalCoverForBook(file);
     event.target.value = "";
   }
+});
+
+async function openSummaryDialog() {
+  if (!activeConversationId) return;
+  const dialog = document.querySelector("#summary-dialog");
+  const contentEl = document.querySelector("#summary-dialog-content");
+  const metaEl = document.querySelector("#summary-dialog-meta");
+  const feedbackEl = document.querySelector("#summary-dialog-feedback");
+  const generateBtn = document.querySelector("#summary-dialog-generate");
+  const copyBtn = document.querySelector("#summary-dialog-copy");
+
+  contentEl.textContent = "Cargando síntesis…";
+  metaEl.textContent = "";
+  feedbackEl.textContent = "";
+  copyBtn.hidden = true;
+  generateBtn.disabled = false;
+  dialog.showModal();
+
+  try {
+    const summary = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/summary`);
+    contentEl.textContent = summary.summary;
+    metaEl.textContent = `Generada por ${summary.profile_name_snapshot || "Perfil"} · Actualizada: ${summary.updated_at || ""}`;
+    generateBtn.textContent = "🔄 Actualizar síntesis";
+    copyBtn.hidden = false;
+  } catch (error) {
+    contentEl.textContent = "Esta conversación todavía no tiene una síntesis generada.\n\nAl generarla, se creará un resumen condensado (tesis clave, argumentos y conclusiones) que estará disponible en la pestaña «Conversaciones» del selector de contexto para que otros perfiles puedan consultarlo como memoria previa.";
+    metaEl.textContent = "Sin síntesis previa";
+    generateBtn.textContent = "🧠 Generar síntesis";
+    copyBtn.hidden = true;
+  }
+}
+
+async function generateConversationSummary() {
+  if (!activeConversationId) return;
+  const contentEl = document.querySelector("#summary-dialog-content");
+  const metaEl = document.querySelector("#summary-dialog-meta");
+  const feedbackEl = document.querySelector("#summary-dialog-feedback");
+  const generateBtn = document.querySelector("#summary-dialog-generate");
+  const copyBtn = document.querySelector("#summary-dialog-copy");
+
+  generateBtn.disabled = true;
+  generateBtn.textContent = "Generando síntesis…";
+  feedbackEl.textContent = "Consultando al modelo para sintetizar la conversación…";
+
+  try {
+    const summary = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/summarize`, {
+      method: "POST",
+    });
+    contentEl.textContent = summary.summary;
+    metaEl.textContent = `Generada por ${summary.profile_name} · Recién actualizada`;
+    feedbackEl.textContent = "¡Síntesis generada y guardada con éxito!";
+    generateBtn.textContent = "🔄 Actualizar síntesis";
+    copyBtn.hidden = false;
+    await loadContext(activeConversationId);
+  } catch (error) {
+    feedbackEl.textContent = `Error al generar la síntesis: ${error.message}`;
+    generateBtn.textContent = "Reintentar síntesis";
+  } finally {
+    generateBtn.disabled = false;
+  }
+}
+
+document.querySelector("#conversation-summary-btn")?.addEventListener("click", openSummaryDialog);
+document.querySelector("#summary-dialog-generate")?.addEventListener("click", generateConversationSummary);
+document.querySelector("#summary-dialog-copy")?.addEventListener("click", async () => {
+  const content = document.querySelector("#summary-dialog-content").textContent;
+  if (content) {
+    await navigator.clipboard.writeText(content);
+    document.querySelector("#summary-dialog-feedback").textContent = "Síntesis copiada al portapapeles.";
+  }
+});
+document.querySelector("#summary-dialog-close")?.addEventListener("click", () => {
+  document.querySelector("#summary-dialog")?.close();
 });
 
 loadBook().catch(showBookLoadError);
