@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from .db import connect_database
-from .ai import PromptPacket
+from .ai import PromptPacket, AIProvider, resolve_provider_for_profile
 from .companion_actions import get_companion_action
 
 
@@ -24,6 +24,18 @@ LOCATION_REFERENCE = re.compile(
 DEFAULT_CONVERSATION_TITLE = "Nueva conversación"
 MAX_CONVERSATION_TITLE_LENGTH = 120
 MAX_AUTOMATIC_TITLE_LENGTH = 55
+
+CONVERSATION_SUMMARY_PROMPT = """\
+Sos un sintetizador analítico de lecturas. Tu tarea es generar una SÍNTESIS EJECUTIVA y ESTRUCTURADA de una conversación de lectura entre un lector y un asistente ({profile_name}) sobre la obra «{work_title}».
+
+La síntesis debe ser clara, densa y tener entre 80 y 150 palabras.
+Debe estructurarse obligatoriamente en tres puntos concisos:
+1. DILEMA O TEMA CENTRAL: Qué cuestión, escena o problema de la obra se debatió.
+2. POSTURA Y ARGUMENTOS: Qué tesis o perspectiva sostuvo {profile_name} y qué acuerdos o desacuerdos surgieron con el lector.
+3. PREGUNTAS ABIERTAS: Qué tensión o interrogante quedó planteado para capítulos o lecturas posteriores.
+
+Respondé directamente con los 3 puntos sintetizados, sin introducciones ni despedidas meta.
+"""
 
 _GREETING_PREFIX = re.compile(
     r"^(?:hola|buenas(?: tardes| noches| días)?|buen día)\b[\s,!.¡¿-]*",
@@ -471,6 +483,156 @@ def get_conversation(database: Path | str, conversation_id: str) -> dict:
         connection.close()
 
 
+def get_conversation_summary(
+    database: Path | str,
+    conversation_id: str,
+) -> dict | None:
+    connection = _open_database(database)
+    try:
+        row = connection.execute(
+            """
+            SELECT conversation_id, work_id, profile_id,
+                   profile_name_snapshot, title_snapshot,
+                   summary, created_at, updated_at
+            FROM conversation_summaries
+            WHERE conversation_id = ?
+            """,
+            (conversation_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return dict(row)
+    finally:
+        connection.close()
+
+
+def list_work_conversation_summaries(
+    database: Path | str,
+    work_id: str,
+    *,
+    exclude_conversation_id: str | None = None,
+) -> list[dict]:
+    connection = _open_database(database)
+    try:
+        query = """
+            SELECT cs.conversation_id, cs.work_id, cs.profile_id,
+                   cs.profile_name_snapshot, cs.title_snapshot,
+                   cs.summary, cs.created_at, cs.updated_at
+            FROM conversation_summaries cs
+            WHERE cs.work_id = ?
+        """
+        params: list[object] = [work_id]
+        if exclude_conversation_id:
+            query += " AND cs.conversation_id != ?"
+            params.append(exclude_conversation_id)
+        query += " ORDER BY cs.updated_at DESC"
+        rows = connection.execute(query, params).fetchall()
+        return [
+            {
+                "id": row["conversation_id"],
+                "conversation_id": row["conversation_id"],
+                "work_id": row["work_id"],
+                "profile_id": row["profile_id"],
+                "profile_name": row["profile_name_snapshot"],
+                "title": row["title_snapshot"],
+                "summary": row["summary"],
+                "content": row["summary"],
+                "label": f"Síntesis: {row['profile_name_snapshot']} · {row['title_snapshot']}",
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"],
+            }
+            for row in rows
+        ]
+    finally:
+        connection.close()
+
+
+def generate_and_save_conversation_summary(
+    database: Path | str,
+    conversation_id: str,
+    *,
+    provider: AIProvider | None = None,
+) -> dict:
+    conversation = get_conversation(database, conversation_id)
+    messages = conversation.get("messages", [])
+    user_messages = [m for m in messages if m["role"] == "user"]
+    if not user_messages:
+        raise ConversationError("No se puede sintetizar una conversación vacía o sin intervenciones del lector")
+
+    work_id = conversation["work_id"]
+    profile_name = conversation.get("profile_name_snapshot") or "Asistente"
+    title = conversation.get("title") or DEFAULT_CONVERSATION_TITLE
+
+    connection = _open_database(database)
+    try:
+        work_row = connection.execute(
+            "SELECT COALESCE(NULLIF(TRIM(display_title), ''), REPLACE(preferred_title, '_', ' ')) AS title FROM works WHERE id = ?",
+            (work_id,),
+        ).fetchone()
+        work_title = work_row["title"] if work_row else "Obra"
+    finally:
+        connection.close()
+
+    instructions = CONVERSATION_SUMMARY_PROMPT.format(
+        profile_name=profile_name,
+        work_title=work_title,
+    )
+
+    conversation_text_parts = []
+    for m in messages:
+        sender = "Lector" if m["role"] == "user" else profile_name
+        conversation_text_parts.append(f"{sender}: {m['content']}")
+    conversation_text = "\n\n".join(conversation_text_parts)
+
+    packet = PromptPacket(
+        instructions=instructions,
+        input=[{
+            "role": "user",
+            "content": f"A continuación la transcripción de la conversación para sintetizar:\n\n{conversation_text}",
+        }],
+    )
+
+    if provider is None:
+        provider = resolve_provider_for_profile(conversation.get("profile_id"))
+
+    summary_text = provider.respond(packet).strip()
+
+    connection = _open_database(database)
+    try:
+        with connection:
+            connection.execute(
+                """
+                INSERT INTO conversation_summaries(
+                    conversation_id, work_id, profile_id, profile_name_snapshot,
+                    title_snapshot, summary, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON CONFLICT(conversation_id) DO UPDATE SET
+                    profile_name_snapshot = excluded.profile_name_snapshot,
+                    title_snapshot = excluded.title_snapshot,
+                    summary = excluded.summary,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                (
+                    conversation_id,
+                    work_id,
+                    conversation["profile_id"],
+                    profile_name,
+                    title,
+                    summary_text,
+                ),
+            )
+        return {
+            "conversation_id": conversation_id,
+            "work_id": work_id,
+            "profile_id": conversation["profile_id"],
+            "profile_name": profile_name,
+            "title": title,
+            "summary": summary_text,
+        }
+    finally:
+        connection.close()
+
+
 def context_options(database: Path | str, conversation_id: str) -> dict:
     connection = _open_database(database)
     try:
@@ -508,6 +670,7 @@ def context_options(database: Path | str, conversation_id: str) -> dict:
             item = dict(row)
             item["reference"] = _context_reference(item.pop("source_reference", None))
             annotations.append(item)
+        summaries = list_work_conversation_summaries(database, work_id, exclude_conversation_id=conversation_id)
         selected = connection.execute(
             """
             SELECT source_type, source_id FROM conversation_context_sources
@@ -518,6 +681,7 @@ def context_options(database: Path | str, conversation_id: str) -> dict:
         return {
             "notes": notes,
             "annotations": annotations,
+            "conversation_summaries": summaries,
             "selected": {row["source_type"]: [] for row in selected} | {
                 kind: [row["source_id"] for row in selected if row["source_type"] == kind]
                 for kind in {row["source_type"] for row in selected}
@@ -533,12 +697,13 @@ def resolve_turn_context_sources(
     *,
     personal_note_ids: object | None = None,
     annotation_ids: object | None = None,
+    conversation_summary_ids: object | None = None,
 ) -> list[dict]:
     """Resuelve el contexto de un próximo turno sin escribir en SQLite.
 
     Cuando llegan ids desde el cliente representa el reemplazo que haría
     ``update_context``: conserva la ficha del libro y los materiales fijados,
-    y usa la selección de borrador para notas y anotaciones.
+    y usa la selección de borrador para notas, anotaciones y síntesis.
     """
     connection = _open_database(database)
     try:
@@ -558,16 +723,20 @@ def resolve_turn_context_sources(
                 (conversation_id,),
             )
         ]
-        if personal_note_ids is None and annotation_ids is None:
+        if personal_note_ids is None and annotation_ids is None and conversation_summary_ids is None:
             return current
         note_input = [] if personal_note_ids is None else personal_note_ids
         annotation_input = [] if annotation_ids is None else annotation_ids
+        summary_input = [] if conversation_summary_ids is None else conversation_summary_ids
         if not isinstance(note_input, list) or not all(isinstance(item, str) for item in note_input):
             raise ConversationError("La selección de notas no es válida")
         if not isinstance(annotation_input, list) or not all(isinstance(item, str) for item in annotation_input):
             raise ConversationError("La selección de anotaciones no es válida")
+        if not isinstance(summary_input, list) or not all(isinstance(item, str) for item in summary_input):
+            raise ConversationError("La selección de síntesis de conversación no es válida")
         note_ids = list(dict.fromkeys(note_input))
         annotation_ids_clean = list(dict.fromkeys(annotation_input))
+        summary_ids_clean = list(dict.fromkeys(summary_input))
         work_id = conversation["work_id"]
         notes = {row["id"]: row for row in connection.execute(
             "SELECT id, body FROM personal_notes WHERE target_type = 'work' AND target_id = ?",
@@ -581,13 +750,26 @@ def resolve_turn_context_sources(
             """,
             (work_id,),
         )}
+        summaries = {row["conversation_id"]: row for row in connection.execute(
+            """
+            SELECT conversation_id, profile_name_snapshot, title_snapshot, summary
+            FROM conversation_summaries WHERE work_id = ?
+            """,
+            (work_id,),
+        )}
         if any(identifier not in notes for identifier in note_ids):
             raise ConversationError("Una nota seleccionada no pertenece a este libro")
         if any(identifier not in annotations for identifier in annotation_ids_clean):
             raise ConversationError("Una anotación seleccionada no pertenece a este libro")
+        if any(identifier not in summaries for identifier in summary_ids_clean):
+            raise ConversationError("Una síntesis seleccionada no pertenece a este libro")
         retained = [
             item for item in current
-            if item["source_type"] == "work" or item["is_pinned"]
+            if item["source_type"] == "work"
+            or item["is_pinned"]
+            or (personal_note_ids is None and item["source_type"] == "personal_note")
+            or (annotation_ids is None and item["source_type"] == "annotation")
+            or (conversation_summary_ids is None and item["source_type"] == "conversation_summary")
         ]
         material = [
             {
@@ -603,6 +785,13 @@ def resolve_turn_context_sources(
                 "content_snapshot": annotations[identifier]["content"], "is_pinned": 0,
             }
             for identifier in annotation_ids_clean
+        ] + [
+            {
+                "source_type": "conversation_summary", "source_id": identifier,
+                "label_snapshot": f"Síntesis: {summaries[identifier]['profile_name_snapshot']} · {summaries[identifier]['title_snapshot']}",
+                "content_snapshot": summaries[identifier]["summary"], "is_pinned": 0,
+            }
+            for identifier in summary_ids_clean
         ]
         merged = {(item["source_type"], item["source_id"]): item for item in retained}
         for item in material:
@@ -618,13 +807,22 @@ def update_context(
     *,
     personal_note_ids: object,
     annotation_ids: object,
+    conversation_summary_ids: object | None = None,
 ) -> None:
     if not isinstance(personal_note_ids, list) or not all(isinstance(item, str) for item in personal_note_ids):
         raise ConversationError("La selección de notas no es válida")
     if not isinstance(annotation_ids, list) or not all(isinstance(item, str) for item in annotation_ids):
         raise ConversationError("La selección de anotaciones no es válida")
+    if conversation_summary_ids is not None and (
+        not isinstance(conversation_summary_ids, list)
+        or not all(isinstance(item, str) for item in conversation_summary_ids)
+    ):
+        raise ConversationError("La selección de síntesis de conversación no es válida")
+
     note_ids = list(dict.fromkeys(personal_note_ids))
     selected_annotation_ids = list(dict.fromkeys(annotation_ids))
+    summary_ids = list(dict.fromkeys(conversation_summary_ids)) if conversation_summary_ids is not None else None
+
     connection = _open_database(database)
     try:
         conversation = connection.execute(
@@ -645,15 +843,32 @@ def update_context(
             """,
             (work_id,),
         )}
+        summaries = {row["conversation_id"]: row for row in connection.execute(
+            """
+            SELECT conversation_id, profile_name_snapshot, title_snapshot, summary
+            FROM conversation_summaries WHERE work_id = ?
+            """,
+            (work_id,),
+        )}
+
         if any(identifier not in notes for identifier in note_ids):
             raise ConversationError("Una nota seleccionada no pertenece a este libro")
         if any(identifier not in annotations for identifier in selected_annotation_ids):
             raise ConversationError("Una anotación seleccionada no pertenece a este libro")
+        if summary_ids and any(identifier not in summaries for identifier in summary_ids):
+            raise ConversationError("Una síntesis seleccionada no pertenece a este libro")
+
         with connection:
-            connection.execute(
-                "DELETE FROM conversation_context_sources WHERE conversation_id = ? AND source_type != 'work' AND is_pinned = 0",
-                (conversation_id,),
-            )
+            if summary_ids is not None:
+                connection.execute(
+                    "DELETE FROM conversation_context_sources WHERE conversation_id = ? AND source_type != 'work' AND is_pinned = 0",
+                    (conversation_id,),
+                )
+            else:
+                connection.execute(
+                    "DELETE FROM conversation_context_sources WHERE conversation_id = ? AND source_type NOT IN ('work', 'conversation_summary') AND is_pinned = 0",
+                    (conversation_id,),
+                )
             connection.executemany(
                 """
                 INSERT INTO conversation_context_sources(
@@ -676,6 +891,27 @@ def update_context(
                 """,
                 [(str(uuid.uuid4()), conversation_id, identifier, annotations[identifier]["kind"], annotations[identifier]["content"]) for identifier in selected_annotation_ids],
             )
+            if summary_ids:
+                connection.executemany(
+                    """
+                    INSERT INTO conversation_context_sources(
+                        id, conversation_id, source_type, source_id, label_snapshot, content_snapshot
+                    ) VALUES (?, ?, 'conversation_summary', ?, ?, ?)
+                    ON CONFLICT(conversation_id, source_type, source_id) DO UPDATE SET
+                        label_snapshot=excluded.label_snapshot,
+                        content_snapshot=excluded.content_snapshot
+                    """,
+                    [
+                        (
+                            str(uuid.uuid4()),
+                            conversation_id,
+                            identifier,
+                            f"Síntesis: {summaries[identifier]['profile_name_snapshot']} · {summaries[identifier]['title_snapshot']}",
+                            summaries[identifier]["summary"],
+                        )
+                        for identifier in summary_ids
+                    ],
+                )
     finally:
         connection.close()
 
@@ -750,10 +986,15 @@ def build_prompt_packet(
     conversation = get_conversation(database, conversation_id)
     if context_sources is not None:
         conversation["context_sources"] = context_sources
-    sources = "\n\n".join(
-        f"[{item['label_snapshot']}]\n{item['content_snapshot']}"
-        for item in conversation["context_sources"]
-    )
+    sources_parts = []
+    for item in conversation["context_sources"]:
+        label = item.get("label_snapshot", "")
+        content = item.get("content_snapshot", "")
+        if item.get("source_type") == "conversation_summary":
+            sources_parts.append(f"[MEMORIA PREVIA — {label}]\n{content}")
+        else:
+            sources_parts.append(f"[{label}]\n{content}")
+    sources = "\n\n".join(sources_parts)
     instructions = (
         f"{conversation['profile_prompt_snapshot']}\n\n"
         "Estás conversando sobre la OBRA PRINCIPAL indicada en la ficha del contexto. "
@@ -772,6 +1013,7 @@ def build_prompt_packet(
         "DINÁMICA CONVERSACIONAL Y SEGUIMIENTO: La estructura rígida con encabezados (###) se utiliza únicamente en el primer turno de presentación o análisis inicial de la conversación. En los mensajes de seguimiento, repreguntas o comentarios posteriores del diálogo, respondé de forma fluida, directa y conversacional sin repetir la plantilla de secciones, manteniendo siempre tu personalidad y tono. "
         "Cuando uses subrayados o notas adjuntas, o evidencias de otras obras de la biblioteca, nombrá de manera natural "
         "la obra y el tipo de material (por ejemplo: 'Según un subrayado de 1984…' o 'En relación con El cisne negro…'). "
+        "Si dispones de memorias previas o síntesis de conversaciones anteriores, refierete a ellas como antecedentes o debates previos (por ejemplo: 'En el debate previo sobre este punto...'). "
         "No uses códigos ni identificadores técnicos para referirte a las fuentes."
     )
     messages = [{"role": item["role"], "content": item["content"]} for item in conversation["messages"]]

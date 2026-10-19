@@ -18,9 +18,12 @@ from biblioteca_kindle.conversations import (
     pin_library_sources,
     prepare_external_turn,
     update_conversation_title,
+    get_conversation_summary,
+    list_work_conversation_summaries,
+    generate_and_save_conversation_summary,
 )
 from biblioteca_kindle.db import connect_database, migrate_database
-from biblioteca_kindle.ai import DraftProvider, ResponsesProvider, load_environment_file, provider_from_environment
+from biblioteca_kindle.ai import DraftProvider, ResponsesProvider, load_environment_file, provider_from_environment, PromptPacket
 
 
 class ConversationTests(unittest.TestCase):
@@ -308,6 +311,94 @@ class ConversationTests(unittest.TestCase):
             load_environment_file(environment)
             self.assertEqual(__import__("os").environ["BIBLIOTECA_AI_PROVIDER"], "draft")
             self.assertEqual(__import__("os").environ["DEEPSEEK_API_KEY"], "local-key")
+
+    def test_generate_and_save_conversation_summary_requires_messages(self) -> None:
+        identifier = create_conversation(
+            self.database, work_id="work-1", profile_id="companion"
+        )
+        with self.assertRaises(ConversationError):
+            generate_and_save_conversation_summary(self.database, identifier)
+
+    def test_generate_and_save_conversation_summary_success(self) -> None:
+        identifier = create_conversation(
+            self.database, work_id="work-1", profile_id="companion", title="Debate sobre la culpa"
+        )
+        add_message(self.database, conversation_id=identifier, role="user", content="¿Raskolnikov sentía culpa o soberbia?")
+        add_message(self.database, conversation_id=identifier, role="assistant", content="Al principio era pura soberbia teórica.")
+
+        class MockProvider:
+            ready = True
+            name = "mock"
+            def respond(self, packet: PromptPacket) -> str:
+                return "1. DILEMA: La motivación del crimen.\n2. POSTURA: Soberbia intelectual.\n3. PREGUNTAS: Cuándo surge la redención."
+
+        summary_data = generate_and_save_conversation_summary(
+            self.database, identifier, provider=MockProvider()
+        )
+        self.assertEqual(summary_data["conversation_id"], identifier)
+        self.assertIn("Soberbia intelectual", summary_data["summary"])
+
+        retrieved = get_conversation_summary(self.database, identifier)
+        self.assertIsNotNone(retrieved)
+        self.assertEqual(retrieved["summary"], summary_data["summary"])
+        self.assertEqual(retrieved["title_snapshot"], "Debate sobre la culpa")
+
+    def test_context_options_includes_summaries_from_other_conversations(self) -> None:
+        c1 = create_conversation(self.database, work_id="work-1", profile_id="companion", title="Chat 1")
+        c2 = create_conversation(self.database, work_id="work-1", profile_id="companion", title="Chat 2")
+
+        add_message(self.database, conversation_id=c1, role="user", content="Mensaje en chat 1")
+        class MockProvider:
+            ready = True
+            name = "mock"
+            def respond(self, packet: PromptPacket) -> str:
+                return "Resumen del Chat 1"
+
+        generate_and_save_conversation_summary(self.database, c1, provider=MockProvider())
+
+        # Para c1, no debe figurar su propia síntesis
+        options_c1 = context_options(self.database, c1)
+        self.assertEqual(options_c1["conversation_summaries"], [])
+
+        # Para c2, debe figurar la síntesis de c1
+        options_c2 = context_options(self.database, c2)
+        self.assertEqual(len(options_c2["conversation_summaries"]), 1)
+        self.assertEqual(options_c2["conversation_summaries"][0]["conversation_id"], c1)
+        self.assertEqual(options_c2["conversation_summaries"][0]["summary"], "Resumen del Chat 1")
+
+    def test_update_context_with_conversation_summaries_and_prompt_packet(self) -> None:
+        c1 = create_conversation(self.database, work_id="work-1", profile_id="companion", title="Capítulo 1 con Sócrates")
+        c2 = create_conversation(self.database, work_id="work-1", profile_id="companion", title="Capítulo 2 con Analista")
+
+        add_message(self.database, conversation_id=c1, role="user", content="Discutiendo Cap 1")
+        class MockProvider:
+            ready = True
+            name = "mock"
+            def respond(self, packet: PromptPacket) -> str:
+                return "Sócrates sostuvo que la justicia no es la conveniencia del más fuerte."
+
+        generate_and_save_conversation_summary(self.database, c1, provider=MockProvider())
+
+        # En c2, seleccionamos la síntesis de c1
+        update_context(
+            self.database,
+            c2,
+            personal_note_ids=[],
+            annotation_ids=[],
+            conversation_summary_ids=[c1],
+        )
+
+        conv = get_conversation(self.database, c2)
+        summaries_in_context = [s for s in conv["context_sources"] if s["source_type"] == "conversation_summary"]
+        self.assertEqual(len(summaries_in_context), 1)
+        self.assertIn("Sócrates sostuvo que la justicia", summaries_in_context[0]["content_snapshot"])
+
+        # Verificar formateo en prompt packet
+        add_message(self.database, conversation_id=c2, role="user", content="¿Cómo contradice Trasímaco esta postura?")
+        packet = build_prompt_packet(self.database, c2)
+        packet_text = "\n".join(str(m["content"]) for m in packet.input)
+        self.assertIn("[MEMORIA PREVIA — Síntesis: Compañero de lectura · Capítulo 1 con Sócrates]", packet_text)
+        self.assertIn("Sócrates sostuvo que la justicia no es la conveniencia del más fuerte", packet_text)
 
 
 if __name__ == "__main__":
