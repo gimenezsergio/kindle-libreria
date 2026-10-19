@@ -39,6 +39,8 @@ from .conversations import (
     attach_library_sources,
     pin_library_sources,
     resolve_turn_context_sources,
+    generate_and_save_conversation_summary,
+    get_conversation_summary,
 )
 from .ai import AIError, DraftProvider, PRESET_PROVIDERS, load_environment_file, provider_from_environment, resolve_provider_for_profile, save_environment_config
 from .companion_actions import get_companion_action, list_companion_actions
@@ -608,12 +610,17 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
             action = get_companion_action(payload.get("companion_action_id"))
         except ValueError as error:
             raise ConversationError(str(error)) from error
-        has_context_update = "personal_note_ids" in payload or "annotation_ids" in payload
+        has_context_update = (
+            "personal_note_ids" in payload
+            or "annotation_ids" in payload
+            or "conversation_summary_ids" in payload
+        )
         context_sources = resolve_turn_context_sources(
             database_path,
             conversation_id,
             personal_note_ids=payload.get("personal_note_ids") if has_context_update else None,
             annotation_ids=payload.get("annotation_ids") if has_context_update else None,
+            conversation_summary_ids=payload.get("conversation_summary_ids") if has_context_update else None,
         )
         conversation = get_conversation(database_path, conversation_id)
         if conversation["status"] != "active":
@@ -659,7 +666,7 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
         context_sources = turn["context_sources"]
         material = [
             item for item in context_sources
-            if item["source_type"] in {"personal_note", "annotation"}
+            if item["source_type"] in {"personal_note", "annotation", "conversation_summary"}
         ]
         conv_provider = resolve_conversation_provider(turn["conversation"]["id"])
         return {
@@ -1139,6 +1146,7 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
                     conversation_id,
                     personal_note_ids=payload.get("personal_note_ids", []),
                     annotation_ids=payload.get("annotation_ids", []),
+                    conversation_summary_ids=payload.get("conversation_summary_ids"),
                 )
             add_message(
                 database_path,
@@ -1175,10 +1183,32 @@ def create_app(database: Path | str, ai_provider=None) -> Flask:
                 conversation_id,
                 personal_note_ids=payload.get("personal_note_ids", []),
                 annotation_ids=payload.get("annotation_ids", []),
+                conversation_summary_ids=payload.get("conversation_summary_ids"),
             )
             return jsonify(saved=True)
         except (ConversationError, PersonalDataError) as error:
             return jsonify(error=str(error)), 400
+
+    @app.post("/api/conversations/<conversation_id>/summarize")
+    def conversation_summarize(conversation_id: str):
+        try:
+            conv_provider = resolve_conversation_provider(conversation_id)
+            summary_info = generate_and_save_conversation_summary(
+                database_path, conversation_id, provider=conv_provider
+            )
+            return jsonify(summary_info)
+        except (ConversationError, AIError, ValueError) as error:
+            return jsonify(error=str(error)), 400
+
+    @app.get("/api/conversations/<conversation_id>/summary")
+    def conversation_summary_get(conversation_id: str):
+        try:
+            summary_data = get_conversation_summary(database_path, conversation_id)
+            if summary_data is None:
+                return jsonify(error="No hay síntesis generada para esta conversación."), 404
+            return jsonify(summary_data)
+        except ConversationError as error:
+            return jsonify(error=str(error)), 404
 
     # ==========================================
     # Laboratorio Filosófico API

@@ -892,6 +892,108 @@ class WebTests(unittest.TestCase):
             self.assertEqual(len(work_data["reflections"]), 1)
             self.assertEqual(work_data["reflections"][0]["id"], inquiry_id)
 
+    def test_conversation_summarize_and_summary_api(self) -> None:
+        class FakeSummaryProvider:
+            name = "summary-test"
+            ready = True
+
+            def respond(self, packet):
+                return "1. Idea clave\n- Punto relevante sintetizado."
+
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            try:
+                with connection:
+                    connection.execute("INSERT INTO works(id, preferred_title) VALUES ('w1', 'Obra Filosófica')")
+            finally:
+                connection.close()
+
+            provider = FakeSummaryProvider()
+            client = create_app(database, ai_provider=provider).test_client()
+
+            conv_id = client.post("/api/works/w1/conversations", json={"profile_id": "companion"}).get_json()["id"]
+
+            # Summarizing an empty conversation fails with 400
+            empty_res = client.post(f"/api/conversations/{conv_id}/summarize")
+            self.assertEqual(empty_res.status_code, 400)
+            self.assertIn("vacía", empty_res.get_json()["error"])
+
+            # Getting summary when none exists returns 404
+            missing_res = client.get(f"/api/conversations/{conv_id}/summary")
+            self.assertEqual(missing_res.status_code, 404)
+
+            # Add message and assistant response
+            client.post(f"/api/conversations/{conv_id}/respond", json={"content": "¿De qué trata este capítulo?"})
+
+            # Now summarize succeeds
+            sum_res = client.post(f"/api/conversations/{conv_id}/summarize")
+            self.assertEqual(sum_res.status_code, 200)
+            data = sum_res.get_json()
+            self.assertEqual(data["conversation_id"], conv_id)
+            self.assertEqual(data["profile_name"], "Compañero de lectura")
+            self.assertIn("Punto relevante", data["summary"])
+
+            # Getting summary now returns the saved summary
+            get_res = client.get(f"/api/conversations/{conv_id}/summary")
+            self.assertEqual(get_res.status_code, 200)
+            self.assertEqual(get_res.get_json()["summary"], data["summary"])
+
+    def test_conversation_context_with_summaries_api(self) -> None:
+        class FakeProvider:
+            name = "test"
+            ready = True
+
+            def __init__(self):
+                self.packets = []
+
+            def respond(self, packet):
+                self.packets.append(packet)
+                return "Respuesta con contexto"
+
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            try:
+                with connection:
+                    connection.execute("INSERT INTO works(id, preferred_title) VALUES ('w1', 'Obra Filosófica')")
+            finally:
+                connection.close()
+
+            provider = FakeProvider()
+            client = create_app(database, ai_provider=provider).test_client()
+
+            # Conv 1
+            conv1_id = client.post("/api/works/w1/conversations", json={"profile_id": "companion"}).get_json()["id"]
+            client.post(f"/api/conversations/{conv1_id}/respond", json={"content": "Pregunta 1"})
+            client.post(f"/api/conversations/{conv1_id}/summarize")
+
+            # Conv 2
+            conv2_id = client.post("/api/works/w1/conversations", json={"profile_id": "companion"}).get_json()["id"]
+
+            # Context options for Conv 2 includes Conv 1's summary
+            ctx_res = client.get(f"/api/conversations/{conv2_id}/context")
+            self.assertEqual(ctx_res.status_code, 200)
+            ctx_data = ctx_res.get_json()
+            self.assertIn("conversation_summaries", ctx_data)
+            self.assertEqual(len(ctx_data["conversation_summaries"]), 1)
+            self.assertEqual(ctx_data["conversation_summaries"][0]["id"], conv1_id)
+
+            # Update context for Conv 2 to select Conv 1 summary
+            put_res = client.put(
+                f"/api/conversations/{conv2_id}/context",
+                json={"conversation_summary_ids": [conv1_id]},
+            )
+            self.assertEqual(put_res.status_code, 200)
+
+            # Respond in Conv 2
+            client.post(f"/api/conversations/{conv2_id}/respond", json={"content": "¿Qué opinás del enfoque previo?"})
+            last_packet = provider.packets[-1]
+            content = last_packet.input[0]["content"]
+            self.assertIn("MEMORIA PREVIA — Síntesis: Compañero de lectura · Pregunta 1", content)
+
 
 if __name__ == "__main__":
     unittest.main()
