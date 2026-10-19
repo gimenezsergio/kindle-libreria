@@ -38,6 +38,7 @@ class MigrationTests(unittest.TestCase):
                     "0021_conversational_dynamic_profiles.sql",
                     "0022_recently_opened_works.sql",
                     "0023_philosophical_inquiries.sql",
+                    "0024_conversation_summaries.sql",
                 ],
             )
 
@@ -80,6 +81,7 @@ class MigrationTests(unittest.TestCase):
                     "inquiry_messages",
                     "inquiry_tags",
                     "annotation_contexts",
+                    "conversation_summaries",
                 }.issubset(tables)
             )
 
@@ -96,7 +98,7 @@ class MigrationTests(unittest.TestCase):
                 ).fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(count, 23)
+            self.assertEqual(count, 24)
 
 
 
@@ -128,6 +130,27 @@ class MigrationTests(unittest.TestCase):
                         "INSERT INTO editions(id, work_id, title) VALUES (?, ?, ?)",
                         ("edition", "missing-work", "Title"),
                     )
+            finally:
+                connection.close()
+
+    def test_conversation_summary_source_type_allowed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "library.sqlite3"
+            migrate_database(database)
+            connection = connect_database(database)
+            try:
+                # Crear obra, perfil y conversación
+                connection.execute("INSERT INTO works(id, preferred_title) VALUES ('w1', 'Work 1')")
+                connection.execute("INSERT INTO ai_profiles(id, name, prompt) VALUES ('p1', 'Profile 1', 'Prompt')")
+                connection.execute(
+                    "INSERT INTO reading_conversations(id, work_id, profile_id, profile_name_snapshot, profile_prompt_snapshot) "
+                    "VALUES ('c1', 'w1', 'p1', 'Profile 1', 'Prompt')"
+                )
+                # Debe permitir source_type = 'conversation_summary'
+                connection.execute(
+                    "INSERT INTO conversation_context_sources(id, conversation_id, source_type, source_id, label_snapshot, content_snapshot) "
+                    "VALUES ('cs1', 'c1', 'conversation_summary', 'c2', 'Síntesis previa', 'Resumen')"
+                )
             finally:
                 connection.close()
 
