@@ -39,6 +39,7 @@ class MigrationTests(unittest.TestCase):
                     "0022_recently_opened_works.sql",
                     "0023_philosophical_inquiries.sql",
                     "0024_conversation_summaries.sql",
+                    "0025_telegram_sessions.sql",
                 ],
             )
 
@@ -82,6 +83,7 @@ class MigrationTests(unittest.TestCase):
                     "inquiry_tags",
                     "annotation_contexts",
                     "conversation_summaries",
+                    "telegram_sessions",
                 }.issubset(tables)
             )
 
@@ -98,7 +100,7 @@ class MigrationTests(unittest.TestCase):
                 ).fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(count, 24)
+            self.assertEqual(count, 25)
 
 
 
