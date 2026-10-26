@@ -26,6 +26,9 @@ from .web import run_server
 from .remote_sync import SyncPackageError, build_sync_package, write_sync_package
 from .remote_client import RemotePushError, push_sync
 from .backup import BackupError, create_database_backup
+from .ai import load_environment_file
+from .telegram_bot import TelegramBotService
+from .telegram_client import TelegramAPIError, TelegramClient
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -172,6 +175,25 @@ def build_parser() -> argparse.ArgumentParser:
     serve = subparsers.add_parser("serve", help="Abrir el servidor web local")
     serve.add_argument("--database", required=True, type=Path)
     serve.add_argument("--port", type=int, default=8000)
+    serve.add_argument(
+        "--no-bot",
+        action="store_true",
+        help="No iniciar el bot de Telegram en segundo plano aunque esté configurado",
+    )
+
+    telegram_bot = subparsers.add_parser(
+        "telegram-bot", help="Iniciar el bot interactivo de Telegram"
+    )
+    telegram_bot.add_argument("--database", required=True, type=Path)
+    telegram_bot.add_argument(
+        "--token", default=None, help="Token de Telegram Bot (o TELEGRAM_BOT_TOKEN)"
+    )
+    telegram_bot.add_argument(
+        "--user-id",
+        type=int,
+        default=None,
+        help="Telegram user ID numérico autorizado (o TELEGRAM_ALLOWED_USER_ID)",
+    )
     return parser
 
 
@@ -364,11 +386,80 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 1
         return 0
     if args.command == "serve":
+        load_environment_file(args.database.parent / ".env")
+        if not getattr(args, "no_bot", False):
+            token = os.environ.get("TELEGRAM_BOT_TOKEN")
+            if token:
+                allowed_id = None
+                env_id = os.environ.get("TELEGRAM_ALLOWED_USER_ID")
+                if env_id:
+                    try:
+                        allowed_id = int(env_id)
+                    except ValueError:
+                        pass
+                import threading
+
+                def _run_bot() -> None:
+                    try:
+                        bot_client = TelegramClient(token)
+                        bot_info = bot_client.get_me()
+                        print(
+                            f"Bot de Telegram activo en segundo plano: @{bot_info.get('username')}"
+                        )
+                        service = TelegramBotService(
+                            args.database, bot_client, allowed_user_id=allowed_id
+                        )
+                        service.run_polling()
+                    except Exception as exc:
+                        print(f"Error al iniciar el bot de Telegram en segundo plano: {exc}")
+
+                bot_thread = threading.Thread(target=_run_bot, daemon=True)
+                bot_thread.start()
+
         try:
             run_server(args.database, port=args.port)
         except ValueError as error:
             print(f"Error del servidor: {error}")
             return 1
+        return 0
+    if args.command == "telegram-bot":
+        load_environment_file(args.database.parent / ".env")
+        token = args.token or os.environ.get("TELEGRAM_BOT_TOKEN")
+        if not token:
+            print("Error: falta el token de Telegram (--token o TELEGRAM_BOT_TOKEN).")
+            return 1
+        allowed_id = args.user_id
+        if allowed_id is None:
+            env_id = os.environ.get("TELEGRAM_ALLOWED_USER_ID")
+            if env_id:
+                try:
+                    allowed_id = int(env_id)
+                except ValueError:
+                    print("Error: TELEGRAM_ALLOWED_USER_ID debe ser un número entero.")
+                    return 1
+
+        client = TelegramClient(token)
+        try:
+            bot_info = client.get_me()
+            print(
+                f"Bot autenticado: @{bot_info.get('username')} "
+                f"({bot_info.get('first_name', 'Biblioteca')})"
+            )
+        except TelegramAPIError as error:
+            print(f"Error al verificar credenciales con Telegram: {error}")
+            return 1
+
+        if allowed_id:
+            print(f"Seguridad activa: aceptando exclusivamente al usuario {allowed_id}")
+        else:
+            print("Advertencia: TELEGRAM_ALLOWED_USER_ID no configurado; acceso abierto.")
+
+        service = TelegramBotService(args.database, client, allowed_user_id=allowed_id)
+        try:
+            service.run_polling()
+        except KeyboardInterrupt:
+            print("\nBot de Telegram detenido.")
+            return 0
         return 0
     if args.command == "import-annotations":
         try:
