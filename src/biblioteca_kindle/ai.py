@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
+
+logger = logging.getLogger(__name__)
 
 
 class AIError(RuntimeError):
@@ -225,17 +229,62 @@ class ResponsesProvider:
         body = json.dumps(body_dict).encode("utf-8")
         request = urllib.request.Request(url, data=body, headers=headers, method="POST")
 
-        try:
-            with urllib.request.urlopen(request, timeout=90) as response:
-                data = json.load(response)
-        except urllib.error.HTTPError as error:
+        max_attempts = 3
+        data = None
+
+        for attempt in range(max_attempts):
             try:
-                detail = json.load(error)["error"]["message"]
-            except Exception:
-                detail = f"HTTP {error.code}"
-            raise AIError(f"El proveedor rechazó la solicitud: {detail}") from error
-        except (urllib.error.URLError, TimeoutError) as error:
-            raise AIError("No se pudo conectar con el proveedor de IA") from error
+                with urllib.request.urlopen(request, timeout=90) as response:
+                    data = json.load(response)
+                break
+            except urllib.error.HTTPError as error:
+                detail = None
+                try:
+                    payload = json.load(error)
+                    err_obj = payload.get("error", {})
+                    if isinstance(err_obj, dict):
+                        msg = err_obj.get("message")
+                        metadata = err_obj.get("metadata")
+                        raw_meta = metadata.get("raw") if isinstance(metadata, dict) else None
+                        if raw_meta:
+                            detail = f"{msg} ({raw_meta})"
+                        else:
+                            detail = msg
+                    elif isinstance(err_obj, str):
+                        detail = err_obj
+                except Exception:
+                    detail = None
+
+                if not detail:
+                    detail = f"HTTP {error.code}"
+
+                if error.code in (429, 500, 502, 503, 504) and attempt < max_attempts - 1:
+                    wait_time = 1.5 * (attempt + 1)
+                    logger.warning(
+                        "Error transitorio del proveedor de IA (%s: %s). Reintentando en %.1fs (intento %d/%d)...",
+                        error.code,
+                        detail,
+                        wait_time,
+                        attempt + 1,
+                        max_attempts,
+                    )
+                    time.sleep(wait_time)
+                    continue
+
+                raise AIError(f"El proveedor rechazó la solicitud: {detail}") from error
+            except (urllib.error.URLError, TimeoutError) as error:
+                if attempt < max_attempts - 1:
+                    wait_time = 1.5 * (attempt + 1)
+                    logger.warning(
+                        "Fallo de conexión o timeout con el proveedor de IA (%s). Reintentando en %.1fs (intento %d/%d)...",
+                        error,
+                        wait_time,
+                        attempt + 1,
+                        max_attempts,
+                    )
+                    time.sleep(wait_time)
+                    continue
+                raise AIError("No se pudo conectar con el proveedor de IA") from error
 
         text = None
         if isinstance(data, dict) and "choices" in data and isinstance(data["choices"], list) and len(data["choices"]) > 0:
