@@ -13,6 +13,7 @@ from .vocabulary import VocabularyImportError, import_vocabulary
 from .clippings import ClippingsImportError, import_clippings
 from .progress import ProgressImportError, import_progress
 from .annotations import AnnotationImportError, import_annotations
+from .annotation_context import ContextExtractionError, extract_annotation_contexts
 from .sync import synchronize
 from .personal import (
     PersonalDataError,
@@ -99,6 +100,25 @@ def build_parser() -> argparse.ArgumentParser:
     sync.add_argument("mount", type=Path, help="Punto de montaje del Kindle")
     sync.add_argument(
         "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
+    )
+    sync.add_argument(
+        "--extract-contexts",
+        action="store_true",
+        help="Extraer automáticamente contexto narrativo y capítulos de subrayados",
+    )
+
+    extract_contexts = subparsers.add_parser(
+        "extract-contexts",
+        help="Extraer párrafos circundantes y capítulos para subrayados desde libros del Kindle",
+    )
+    extract_contexts.add_argument("mount", type=Path, help="Punto de montaje del Kindle")
+    extract_contexts.add_argument(
+        "--database", required=True, type=Path, help="Base SQLite fuera del Kindle"
+    )
+    extract_contexts.add_argument("--work-id", help="Filtrar por ID de obra")
+    extract_contexts.add_argument("--limit", type=int, help="Límite de anotaciones a procesar")
+    extract_contexts.add_argument(
+        "--overwrite", action="store_true", help="Reextraer anotaciones ya procesadas"
     )
 
     export_sync = subparsers.add_parser(
@@ -318,6 +338,34 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"{result.reconciliation.merged_annotations} duplicados entre fuentes unificados; "
             f"{result.reconciliation.revised_annotations} revisiones de subrayado unificadas; "
             f"{result.inventory.warning_count + result.annotations.warnings + result.progress.warnings} advertencias."
+        )
+        if getattr(args, "extract_contexts", False):
+            try:
+                ctx_res = extract_annotation_contexts(args.database, args.mount)
+                print(
+                    f"Contextos extraídos: {ctx_res.annotations_extracted} anotaciones enriquecidas "
+                    f"en {ctx_res.books_matched} libros."
+                )
+            except ContextExtractionError as err:
+                print(f"Advertencia al extraer contextos: {err}")
+        return 0
+    if args.command == "extract-contexts":
+        try:
+            res = extract_annotation_contexts(
+                args.database,
+                args.mount,
+                work_id=args.work_id,
+                limit=args.limit,
+                overwrite=args.overwrite,
+            )
+        except ContextExtractionError as error:
+            print(f"Error de extracción de contexto: {error}")
+            return 1
+        print("Extracción de contexto finalizada.")
+        print(
+            f"Libros: {res.books_matched}/{res.books_scanned} procesados con éxito. "
+            f"Anotaciones: {res.annotations_extracted} enriquecidas con contexto narrativo, "
+            f"{res.annotations_skipped} omitidas o sin coincidencia."
         )
         return 0
     if args.command == "collection-add":

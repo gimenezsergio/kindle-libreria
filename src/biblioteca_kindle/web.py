@@ -470,6 +470,7 @@ def _annotation_page(connection, work_id: str, *, kind: str, source: str,
         SELECT an.id, an.kind, an.text, an.note_text, an.start_position_native,
                an.end_position_native, an.position_type, an.native_created_at,
                an.status, GROUP_CONCAT(DISTINCT ao.source_kind) AS sources,
+               ac.chapter_title, ac.surrounding_before, ac.surrounding_after,
                COALESCE(
                    MAX(CASE WHEN ao.source_kind = 'clippings' THEN ao.original_position END),
                    (SELECT ao2.original_position
@@ -493,6 +494,7 @@ def _annotation_page(connection, work_id: str, *, kind: str, source: str,
         FROM annotations an
         JOIN editions e ON e.id = an.edition_id
         LEFT JOIN annotation_occurrences ao ON ao.annotation_id = an.id
+        LEFT JOIN annotation_contexts ac ON ac.annotation_id = an.id
         WHERE {where}
         GROUP BY an.id
         ORDER BY COALESCE(an.native_created_at, an.created_at) DESC, an.id

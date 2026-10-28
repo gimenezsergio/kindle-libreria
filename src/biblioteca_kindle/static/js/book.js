@@ -237,10 +237,49 @@ function annotationCard(annotation) {
       window.setTimeout(() => { copy.textContent = "Copiar referencia"; }, 1500);
     });
     meta.append(separator, reference, document.createTextNode(" "), copy);
+  if (annotation.chapter_title) {
+    const chapter = document.createElement("span");
+    chapter.className = "annotation-chapter";
+    chapter.textContent = ` · ${annotation.chapter_title}`;
+    meta.append(chapter);
+  }
+  let drawer = null;
+  if (annotation.surrounding_before || annotation.surrounding_after) {
+    const btnToggle = document.createElement("button");
+    btnToggle.type = "button";
+    btnToggle.className = "copy-reference btn-toggle-annotation-context";
+    btnToggle.textContent = "Ver contexto";
+    drawer = document.createElement("div");
+    drawer.className = "quote-context-drawer";
+    drawer.hidden = true;
+    if (annotation.surrounding_before) {
+      const pB = document.createElement("p");
+      pB.className = "context-before";
+      pB.textContent = `...${annotation.surrounding_before}`;
+      drawer.append(pB);
+    }
+    const pQ = document.createElement("p");
+    pQ.className = "context-anchor";
+    pQ.innerHTML = "<strong>[Pasaje subrayado]</strong>";
+    drawer.append(pQ);
+    if (annotation.surrounding_after) {
+      const pA = document.createElement("p");
+      pA.className = "context-after";
+      pA.textContent = `${annotation.surrounding_after}...`;
+      drawer.append(pA);
+    }
+    btnToggle.addEventListener("click", () => {
+      drawer.hidden = !drawer.hidden;
+      btnToggle.textContent = drawer.hidden ? "Ver contexto" : "Ocultar contexto";
+    });
+    meta.append(document.createTextNode(" "), btnToggle);
   }
   const quote = document.createElement("blockquote");
   quote.textContent = annotation.text || (annotation.kind === "bookmark" ? "Marcador sin texto" : "Anotación sin texto recuperable");
   article.append(meta, quote);
+  if (drawer) {
+    article.append(drawer);
+  }
   if (annotation.note_text) {
     const note = document.createElement("p");
     note.className = "kindle-note";

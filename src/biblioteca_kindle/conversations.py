@@ -685,8 +685,10 @@ def context_options(database: Path | str, conversation_id: str) -> dict:
                     FROM annotation_occurrences ao WHERE ao.annotation_id = an.id
                     ORDER BY ao.observed_at DESC LIMIT 1) AS source_reference,
                    COALESCE(NULLIF(TRIM(an.text), ''), NULLIF(TRIM(an.note_text), ''),
-                            'Anotación sin texto recuperable') AS content
+                            'Anotación sin texto recuperable') AS content,
+                   ac.chapter_title, ac.surrounding_before, ac.surrounding_after
             FROM annotations an JOIN editions e ON e.id = an.edition_id
+            LEFT JOIN annotation_contexts ac ON ac.annotation_id = an.id
             WHERE e.work_id = ? ORDER BY COALESCE(an.native_created_at, an.created_at) DESC
             """,
             (work_id,),
@@ -771,8 +773,11 @@ def resolve_turn_context_sources(
         annotations = {row["id"]: row for row in connection.execute(
             """
             SELECT an.id, an.kind, COALESCE(NULLIF(TRIM(an.text), ''),
-                   NULLIF(TRIM(an.note_text), ''), 'Anotación sin texto recuperable') AS content
-            FROM annotations an JOIN editions e ON e.id = an.edition_id WHERE e.work_id = ?
+                   NULLIF(TRIM(an.note_text), ''), 'Anotación sin texto recuperable') AS content,
+                   ac.chapter_title
+            FROM annotations an JOIN editions e ON e.id = an.edition_id
+            LEFT JOIN annotation_contexts ac ON ac.annotation_id = an.id
+            WHERE e.work_id = ?
             """,
             (work_id,),
         )}
@@ -807,7 +812,11 @@ def resolve_turn_context_sources(
         ] + [
             {
                 "source_type": "annotation", "source_id": identifier,
-                "label_snapshot": annotations[identifier]["kind"],
+                "label_snapshot": (
+                    f"{annotations[identifier]['kind']} · {annotations[identifier]['chapter_title']}"
+                    if annotations[identifier]["chapter_title"]
+                    else annotations[identifier]["kind"]
+                ),
                 "content_snapshot": annotations[identifier]["content"], "is_pinned": 0,
             }
             for identifier in annotation_ids_clean
@@ -864,8 +873,11 @@ def update_context(
         annotations = {row["id"]: row for row in connection.execute(
             """
             SELECT an.id, an.kind, COALESCE(NULLIF(TRIM(an.text), ''),
-                   NULLIF(TRIM(an.note_text), ''), 'Anotación sin texto recuperable') AS content
-            FROM annotations an JOIN editions e ON e.id = an.edition_id WHERE e.work_id = ?
+                   NULLIF(TRIM(an.note_text), ''), 'Anotación sin texto recuperable') AS content,
+                   ac.chapter_title
+            FROM annotations an JOIN editions e ON e.id = an.edition_id
+            LEFT JOIN annotation_contexts ac ON ac.annotation_id = an.id
+            WHERE e.work_id = ?
             """,
             (work_id,),
         )}
@@ -915,7 +927,20 @@ def update_context(
                     label_snapshot=excluded.label_snapshot,
                     content_snapshot=excluded.content_snapshot
                 """,
-                [(str(uuid.uuid4()), conversation_id, identifier, annotations[identifier]["kind"], annotations[identifier]["content"]) for identifier in selected_annotation_ids],
+                [
+                    (
+                        str(uuid.uuid4()),
+                        conversation_id,
+                        identifier,
+                        (
+                            f"{annotations[identifier]['kind']} · {annotations[identifier]['chapter_title']}"
+                            if annotations[identifier]["chapter_title"]
+                            else annotations[identifier]["kind"]
+                        ),
+                        annotations[identifier]["content"],
+                    )
+                    for identifier in selected_annotation_ids
+                ],
             )
             if summary_ids:
                 connection.executemany(
@@ -1012,12 +1037,48 @@ def build_prompt_packet(
     conversation = get_conversation(database, conversation_id)
     if context_sources is not None:
         conversation["context_sources"] = context_sources
+
+    ann_ids = [
+        item["source_id"]
+        for item in conversation["context_sources"]
+        if item.get("source_type") == "annotation" and item.get("source_id")
+    ]
+    ann_contexts: dict[str, dict] = {}
+    if ann_ids:
+        conn = _open_database(database)
+        try:
+            placeholders = ",".join("?" for _ in ann_ids)
+            ctx_rows = conn.execute(
+                f"""
+                SELECT annotation_id, chapter_title, surrounding_before, surrounding_after
+                FROM annotation_contexts
+                WHERE annotation_id IN ({placeholders})
+                """,
+                ann_ids,
+            ).fetchall()
+            ann_contexts = {row["annotation_id"]: dict(row) for row in ctx_rows}
+        finally:
+            conn.close()
+
     sources_parts = []
     for item in conversation["context_sources"]:
         label = item.get("label_snapshot", "")
         content = item.get("content_snapshot", "")
         if item.get("source_type") == "conversation_summary":
             sources_parts.append(f"[MEMORIA PREVIA — {label}]\n{content}")
+        elif item.get("source_type") == "annotation" and item.get("source_id") in ann_contexts:
+            ctx = ann_contexts[item["source_id"]]
+            chapter = ctx.get("chapter_title")
+            before = ctx.get("surrounding_before")
+            after = ctx.get("surrounding_after")
+            header = f"[{label} · {chapter}]" if chapter and chapter not in label else f"[{label}]"
+            entry_parts = []
+            if before:
+                entry_parts.append(f"Contexto previo:\n...{before}")
+            entry_parts.append(f"Pasaje subrayado:\n«{content}»")
+            if after:
+                entry_parts.append(f"Contexto posterior:\n{after}...")
+            sources_parts.append(f"{header}\n" + "\n\n".join(entry_parts))
         else:
             sources_parts.append(f"[{label}]\n{content}")
     sources = "\n\n".join(sources_parts)
@@ -1030,6 +1091,8 @@ def build_prompt_packet(
         "un pasaje no esté explícitamente subrayado. "
         "Trabajá como acompañante de lectura riguroso pero conversable, no como autoridad rígida. "
         "Distinguí datos del contexto, inferencias e hipótesis. "
+        "Si un subrayado o pasaje incluye 'Contexto previo' o 'Contexto posterior', aprovechá esa información "
+        "situacional de la escena para entender con exactitud el momento del relato o ensayo y responder con plena familiaridad. "
         "Si el usuario pregunta por la atribución fáctica de una cita, pasaje o personaje específico y existe ambigüedad "
         "en el fragmento o incertidumbre en la fuente, sé prudente y aclara las hipótesis plausibles en lugar de afirmar "
         "categóricamente un dato no verificado. "
