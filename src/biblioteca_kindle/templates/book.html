@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ficha del libro · Biblioteca personal</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=v25_selection_note">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=v27_cover_dialog">
     <script>window.WORK_ID = {{ work_id|tojson }};</script>
-    <script src="{{ url_for('static', filename='js/book.js') }}?v=v25_selection_note" defer></script>
+    <script src="{{ url_for('static', filename='js/book.js') }}?v=v27_cover_dialog" defer></script>
   </head>
   <body class="notebooklm-body">
     <header class="site-header">
@@ -352,6 +352,15 @@
           </div>
           <button class="dialog-close" value="cancel" aria-label="Cerrar diálogo de portada">×</button>
         </form>
+        <div class="cover-dialog-body" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem;">
+          <div class="cover-candidates-grid" id="cover-candidates-grid"></div>
+          <p class="form-feedback cover-feedback" id="cover-dialog-feedback" role="status" aria-live="polite"></p>
+          <footer class="dialog-actions" style="display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; align-items: center; border-top: 1px solid var(--line); padding-top: 0.75rem;">
+            <label class="secondary-button upload-cover-label" style="cursor: pointer;">📁 Subir desde mi PC<input type="file" id="upload-cover-input" accept="image/*" hidden></label>
+            <button class="secondary-button cover-search-button" id="search-online-cover" type="button">🔎 Buscar en internet</button>
+            <button class="secondary-button danger-button" id="remove-cover" type="button">Quitar portada</button>
+            <button class="secondary-button" id="close-cover-dialog" type="button">Cerrar</button>
+          </footer>
         </div>
       </dialog>
 

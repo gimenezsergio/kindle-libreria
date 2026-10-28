@@ -734,6 +734,16 @@ class WebTests(unittest.TestCase):
             self.assertEqual(data["candidates"][0]["path"], "work_cover_test_cand1.jpg")
             self.assertEqual(data["status"], "pending")
 
+            html_res = client.get("/library/work_cover_test")
+            self.assertEqual(html_res.status_code, 200)
+            html_text = html_res.get_data(as_text=True)
+            self.assertIn('id="book-cover-dialog"', html_text)
+            self.assertIn('id="cover-candidates-grid"', html_text)
+            self.assertIn('id="upload-cover-input"', html_text)
+            self.assertIn('id="search-online-cover"', html_text)
+            self.assertIn('id="remove-cover"', html_text)
+            self.assertIn('id="close-cover-dialog"', html_text)
+
     def test_book_cover_setup_upload(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "library.sqlite3"
