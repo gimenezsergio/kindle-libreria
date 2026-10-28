@@ -2204,13 +2204,27 @@ async function openSummaryDialog() {
   try {
     const summary = await jsonRequest(`/api/conversations/${encodeURIComponent(activeConversationId)}/summary`);
     contentEl.textContent = summary.summary;
-    metaEl.textContent = `Generada por ${summary.profile_name_snapshot || "Perfil"} · Actualizada: ${summary.updated_at || ""}`;
-    generateBtn.textContent = "🔄 Actualizar síntesis";
     copyBtn.hidden = false;
+    if (summary.has_new_messages) {
+      metaEl.textContent = `Generada por ${summary.profile_name_snapshot || "Perfil"} · ${summary.new_messages_count} mensaje(s) nuevo(s) sin sintetizar`;
+      generateBtn.textContent = `🔄 Actualizar síntesis (${summary.new_messages_count} nuevo${summary.new_messages_count === 1 ? "" : "s"})`;
+      generateBtn.disabled = false;
+      generateBtn.classList.add("primary-button");
+      generateBtn.classList.remove("secondary-button");
+    } else {
+      metaEl.textContent = `Generada por ${summary.profile_name_snapshot || "Perfil"} · Síntesis al día`;
+      generateBtn.textContent = "✓ Síntesis al día";
+      generateBtn.disabled = true;
+      generateBtn.classList.remove("primary-button");
+      generateBtn.classList.add("secondary-button");
+    }
   } catch (error) {
     contentEl.textContent = "Esta conversación todavía no tiene una síntesis generada.\n\nAl generarla, se creará un resumen condensado (tesis clave, argumentos y conclusiones) que estará disponible en la pestaña «Conversaciones» del selector de contexto para que otros perfiles puedan consultarlo como memoria previa.";
     metaEl.textContent = "Sin síntesis previa";
     generateBtn.textContent = "🧠 Generar síntesis";
+    generateBtn.disabled = false;
+    generateBtn.classList.add("primary-button");
+    generateBtn.classList.remove("secondary-button");
     copyBtn.hidden = true;
   }
 }
@@ -2232,16 +2246,20 @@ async function generateConversationSummary() {
       method: "POST",
     });
     contentEl.textContent = summary.summary;
-    metaEl.textContent = `Generada por ${summary.profile_name} · Recién actualizada`;
+    metaEl.textContent = `Generada por ${summary.profile_name} · Síntesis al día`;
     feedbackEl.textContent = "¡Síntesis generada y guardada con éxito!";
-    generateBtn.textContent = "🔄 Actualizar síntesis";
+    generateBtn.textContent = "✓ Guardada y al día";
+    generateBtn.disabled = true;
+    generateBtn.classList.remove("primary-button");
+    generateBtn.classList.add("secondary-button");
     copyBtn.hidden = false;
     await loadContext(activeConversationId);
   } catch (error) {
     feedbackEl.textContent = `Error al generar la síntesis: ${error.message}`;
     generateBtn.textContent = "Reintentar síntesis";
-  } finally {
     generateBtn.disabled = false;
+    generateBtn.classList.add("primary-button");
+    generateBtn.classList.remove("secondary-button");
   }
 }
 

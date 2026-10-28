@@ -491,17 +491,32 @@ def get_conversation_summary(
     try:
         row = connection.execute(
             """
-            SELECT conversation_id, work_id, profile_id,
-                   profile_name_snapshot, title_snapshot,
-                   summary, created_at, updated_at
-            FROM conversation_summaries
-            WHERE conversation_id = ?
+            SELECT cs.conversation_id, cs.work_id, cs.profile_id,
+                   cs.profile_name_snapshot, cs.title_snapshot,
+                   cs.summary, cs.created_at, cs.updated_at,
+                   cs.last_message_sequence,
+                   COALESCE((
+                       SELECT MAX(cm.sequence)
+                       FROM conversation_messages cm
+                       WHERE cm.conversation_id = cs.conversation_id
+                   ), 0) AS current_max_sequence
+            FROM conversation_summaries cs
+            WHERE cs.conversation_id = ?
             """,
             (conversation_id,),
         ).fetchone()
         if row is None:
             return None
-        return dict(row)
+        res = dict(row)
+        last_seq = res.get("last_message_sequence")
+        curr_seq = res.get("current_max_sequence") or 0
+        if last_seq is not None:
+            new_msgs = max(0, curr_seq - last_seq)
+        else:
+            new_msgs = 0
+        res["new_messages_count"] = new_msgs
+        res["has_new_messages"] = (new_msgs > 0)
+        return res
     finally:
         connection.close()
 
@@ -599,17 +614,24 @@ def generate_and_save_conversation_summary(
 
     connection = _open_database(database)
     try:
+        current_seq_row = connection.execute(
+            "SELECT COALESCE(MAX(sequence), 0) FROM conversation_messages WHERE conversation_id = ?",
+            (conversation_id,),
+        ).fetchone()
+        last_message_sequence = current_seq_row[0] if current_seq_row else 0
+
         with connection:
             connection.execute(
                 """
                 INSERT INTO conversation_summaries(
                     conversation_id, work_id, profile_id, profile_name_snapshot,
-                    title_snapshot, summary, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    title_snapshot, summary, last_message_sequence, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 ON CONFLICT(conversation_id) DO UPDATE SET
                     profile_name_snapshot = excluded.profile_name_snapshot,
                     title_snapshot = excluded.title_snapshot,
                     summary = excluded.summary,
+                    last_message_sequence = excluded.last_message_sequence,
                     updated_at = CURRENT_TIMESTAMP
                 """,
                 (
@@ -619,6 +641,7 @@ def generate_and_save_conversation_summary(
                     profile_name,
                     title,
                     summary_text,
+                    last_message_sequence,
                 ),
             )
         return {
@@ -628,6 +651,9 @@ def generate_and_save_conversation_summary(
             "profile_name": profile_name,
             "title": title,
             "summary": summary_text,
+            "last_message_sequence": last_message_sequence,
+            "new_messages_count": 0,
+            "has_new_messages": False,
         }
     finally:
         connection.close()

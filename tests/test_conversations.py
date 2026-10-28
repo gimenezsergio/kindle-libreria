@@ -342,6 +342,14 @@ class ConversationTests(unittest.TestCase):
         self.assertIsNotNone(retrieved)
         self.assertEqual(retrieved["summary"], summary_data["summary"])
         self.assertEqual(retrieved["title_snapshot"], "Debate sobre la culpa")
+        self.assertFalse(retrieved["has_new_messages"])
+        self.assertEqual(retrieved["new_messages_count"], 0)
+
+        # Al agregar un nuevo mensaje, la síntesis detecta que hay mensajes nuevos
+        add_message(self.database, conversation_id=identifier, role="user", content="¿Y Sonia qué papel juega?")
+        retrieved2 = get_conversation_summary(self.database, identifier)
+        self.assertTrue(retrieved2["has_new_messages"])
+        self.assertEqual(retrieved2["new_messages_count"], 1)
 
     def test_context_options_includes_summaries_from_other_conversations(self) -> None:
         c1 = create_conversation(self.database, work_id="work-1", profile_id="companion", title="Chat 1")
