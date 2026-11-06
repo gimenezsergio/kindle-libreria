@@ -237,6 +237,7 @@ function annotationCard(annotation) {
       window.setTimeout(() => { copy.textContent = "Copiar referencia"; }, 1500);
     });
     meta.append(separator, reference, document.createTextNode(" "), copy);
+  }
   if (annotation.chapter_title) {
     const chapter = document.createElement("span");
     chapter.className = "annotation-chapter";
