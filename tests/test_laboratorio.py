@@ -139,7 +139,7 @@ class LaboratorioTests(unittest.TestCase):
 
         self.assertEqual(resp["role"], "tutor")
         self.assertEqual(resp["content"], "¿Y qué ocurre cuando los recursos de la comunidad son escasos?")
-        self.assertIn("COLEGA DE LECTURA EXIGENTE", mock.last_packet.instructions)
+        self.assertIn("compañero de lectura lúcido", mock.last_packet.instructions)
         self.assertIn("La Odisea", mock.last_packet.instructions)
         self.assertIn("Todo forastero e indigente", mock.last_packet.instructions)
 
