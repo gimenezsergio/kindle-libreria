@@ -42,6 +42,7 @@ class MigrationTests(unittest.TestCase):
                     "0025_telegram_sessions.sql",
                     "0026_summary_last_sequence.sql",
                     "0027_cafe_literario_profile.sql",
+                    "0028_update_cafe_literario_prompt.sql",
                 ],
             )
 
@@ -102,7 +103,7 @@ class MigrationTests(unittest.TestCase):
                 ).fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(count, 27)
+            self.assertEqual(count, 28)
 
 
 

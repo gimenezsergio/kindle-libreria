@@ -1082,8 +1082,20 @@ def build_prompt_packet(
         else:
             sources_parts.append(f"[{label}]\n{content}")
     sources = "\n\n".join(sources_parts)
+    profile_prompt = conversation["profile_prompt_snapshot"]
+    if conversation.get("profile_id"):
+        conn_p = _open_database(database)
+        try:
+            p_row = conn_p.execute(
+                "SELECT prompt FROM ai_profiles WHERE id = ?", (conversation["profile_id"],)
+            ).fetchone()
+            if p_row and p_row["prompt"]:
+                profile_prompt = p_row["prompt"]
+        finally:
+            conn_p.close()
+
     instructions = (
-        f"{conversation['profile_prompt_snapshot']}\n\n"
+        f"{profile_prompt}\n\n"
         "Estás conversando sobre la OBRA PRINCIPAL indicada en la ficha del contexto. "
         "Utilizá activamente tu conocimiento general sobre esta obra para analizar sus temas, estructura y contenido. "
         "Los subrayados, notas y selecciones del usuario representan sus puntos de interés personales en su lectura, "
