@@ -285,7 +285,7 @@ class WebTests(unittest.TestCase):
             self.assertEqual(profiles[0]["name"], "Jenna")
             self.assertEqual(profiles[0]["prompt"], "Un prompt completo")
             self.assertEqual(archived.status_code, 200)
-            self.assertEqual([item["name"] for item in remaining], ["Compañero de lectura"])
+            self.assertEqual([item["name"] for item in remaining], ["Café literario", "Compañero de lectura"])
 
     def test_reading_conversation_can_be_created_and_messages_saved(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

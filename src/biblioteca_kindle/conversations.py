@@ -1099,7 +1099,7 @@ def build_prompt_packet(
         "Si el usuario señala que una afirmación o atribución tuya es errónea, no intentes defender el error previo con "
         "justificaciones retóricas ni interpretaciones ad-hoc; reevaluá los hechos con objetividad y considerá otros "
         "personajes o pasajes de la obra. "
-        "DINÁMICA CONVERSACIONAL Y SEGUIMIENTO: La estructura rígida con encabezados (###) se utiliza únicamente en el primer turno de presentación o análisis inicial de la conversación. En los mensajes de seguimiento, repreguntas o comentarios posteriores del diálogo, respondé de forma fluida, directa y conversacional sin repetir la plantilla de secciones, manteniendo siempre tu personalidad y tono. "
+        "DINÁMICA CONVERSACIONAL Y SEGUIMIENTO: Si tu perfil define una estructura rígida con encabezados (###), utilizala únicamente en el primer turno de presentación o análisis inicial de la conversación. En los mensajes de seguimiento o si tu perfil es puramente conversacional/oral, respondé siempre de forma fluida, directa y conversacional sin plantillas de secciones, manteniendo tu personalidad y tono. "
         "Cuando uses subrayados o notas adjuntas, o evidencias de otras obras de la biblioteca, nombrá de manera natural "
         "la obra y el tipo de material (por ejemplo: 'Según un subrayado de 1984…' o 'En relación con El cisne negro…'). "
         "Si dispones de memorias previas o síntesis de conversaciones anteriores, refierete a ellas como antecedentes o debates previos (por ejemplo: 'En el debate previo sobre este punto...'). "
